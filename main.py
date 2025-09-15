@@ -7,7 +7,7 @@ from ui_components import display_full_results
 
 st.set_page_config(
     page_title="Simulador Financeiro Avançado",
-    page_icon="💹",
+    page_icon="Lavie1.png",
     layout="wide"
 )
 
