@@ -23,7 +23,7 @@ for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-worksheet = utils.init_gsheet_connection()
+worksheets = utils.init_gsheet_connection()
 
 
 def render_dashboard_page():
@@ -54,74 +54,114 @@ def render_dashboard_page():
 
 def render_new_simulation_page():
     st.title("Nova Simulação Financeira")
+    if 'aportes' not in st.session_state:
+        st.session_state.aportes = []
     with st.container(border=True):
-        st.subheader("Parâmetros da Simulação")
-        tab_invest, tab_proj = st.tabs(["**Dados do Investidor**", "**Dados do Projeto**"])
-        with tab_invest:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.text_input("Nome do Cliente", key="client_name")
-                st.number_input("Valor do Aporte Total", min_value=0.0, step=500.0, format="%.2f", key="total_contribution")
-                st.number_input("Taxa de Juros Mensal (%)", min_value=0.0, step=0.1, format="%.2f", key="monthly_interest_rate")
-            with col2:
-                st.text_input("Código do Cliente", key="client_code")
-                st.number_input("Quantidade de Meses", min_value=1, step=1, key="num_months")
-                st.date_input("Data de Início", key="start_date")
-        with tab_proj:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.number_input("Tamanho do Terreno (m²)", min_value=0, step=100, key="land_size")
-                st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-            with col2:
-                st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
-                st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
-            st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
+        st.subheader("Parâmetros Gerais da Simulação")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.text_input("Nome do Cliente", key="client_name")
+            st.text_input("Código do Cliente", key="client_code")
+        with c2:
+            st.date_input("Data Final do Projeto (para cálculo dos juros)", key="project_end_date")
+            st.number_input("Taxa de Juros Mensal (%)", min_value=0.0, step=0.1, format="%.2f", key="monthly_interest_rate")
+    with st.container(border=True):
+        st.subheader("Lançamento de Aportes")
+        c1, c2, c3 = st.columns([2, 2, 1])
+        with c1:
+            aporte_date = st.date_input("Data do Aporte")
+        with c2:
+            aporte_value = st.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f")
+        with c3:
+            st.write("‎")
+            if st.button("Adicionar Aporte", use_container_width=True):
+                if aporte_value > 0:
+                    st.session_state.aportes.append({"data": aporte_date, "valor": aporte_value})
+                else:
+                    st.warning("O valor do aporte deve ser maior que zero.")
+
+    if st.session_state.aportes:
+        st.subheader("Aportes Adicionados")
+
+        aportes_df = pd.DataFrame(st.session_state.aportes)
+        aportes_df["data"] = pd.to_datetime(aportes_df["data"]).dt.strftime('%d/%m/%Y')
+        aportes_df["valor"] = aportes_df["valor"].apply(utils.format_currency)
+        st.dataframe(aportes_df, use_container_width=True, hide_index=True)
+        
+        if st.button("Limpar Todos os Aportes", type="secondary"):
+            st.session_state.aportes = []
+            st.rerun()
+
+    with st.container(border=True):
+        st.subheader("Dados do Projeto Imobiliário")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.number_input("Tamanho do Terreno (m²)", min_value=0, step=100, key="land_size")
+            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
+        with col2:
+            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
+            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
+        st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
 
     if st.button("📈 Calcular Resultado", use_container_width=True, type="primary"):
-        required_fields = {
-            "Aporte Total": st.session_state.total_contribution,
-            "Tamanho do Terreno": st.session_state.land_size,
-            "Valor de Venda do m²": st.session_state.value_m2
-        }
-        missing_fields = [name for name, value in required_fields.items() if value <= 0]
-
-        if missing_fields:
-            st.warning(f"**Cálculo Interrompido.** Verifique se os campos a seguir são maiores que zero: **{', '.join(missing_fields)}**.")
+        if not st.session_state.aportes:
+            st.warning("Adicione pelo menos um aporte para calcular.")
+            st.session_state.results_ready = False
+        elif not st.session_state.land_size > 0 or not st.session_state.value_m2 > 0:
+            st.warning("Verifique se 'Tamanho do Terreno' e 'Valor de Venda do m²' são maiores que zero.")
             st.session_state.results_ready = False
         else:
             with st.spinner("Realizando cálculos..."):
-                params = {k: st.session_state[k] for k in defaults if k not in ['page', 'results_ready', 'simulation_results', 'editing_row', 'simulation_to_edit', 'deleting_row_index']}
+                params = {k: st.session_state[k] for k in st.session_state if k not in ['results_ready', 'simulation_results']}
+                aportes_list = [{'date': pd.to_datetime(a['data']).date(), 'value': a['valor']} for a in st.session_state.aportes]
+                params['aportes'] = aportes_list
+                params['project_end_date'] = st.session_state.project_end_date
+
                 st.session_state.simulation_results = utils.calculate_financials(params)
                 st.session_state.results_ready = True
 
     def save_simulation_callback():
-        if not worksheet:
+        if not worksheets:
             st.error("Conexão com a planilha não disponível.")
             return
         with st.spinner("Salvando simulação..."):
             results = st.session_state.simulation_results
-            data = [
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+            ws_simulations = worksheets["simulations"]
+            ws_aportes = worksheets["aportes"]
+            sim_id = f"sim_{int(datetime.now().timestamp())}"
+            main_data = [
+                sim_id,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 st.session_state.client_name, st.session_state.client_code,
-                st.session_state.total_contribution, st.session_state.num_months, 
-                st.session_state.monthly_interest_rate, st.session_state.spe_percentage, 
+                results.get('total_contribution', 0),
+                results.get('num_months', 0),
+                st.session_state.monthly_interest_rate, st.session_state.spe_percentage,
                 st.session_state.land_size, st.session_state.construction_cost_m2,
-                st.session_state.value_m2, st.session_state.area_exchange_percentage, 
+                st.session_state.value_m2, st.session_state.area_exchange_percentage,
                 results.get('vgv', 0), results.get('total_construction_cost', 0),
                 results.get('final_operational_result', 0), results.get('valor_participacao', 0),
                 results.get('resultado_final_investidor', 0),
                 results.get('roi', 0), results.get('roi_anualizado', 0),
                 results.get('valor_corrigido', 0)
             ]
-            worksheet.append_row(data, value_input_option='USER_ENTERED')
+            ws_simulations.append_row(main_data, value_input_option='USER_ENTERED')
+            aportes_data_to_save = []
+            for aporte in st.session_state.aportes:
+                aporte_data_str = aporte['data'].strftime('%Y-%m-%d')
+                aportes_data_to_save.append([sim_id, aporte_data_str, aporte['valor']])
+
+            if aportes_data_to_save:
+                ws_aportes.append_rows(aportes_data_to_save, value_input_option='USER_ENTERED')
+
             st.cache_data.clear()
             st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
+    # Exibição dos resultados (agora com o botão de salvar reativado)
     if st.session_state.get('results_ready', False):
         st.divider()
         display_full_results(
-            st.session_state.simulation_results, 
-            show_save_button=True, 
+            st.session_state.simulation_results,
+            show_save_button=True, # Reativado!
             show_download_button=True,
             save_callback=save_simulation_callback
         )
@@ -152,13 +192,21 @@ def render_history_page():
                     st.rerun()
         st.divider()
 
-    if not worksheet:
+    if not worksheets:
         st.error("Conexão com a planilha não disponível.")
         return
-    df = utils.load_data_from_sheet(worksheet)
-    if df.empty:
+    df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+    df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
+
+    if df_simulations.empty:
         st.info("Nenhuma simulação salva encontrada na planilha.")
         return
+    if not df_aportes.empty:
+        df_aportes['valor_aporte'] = pd.to_numeric(df_aportes['valor_aporte'], errors='coerce').fillna(0)
+        aportes_grouped = df_aportes.groupby('simulation_id').apply(lambda x: x[['data_aporte', 'valor_aporte']].to_dict('records'))
+        df_simulations['aportes'] = df_simulations['simulation_id'].map(aportes_grouped)
+    else:
+        df_simulations['aportes'] = [[] for _ in range(len(df_simulations))]
 
     st.subheader("Filtro por Cliente")
     selected_client = st.selectbox(
@@ -178,7 +226,7 @@ def render_history_page():
         st.warning("Nenhum resultado encontrado para o cliente selecionado.")
         return
 
-    for index, row in filtered_df.sort_values(by="created_at", ascending=False).iterrows():
+    for index, row in df_simulations.sort_values(by="created_at", ascending=False).iterrows():
         with st.container(border=True):
             c1, c2, c3, c4, c5, c6 = st.columns([2.5, 3, 2, 4, 0.8, 0.8])
             c1.metric("Cliente", row['client_name'])
@@ -195,7 +243,6 @@ def render_history_page():
                 st.rerun()
             with st.expander("Ver resultado completo"):
                 sim_data = row.to_dict()
-                sim_data['start_date'] = pd.to_datetime(sim_data.get('start_date') or sim_data.get('created_at')).date()
                 display_full_results(sim_data, show_download_button=True)
 
 def render_edit_page():
