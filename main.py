@@ -27,7 +27,7 @@ worksheet = utils.init_gsheet_connection()
 
 
 def render_dashboard_page():
-    st.title("📊 Dashboard de Simulações")
+    st.title("Dashboard de Simulações")
     st.markdown("Visão geral dos projetos e desempenho dos investimentos.")
     df = utils.load_data_from_sheet(worksheet)
     if df.empty:
@@ -53,7 +53,7 @@ def render_dashboard_page():
         st.bar_chart(simulations_per_month)
 
 def render_new_simulation_page():
-    st.title("➕ Nova Simulação Financeira")
+    st.title("Nova Simulação Financeira")
     with st.container(border=True):
         st.subheader("Preenchimento da Simulação")
         tab_invest, tab_proj = st.tabs(["**Passo 1: Investidor**", "**Passo 2: Projeto**"])
@@ -101,8 +101,6 @@ def render_new_simulation_page():
             return
         with st.spinner("Salvando simulação..."):
             results = st.session_state.simulation_results
-            
-            # --- LISTA DE DADOS PARA SALVAR (ATUALIZADA) ---
             data = [
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
                 st.session_state.client_name, st.session_state.client_code,
@@ -128,12 +126,12 @@ def render_new_simulation_page():
         display_full_results(
             st.session_state.simulation_results, 
             show_save_button=True, 
-            show_download_button=True, # <-- Adicionado
+            show_download_button=True,
             save_callback=save_simulation_callback
         )
 
 def render_history_page():
-    st.title("🗂️ Histórico de Simulações")
+    st.title("Histórico de Simulações")
 
     if st.session_state.get('deleting_row_index') is not None:
         with st.container(border=True):
@@ -205,7 +203,7 @@ def render_history_page():
                 display_full_results(sim_data, show_download_button=True)
 
 def render_edit_page():
-    st.title("📝 Editando Simulação")
+    st.title("Editando Simulação")
     if st.session_state.editing_row is None or st.session_state.simulation_to_edit is None:
         st.warning("Nenhuma simulação selecionada para edição. Volte ao Histórico.")
         if st.button("Voltar ao Histórico"):
@@ -271,7 +269,7 @@ def render_edit_page():
         if st.button("✖️ Cancelar", use_container_width=True):
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
-            st.session_state.page = "🗂️ Histórico de Simulações"
+            st.session_state.page = "🗂Histórico de Simulações"
             st.rerun()
 
 
