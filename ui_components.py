@@ -19,44 +19,30 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_parcelas:
         st.subheader("📅 Plano de Parcelas Detalhado")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Nome do Cliente", results.get('client_name', "N/A"))
-        c2.metric("Montante Final (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
-        daily_rate = (results.get('monthly_interest_rate', 0) / 30)
-        c3.metric("Taxa de Juros Diária (aprox.)", f"{daily_rate:.4f}%")
-        
-        num_months = int(results.get('num_months', 1))
-        if num_months <= 0: num_months = 1
-        
-        start_date_val = results.get('start_date')
-        if isinstance(start_date_val, str):
-            try: start_date_val = pd.to_datetime(start_date_val).date()
-            except (ValueError, TypeError): start_date_val = datetime.now().date()
-        elif isinstance(start_date_val, datetime):
-            start_date_val = start_date_val.date()
-        elif isinstance(start_date_val, pd.Timestamp):
-             start_date_val = start_date_val.date()
-        elif start_date_val is None:
-             start_date_val = datetime.now().date()
 
-        monthly_rate_dec = results.get('monthly_interest_rate', 0) / 100
-        total_contribution = results.get('total_contribution', 0)
+        aportes_list = results.get('aportes', [])
+
+        display_data = []
+        if aportes_list:
+            monthly_rate_dec = results.get('monthly_interest_rate', 0) / 100
+            
+            for i, aporte in enumerate(aportes_list):
+                valor_base = aporte.get('value', 0)
+                juros_mensal_parcela = valor_base * monthly_rate_dec
+                valor_total_parcela = valor_base + juros_mensal_parcela
+
+                display_data.append({
+                    "Parcela Nº": i + 1,
+                    "Vencimento": pd.to_datetime(aporte.get('date')).strftime("%d/%m/%Y"),
+                    "Valor Base": utils.format_currency(valor_base),
+                    "Juros Mensal": utils.format_currency(juros_mensal_parcela),
+                    "Valor Total": utils.format_currency(valor_total_parcela)
+                })
         
-        inst_val = total_contribution / num_months if num_months > 0 else 0
-        int_val = inst_val * monthly_rate_dec
-        inst_with_int = inst_val + int_val
-        
-        installments_data = [
-            {
-                "Parcela Nº": i,
-                "Vencimento": (start_date_val + relativedelta(months=i-1)).strftime("%d/%m/%Y"),
-                "Valor Base": format_currency(inst_val),
-                "Juros Mensal": format_currency(int_val),
-                "Valor Total": format_currency(inst_with_int)
-            }
-            for i in range(1, num_months + 1)
-        ]
-        st.dataframe(pd.DataFrame(installments_data), use_container_width=True, hide_index=True)
+        if display_data:
+            st.dataframe(pd.DataFrame(display_data), use_container_width=True, hide_index=True)
+        else:
+            st.warning("Nenhuma parcela foi gerada para esta simulação.")
 
 
     with tab_resumo:
