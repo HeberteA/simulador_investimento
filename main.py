@@ -53,7 +53,7 @@ def render_dashboard_page():
         st.bar_chart(simulations_per_month)
 
 def render_new_simulation_page():
-    st.title("➕ Nova Simulação Financeira")
+    st.title("Nova Simulação Financeira")
     with st.container(border=True):
         st.subheader("Parâmetros da Simulação")
         tab_invest, tab_proj = st.tabs(["**Dados do Investidor**", "**Dados do Projeto**"])
@@ -270,10 +270,8 @@ def render_edit_page():
 
 
 with st.sidebar:
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-
     st.image("Lavie.png")
-    
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
     page_map = {
         "Nova Simulação": "➕ Nova Simulação",
         "Histórico": "🗂️ Histórico de Simulações",
