@@ -53,16 +53,11 @@ def render_dashboard_page():
         st.bar_chart(simulations_per_month)
 
 def render_new_simulation_page():
-    st.title("Nova Simulação Financeira")
-    if 'simulation_step' not in st.session_state:
-        st.session_state.simulation_step = 1
-    def next_step():
-        st.session_state.simulation_step += 1
-    def prev_step():
-        st.session_state.simulation_step -= 1
-    if st.session_state.simulation_step == 1:
-        st.subheader("Passo 1 de 2: Dados do Investidor")
-        with st.container(border=True):
+    st.title("➕ Nova Simulação Financeira")
+    with st.container(border=True):
+        st.subheader("Parâmetros da Simulação")
+        tab_invest, tab_proj = st.tabs(["**Dados do Investidor**", "**Dados do Projeto**"])
+        with tab_invest:
             col1, col2 = st.columns(2)
             with col1:
                 st.text_input("Nome do Cliente", key="client_name")
@@ -72,13 +67,7 @@ def render_new_simulation_page():
                 st.text_input("Código do Cliente", key="client_code")
                 st.number_input("Quantidade de Meses", min_value=1, step=1, key="num_months")
                 st.date_input("Data de Início", key="start_date")
-        
-        st.divider()
-        st.button("Próximo Passo →", on_click=next_step, use_container_width=True, type="primary")
-
-    elif st.session_state.simulation_step == 2:
-        st.subheader("Passo 2 de 2: Dados do Projeto")
-        with st.container(border=True):
+        with tab_proj:
             col1, col2 = st.columns(2)
             with col1:
                 st.number_input("Tamanho do Terreno (m²)", min_value=0, step=100, key="land_size")
@@ -87,37 +76,24 @@ def render_new_simulation_page():
                 st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
                 st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
             st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
-        
-        st.divider()
-        b_col1, b_col2 = st.columns([1, 3])
-        with b_col1:
-            st.button("← Voltar", on_click=prev_step, use_container_width=True)
-        with b_col2:
-            if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
-                required_fields = {
-                    "Aporte Total": st.session_state.total_contribution,
-                    "Tamanho do Terreno": st.session_state.land_size,
-                    "Valor de Venda do m²": st.session_state.value_m2
-                }
-                missing_fields = [name for name, value in required_fields.items() if value <= 0]
 
-                if missing_fields:
-                    st.warning(f"**Cálculo Interrompido.** Verifique se os campos a seguir são maiores que zero: **{', '.join(missing_fields)}**.")
-                    st.session_state.results_ready = False
-                else:
-                    with st.spinner("Realizando cálculos..."):
-                        params = {k: st.session_state[k] for k in defaults if k not in ['page', 'results_ready', 'simulation_results', 'editing_row', 'simulation_to_edit', 'deleting_row_index']}
-                        st.session_state.simulation_results = utils.calculate_financials(params)
-                        st.session_state.results_ready = True
-                        st.session_state.simulation_step = 3 
-                        st.rerun()
+    if st.button("📈 Calcular Resultado", use_container_width=True, type="primary"):
+        required_fields = {
+            "Aporte Total": st.session_state.total_contribution,
+            "Tamanho do Terreno": st.session_state.land_size,
+            "Valor de Venda do m²": st.session_state.value_m2
+        }
+        missing_fields = [name for name, value in required_fields.items() if value <= 0]
 
-    elif st.session_state.simulation_step == 3:
-        if st.button("↩ Iniciar Nova Simulação"):
-            st.session_state.simulation_step = 1
-            st.session_state.results_ready = False 
-            st.rerun()
-            
+        if missing_fields:
+            st.warning(f"**Cálculo Interrompido.** Verifique se os campos a seguir são maiores que zero: **{', '.join(missing_fields)}**.")
+            st.session_state.results_ready = False
+        else:
+            with st.spinner("Realizando cálculos..."):
+                params = {k: st.session_state[k] for k in defaults if k not in ['page', 'results_ready', 'simulation_results', 'editing_row', 'simulation_to_edit', 'deleting_row_index']}
+                st.session_state.simulation_results = utils.calculate_financials(params)
+                st.session_state.results_ready = True
+
     def save_simulation_callback():
         if not worksheet:
             st.error("Conexão com a planilha não disponível.")
@@ -131,21 +107,18 @@ def render_new_simulation_page():
                 st.session_state.monthly_interest_rate, st.session_state.spe_percentage, 
                 st.session_state.land_size, st.session_state.construction_cost_m2,
                 st.session_state.value_m2, st.session_state.area_exchange_percentage, 
-                results.get('vgv', 0), 
-                results.get('total_construction_cost', 0), 
-                results.get('final_operational_result', 0), 
-                results.get('valor_participacao', 0),
+                results.get('vgv', 0), results.get('total_construction_cost', 0),
+                results.get('final_operational_result', 0), results.get('valor_participacao', 0),
                 results.get('resultado_final_investidor', 0),
-                results.get('roi', 0), 
-                results.get('roi_anualizado', 0),
+                results.get('roi', 0), results.get('roi_anualizado', 0),
                 results.get('valor_corrigido', 0)
             ]
-            
             worksheet.append_row(data, value_input_option='USER_ENTERED')
             st.cache_data.clear()
             st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
-    if st.session_state.results_ready:
+    if st.session_state.get('results_ready', False):
+        st.divider()
         display_full_results(
             st.session_state.simulation_results, 
             show_save_button=True, 
@@ -297,6 +270,8 @@ def render_edit_page():
 
 
 with st.sidebar:
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+
     st.image("Lavie.png")
     
     page_map = {
