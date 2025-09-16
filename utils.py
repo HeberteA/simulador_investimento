@@ -173,9 +173,15 @@ def generate_pdf(data):
         pdf.cell(col_widths[2], 6, format_currency(inst_val), 1, 0, 'R')
         pdf.cell(col_widths[3], 6, format_currency(int_val), 1, 0, 'R')
         pdf.cell(col_widths[4], 6, format_currency(inst_with_int), 1, 1, 'R')
-    output = pdf.output(dest='S')
-
+    output = None
+    try:
+        output = pdf.output(dest='S')
+    except Exception as e:
+        st.warning(f"Não foi possível gerar o PDF. Erro interno: {e}")
+        return b""
     if isinstance(output, str):
         return output.encode('latin-1')
-    return output
+    if isinstance(output, bytes):
+        return output
+    return b""
   
