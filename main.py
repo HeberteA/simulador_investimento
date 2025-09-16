@@ -104,10 +104,9 @@ def render_new_simulation_page():
             aportes_list = results.get('aportes', [])
             for aporte in aportes_list:
                 aporte_data_str = aporte['date'].strftime('%Y-%m-%d')
-                aportes_data_to_save.append([sim_id, aporte_data_str, aporte['value']])
+                aporte_to_save = [sim_id, aporte_data_str, aporte['value']]
+                ws_aportes.append_row(aporte_to_save, value_input_option='USER_ENTERED')
             
-            if aportes_data_to_save:
-                ws_aportes.append_rows(aportes_data_to_save, value_input_option='USER_ENTERED')
             st.cache_data.clear()
             st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
@@ -246,11 +245,12 @@ def render_edit_page():
                 rows_to_delete = sorted([cell.row for cell in cell_list], reverse=True)
                 for row_idx in rows_to_delete:
                     ws_aportes.delete_rows(row_idx)
-            
-            new_aportes_data = [[sim_id, a['date'].strftime('%Y-%m-%d'), a['value']] for a in aportes_list]
-            if new_aportes_data:
-                ws_aportes.append_rows(new_aportes_data, value_input_option='USER_ENTERED')
+            for aporte in aportes_list:
+                new_aporte_data = [sim_id, aporte['date'].strftime('%Y-%m-%d'), aporte['value']]
+                ws_aportes.append_row(new_aporte_data, value_input_option='USER_ENTERED')
 
+            
+    
             st.cache_data.clear()
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
