@@ -174,5 +174,8 @@ def generate_pdf(data):
         pdf.cell(col_widths[3], 6, format_currency(int_val), 1, 0, 'R')
         pdf.cell(col_widths[4], 6, format_currency(inst_with_int), 1, 1, 'R')
     
-    return pdf.output()
+    if output_string:
+        return output_string.encode('latin-1')
+    else:
+        return b""
   
