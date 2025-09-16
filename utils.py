@@ -25,23 +25,16 @@ def init_gsheet_connection():
         sheet_name = st.secrets["g_sheet_name"]
         gc = gspread.service_account_from_dict(creds)
         spreadsheet = gc.open(sheet_name)
-        try:
-            worksheet = spreadsheet.worksheet("simulations")
-        except WorksheetNotFound:
-            worksheet = spreadsheet.add_worksheet(title="simulations", rows="100", cols="22")
-            header = [
-                "created_at", "client_name", "client_code", "total_contribution",
-                "num_months", "monthly_interest_rate", "spe_percentage", "land_size",
-                "construction_cost_m2", "value_m2", "area_exchange_percentage",
-                "vgv", "total_construction_cost", "final_operational_result", "valor_participacao",
-                "resultado_final_investidor", "roi", "roi_anualizado", "valor_corrigido"
-            ]
-            worksheet.append_row(header)
-        return worksheet
+        worksheet_simulations = spreadsheet.worksheet("simulations")
+        worksheet_aportes = spreadsheet.worksheet("aportes")
+        return {
+            "simulations": worksheet_simulations,
+            "aportes": worksheet_aportes
+        }
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
-
+        
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
@@ -79,40 +72,56 @@ def load_data_from_sheet(_worksheet):
 def calculate_financials(params):
     results = {}
     results.update(params)
+    total_juros = 0
+    total_contribution = 0
+    aportes = params.get('aportes', [])
+    project_end_date = params.get('project_end_date')
+    monthly_rate_decimal = params.get('monthly_interest_rate', 0) / 100
+
+    if not aportes:
+        num_months_for_roi = 1
+    else:
+        aportes.sort(key=lambda x: x['date'])
+        first_contribution_date = aportes[0]['date']
+        delta_total = relativedelta(project_end_date, first_contribution_date)
+        num_months_for_roi = delta_total.years * 12 + delta_total.months
+        if num_months_for_roi <= 0:
+            num_months_for_roi = 1
+        for aporte in aportes:
+            contribution_date = aporte['date']
+            contribution_value = aporte['value']
+            total_contribution += contribution_value
+            delta = relativedelta(project_end_date, contribution_date)
+            num_months_aporte = delta.years * 12 + delta.months
+            
+            if num_months_aporte > 0:
+                juros_aporte = contribution_value * monthly_rate_decimal * num_months_aporte
+                total_juros += juros_aporte
+    results['total_contribution'] = total_contribution
+    results['valor_corrigido'] = total_contribution + total_juros
+    results['num_months'] = num_months_for_roi
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     results['total_construction_cost'] = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
     operational_result = results['vgv'] - results['total_construction_cost']
     area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
     results['final_operational_result'] = operational_result - area_exchange_value
-    valor_investido = params.get('total_contribution', 0)
-    num_months = params.get('num_months', 1)
-    if num_months <= 0: num_months = 1
-    monthly_rate_decimal = params.get('monthly_interest_rate', 0) / 100
-    total_juros = valor_investido * monthly_rate_decimal * num_months
-    results['valor_corrigido'] = valor_investido + total_juros
+    valor_investido = total_contribution
     results['valor_participacao'] = results['final_operational_result'] * (params.get('spe_percentage', 0) / 100)
     lucro_bruto_investidor = results['valor_corrigido'] + results['valor_participacao']
     results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido
-    
     roi_raw = (results['resultado_final_investidor'] / valor_investido) * 100 if valor_investido > 0 else 0
-    
     base_anualizacao = 1 + (roi_raw / 100)
     if base_anualizacao < 0:
         roi_anualizado_raw = -100.0
     else:
-        roi_anualizado_raw = ((base_anualizacao ** (12 / num_months)) - 1) * 100 if num_months > 0 else 0
-
+        roi_anualizado_raw = ((base_anualizacao ** (12 / num_months_for_roi)) - 1) * 100 if num_months_for_roi > 0 else 0
     results['roi'] = round(roi_raw, 2)
     results['roi_anualizado'] = round(roi_anualizado_raw, 2)
     
     return results
 
-# Em utils.py
-
 def generate_pdf(data):
-    # --- INÍCIO DA VERSÃO DE DIAGNÓSTICO E CORREÇÃO ---
     try:
-        # Função auxiliar para garantir a compatibilidade de texto com a biblioteca FPDF
         def to_latin1(text):
             """Converte uma string para o formato latin-1, substituindo caracteres incompatíveis."""
             if text is None:
@@ -141,7 +150,6 @@ def generate_pdf(data):
         pdf.cell(0, 5, to_latin1(f"Taxa de Juros Mensal: {data.get('monthly_interest_rate', 0):.2f}%"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Participação na SPE: {data.get('spe_percentage', 0):.2f}%"), 0, 1)
         pdf.ln(5)
-
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Análise do Projeto Imobiliário"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
@@ -149,7 +157,6 @@ def generate_pdf(data):
         pdf.cell(0, 5, to_latin1(f"Custo Total da Obra: {format_currency(data.get('total_construction_cost'))}"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Resultado Operacional Final: {format_currency(data.get('final_operational_result'))}"), 0, 1)
         pdf.ln(5)
-
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Resultados do Investidor"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
@@ -159,7 +166,6 @@ def generate_pdf(data):
         pdf.cell(0, 8, to_latin1(f"ROI: {data.get('roi', 0):.2f}%"), 0, 1)
         pdf.cell(0, 8, to_latin1(f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%"), 0, 1)
         pdf.ln(10)
-        
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Plano de Parcelas Detalhado"), 0, 1, "L")
         pdf.set_font("Arial", "B", 9)
