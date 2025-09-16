@@ -13,7 +13,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
     if isinstance(unique_id, pd.Timestamp):
         unique_id = unique_id.strftime("%Y%m%d%H%M%S")
     
-    st.header("📊 Resultados da Simulação")
+    st.header("Resultados da Simulação")
 
     tab_parcelas, tab_resumo, tab_sensibilidade = st.tabs(["**Plano de Parcelas**", "**Resumo Financeiro**", "**Análise de Cenários**"])
 
