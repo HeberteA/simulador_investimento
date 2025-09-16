@@ -47,7 +47,7 @@ def load_data_from_sheet(_worksheet):
     header = values[0]
     data = values[1:]
     df = pd.DataFrame(data, columns=header)
-
+    
     if 'row_index' not in df.columns:
         df['row_index'] = range(2, len(df) + 2)
     
@@ -56,7 +56,7 @@ def load_data_from_sheet(_worksheet):
         'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage', 
         'vgv', 'total_construction_cost', 'final_operational_result', 'valor_participacao', 
         'resultado_final_investidor', 'roi', 'roi_anualizado', 'valor_corrigido',
-        'valor_aporte' 
+        'valor_aporte'
     ]
     
     for col in numeric_cols:
@@ -65,11 +65,14 @@ def load_data_from_sheet(_worksheet):
             is_pt_br_format = series.str.contains(',', na=False)
             series.loc[is_pt_br_format] = series.loc[is_pt_br_format].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
             df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
+            
     for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date']:
         if date_col in df.columns:
             df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
 
-    df.dropna(subset=['created_at'], inplace=True, if_exists=True)
+    if 'created_at' in df.columns:
+        df.dropna(subset=['created_at'], inplace=True)
+        
     return df
 
 def calculate_financials(params):
