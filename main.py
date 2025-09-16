@@ -132,9 +132,9 @@ def render_new_simulation_page():
                 st.session_state.land_size, st.session_state.construction_cost_m2,
                 st.session_state.value_m2, st.session_state.area_exchange_percentage, 
                 results.get('vgv', 0), 
-                results.get('total_construction_cost', 0), # <-- CAMPO ADICIONADO
+                results.get('total_construction_cost', 0), 
                 results.get('final_operational_result', 0), 
-                results.get('valor_participacao', 0), # <-- CAMPO ADICIONADO
+                results.get('valor_participacao', 0),
                 results.get('resultado_final_investidor', 0),
                 results.get('roi', 0), 
                 results.get('roi_anualizado', 0),
@@ -330,7 +330,6 @@ with st.sidebar:
         st.session_state.editing_row = None
         st.session_state.simulation_to_edit = None
 
-    st.divider()
 
 if st.session_state.page == "➕ Nova Simulação":
     render_new_simulation_page()
