@@ -2,13 +2,13 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from streamlit_option_menu import option_menu
-from dateutil.relativedelta import relativedelta # <-- LINHA ADICIONADA
+from dateutil.relativedelta import relativedelta 
 import utils
 from ui_components import display_full_results
 
 st.set_page_config(
     page_title="Simulador Financeiro Avançado",
-    page_icon="💹",
+    page_icon="Lavie1.png",
     layout="wide"
 )
 
