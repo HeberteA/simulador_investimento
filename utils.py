@@ -108,47 +108,51 @@ def calculate_financials(params):
     return results
 
 def generate_pdf(data):
+    def to_latin1(text):
+        """Converte uma string para o formato latin-1, substituindo caracteres incompatíveis."""
+        return str(text).encode('latin-1', 'replace').decode('latin-1')
     pdf = FPDF()
     pdf.add_page()
     try:
         pdf.image("Lavie.png", x=10, y=8, w=40)
-    except FileNotFoundError:
+    except Exception:
         pdf.set_font("Arial", "I", 8)
         pdf.cell(0, 5, "Logo 'Lavie.png' nao encontrado.", 0, 1, "L")
     pdf.set_font("Arial", "B", 16)
     pdf.set_x(60)
-    pdf.cell(0, 10, "Relatório de Simulação Financeira", 0, 1, "C")
+    pdf.cell(0, 10, to_latin1("Relatório de Simulação Financeira"), 0, 1, "C")
     pdf.ln(20)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Dados do Cliente e Investimento", 0, 1, "L")
+    pdf.cell(0, 10, to_latin1("Dados do Cliente e Investimento"), 0, 1, "L")
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 5, f"Cliente: {data.get('client_name')} (Código: {data.get('client_code')})", 0, 1)
-    pdf.cell(0, 5, f"Valor do Aporte Total: {format_currency(data.get('total_contribution'))}", 0, 1)
-    pdf.cell(0, 5, f"Duração: {data.get('num_months')} meses", 0, 1)
-    pdf.cell(0, 5, f"Taxa de Juros Mensal: {data.get('monthly_interest_rate', 0):.2f}%", 0, 1)
-    pdf.cell(0, 5, f"Participação na SPE: {data.get('spe_percentage', 0):.2f}%", 0, 1)
+    client_info = f"Cliente: {data.get('client_name', '')} (Código: {data.get('client_code', '')})"
+    pdf.cell(0, 5, to_latin1(client_info), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Valor do Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Duração: {data.get('num_months')} meses"), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Taxa de Juros Mensal: {data.get('monthly_interest_rate', 0):.2f}%"), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Participação na SPE: {data.get('spe_percentage', 0):.2f}%"), 0, 1)
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Análise do Projeto Imobiliário", 0, 1, "L")
+    pdf.cell(0, 10, to_latin1("Análise do Projeto Imobiliário"), 0, 1, "L")
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 5, f"VGV (Valor Geral de Venda): {format_currency(data.get('vgv'))}", 0, 1)
-    pdf.cell(0, 5, f"Custo Total da Obra: {format_currency(data.get('total_construction_cost'))}", 0, 1)
-    pdf.cell(0, 5, f"Resultado Operacional Final: {format_currency(data.get('final_operational_result'))}", 0, 1)
+    pdf.cell(0, 5, to_latin1(f"VGV (Valor Geral de Venda): {format_currency(data.get('vgv'))}"), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Custo Total da Obra: {format_currency(data.get('total_construction_cost'))}"), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Resultado Operacional Final: {format_currency(data.get('final_operational_result'))}"), 0, 1)
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Resultados do Investidor", 0, 1, "L")
+    pdf.cell(0, 10, to_latin1("Resultados do Investidor"), 0, 1, "L")
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 5, f"Montante Final (Aporte + Juros): {format_currency(data.get('valor_corrigido'))}", 0, 1)
-    pdf.cell(0, 5, f"Resultado Final (Lucro): {format_currency(data.get('resultado_final_investidor'))}", 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Montante Final (Aporte + Juros): {format_currency(data.get('valor_corrigido'))}"), 0, 1)
+    pdf.cell(0, 5, to_latin1(f"Resultado Final (Lucro): {format_currency(data.get('resultado_final_investidor'))}"), 0, 1)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, f"ROI: {data.get('roi', 0):.2f}%", 0, 1)
-    pdf.cell(0, 8, f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%", 0, 1)
+    pdf.cell(0, 8, to_latin1(f"ROI: {data.get('roi', 0):.2f}%"), 0, 1)
+    pdf.cell(0, 8, to_latin1(f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%"), 0, 1)
     pdf.ln(10)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Plano de Parcelas Detalhado", 0, 1, "L")
+    pdf.cell(0, 10, to_latin1("Plano de Parcelas Detalhado"), 0, 1, "L")
     pdf.set_font("Arial", "B", 9)
     col_widths = [20, 35, 40, 40, 40]
-    header = ["Parcela No", "Vencimento", "Valor Base", "Juros Mensal", "Valor Total"]
+    header = [to_latin1("Parcela Nº"), "Vencimento", to_latin1("Valor Base"), "Juros Mensal", "Valor Total"]
     for i, item in enumerate(header):
         pdf.cell(col_widths[i], 8, item, 1, 0, 'C')
     pdf.ln()
