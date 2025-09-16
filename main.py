@@ -153,6 +153,7 @@ def render_new_simulation_page():
             show_save_button=True, 
             show_download_button=True,
             save_callback=save_simulation_callback
+        )
 
 def render_history_page():
     st.title("Histórico de Simulações")
