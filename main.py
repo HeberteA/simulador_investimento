@@ -100,14 +100,14 @@ def save_simulation_callback():
             st.cache_data.clear()
             st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
-    if st.session_state.get('results_ready', False):
-        st.divider()
-        display_full_results(
-            st.session_state.simulation_results,
-            show_save_button=True,
-            show_download_button=True,
-            save_callback=save_simulation_callback
-        )
+if st.session_state.get('results_ready', False):
+    st.divider()
+    display_full_results(
+        st.session_state.simulation_results,
+        show_save_button=True,
+        show_download_button=True,
+        save_callback=save_simulation_callback
+    )
 
 def render_history_page():
     st.title("🗂️ Histórico de Simulações")
