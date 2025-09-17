@@ -124,14 +124,6 @@ def render_history_page():
     if not worksheets:
         st.error("Conexão com a planilha não disponível.")
         return
-        
-    st.error("MODO DE DIAGNÓSTICO ATIVADO")
-    ws_aportes = worksheets["aportes"]
-    header_lido = ws_aportes.row_values(1) # Lê a primeira linha da aba 'aportes'
-    st.write("O cabeçalho que o Python está lendo da sua aba 'aportes' é:")
-    st.write(header_lido)
-    st.info("Por favor, envie uma captura de tela ou copie e cole a lista acima para o assistente.")
-    st.stop() # Para a execução do app aqui para vermos apenas o resultado
 
         
     df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
