@@ -148,7 +148,7 @@ def render_history_page():
             if c6.button("🗑️", key=f"del_{row['row_index']}", help="Excluir simulação"):
                 with st.spinner("Excluindo simulação..."):
                     sim_id_to_delete = row.get('simulation_id')
-                    ws_simulations = worksheet["simulations"]
+                    ws_simulations = worksheet["df_simulations"]
                     ws_simulations.delete_rows(row['row_index'])
                     if sim_id_to_delete:
                         cell_list = ws_aportes.findall(sim_id_to_delete, in_column=1)
