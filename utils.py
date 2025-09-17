@@ -55,14 +55,14 @@ def load_data_from_sheet(_worksheet):
 
     header = all_values[header_row_index]
     data = all_values[header_row_index + 1:]
-
+    
     df = pd.DataFrame(data, columns=header)
     df = df.loc[:, df.columns.notna()]
     df = df.loc[:, [col for col in df.columns if col != '']]
     df.columns = df.columns.str.strip()
-    
     if 'row_index' not in df.columns:
         df['row_index'] = range(header_row_index + 2, len(df) + header_row_index + 2)
+    
     
     numeric_cols = [
         'total_contribution', 'num_months', 'monthly_interest_rate', 'spe_percentage', 
