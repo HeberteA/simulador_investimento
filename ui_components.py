@@ -86,7 +86,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 domain={'x': [0, 1], 'y': [0, 1]},
                 title={'text': f"ROI no Período ({results.get('num_months')} meses)", 'font': {'size': 20}},
                 number={'suffix': "%", 'font': {'size': 24}},
-                gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#607D8B'}} # Cor diferente
+                gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
             ))
             fig_gauge_periodo.update_layout(height=180, margin=dict(l=20, r=20, t=50, b=10))
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
