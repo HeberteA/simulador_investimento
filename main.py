@@ -170,7 +170,7 @@ def render_history_page():
                         aporte_date = start_date + relativedelta(months=i)
                         aportes_list.append({'date': aporte_date, 'value': valor_parcela})
                     sim_data['aportes'] = aportes_list
-                 display_full_results(sim_data, show_download_button=True)
+                    display_full_results(sim_data, show_download_button=True)
 
 def render_edit_page():
     st.title("Editando Simulação")
