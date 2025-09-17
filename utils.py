@@ -87,7 +87,8 @@ def load_data_from_sheet(_worksheet):
 def calculate_financials(params):
     results = {}
     results.update(params)
-    total_juros = 0
+    
+    total_montante = 0  
     total_contribution = 0
     aportes = params.get('aportes', [])
     project_end_date = params.get('project_end_date')
@@ -98,43 +99,54 @@ def calculate_financials(params):
     else:
         aportes.sort(key=lambda x: x['date'])
         first_contribution_date = aportes[0]['date']
+        
         delta_total = relativedelta(project_end_date, first_contribution_date)
         num_months_for_roi = delta_total.years * 12 + delta_total.months
         if num_months_for_roi <= 0:
             num_months_for_roi = 1
+            
         for aporte in aportes:
             contribution_date = aporte['date']
             contribution_value = aporte['value']
             total_contribution += contribution_value
+
             delta = relativedelta(project_end_date, contribution_date)
             num_months_aporte = delta.years * 12 + delta.months
             
             if num_months_aporte > 0:
-                juros_aporte = contribution_value * monthly_rate_decimal * num_months_aporte
-                total_juros += juros_aporte
+                montante_aporte = contribution_value * ((1 + monthly_rate_decimal) ** num_months_aporte)
+                total_montante += montante_aporte
+            else:
+                total_montante += contribution_value
+
+    results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
-    results['valor_corrigido'] = total_contribution + total_juros
     results['num_months'] = num_months_for_roi
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     results['total_construction_cost'] = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
     operational_result = results['vgv'] - results['total_construction_cost']
     area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
     results['final_operational_result'] = operational_result - area_exchange_value
+    
     valor_investido = total_contribution
+    
     results['valor_participacao'] = results['final_operational_result'] * (params.get('spe_percentage', 0) / 100)
     lucro_bruto_investidor = results['valor_corrigido'] + results['valor_participacao']
     results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido
+    
     roi_raw = (results['resultado_final_investidor'] / valor_investido) * 100 if valor_investido > 0 else 0
+    
     base_anualizacao = 1 + (roi_raw / 100)
     if base_anualizacao < 0:
         roi_anualizado_raw = -100.0
     else:
         roi_anualizado_raw = ((base_anualizacao ** (12 / num_months_for_roi)) - 1) * 100 if num_months_for_roi > 0 else 0
+
     results['roi'] = round(roi_raw, 2)
     results['roi_anualizado'] = round(roi_anualizado_raw, 2)
     
     return results
-
+    
 def generate_pdf(data):
     try:
         def to_latin1(text):
