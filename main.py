@@ -148,8 +148,7 @@ def render_history_page():
             if c6.button("🗑️", key=f"del_{row['row_index']}", help="Excluir simulação"):
                 with st.spinner("Excluindo simulação..."):
                     sim_id_to_delete = row.get('simulation_id')
-                    ws_simulations = worksheets["simulations"]
-                    ws_aportes = worksheets["aportes"]
+                    ws_simulations = worksheet["simulations"]
                     ws_simulations.delete_rows(row['row_index'])
                     if sim_id_to_delete:
                         cell_list = ws_aportes.findall(sim_id_to_delete, in_column=1)
@@ -162,15 +161,18 @@ def render_history_page():
 
             with st.expander("Ver resultado completo"):
                 sim_data = row.to_dict()
-                if pd.notnull(row.get('total_contribution')) and pd.notnull(row.get('num_months')) and row.get('num_months') > 0:
+                total_contribution = row.get('total_contribution', 0)
+                num_months = row.get('num_months', 0)
+                start_date_val = row.get('start_date')
+                if pd.notnull(total_contribution) and pd.notnull(num_months) and num_months > 0 and pd.notnull(start_date_val):
                     aportes_list = []
-                    valor_parcela = row['total_contribution'] / row['num_months']
-                    start_date = pd.to_datetime(row['start_date']).date()
-                    for i in range(int(row['num_months'])):
+                    valor_parcela = total_contribution / num_months
+                    start_date = pd.to_datetime(start_date_val).date()
+                    for i in range(int(num_months)):
                         aporte_date = start_date + relativedelta(months=i)
                         aportes_list.append({'date': aporte_date, 'value': valor_parcela})
                     sim_data['aportes'] = aportes_list
-                    display_full_results(sim_data, show_download_button=True)
+                display_full_results(sim_data, show_download_button=True)
 
 def render_edit_page():
     st.title("Editando Simulação")
