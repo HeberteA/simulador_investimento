@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import utils
 from dateutil.relativedelta import relativedelta
 import plotly.graph_objects as go
 from utils import format_currency, generate_pdf, calculate_financials
