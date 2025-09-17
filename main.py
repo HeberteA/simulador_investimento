@@ -121,9 +121,28 @@ def render_new_simulation_page():
 
 def render_history_page():
     st.title("Histórico de Simulações")
-    if not worksheets:
+     if not worksheets:
         st.error("Conexão com a planilha não disponível.")
         return
+        
+    df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+    df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
+    
+    # --- INÍCIO DO NOVO BLOCO DE DIAGNÓSTICO ---
+    st.error("MODO DE DIAGNÓSTICO AVANÇADO")
+    st.write("Abaixo estão as 5 primeiras linhas da tabela 'aportes' como o Python a está vendo.")
+    st.dataframe(df_aportes_all.head())
+    
+    st.write("E aqui estão os detalhes técnicos das colunas (nomes, tipos de dados):")
+    # Usa um io.StringIO para capturar a saída do .info() e exibi-la
+    from io import StringIO
+    buffer = StringIO()
+    df_aportes_all.info(buf=buffer)
+    s = buffer.getvalue()
+    st.text(s)
+
+    st.info("Por favor, envie uma captura de tela desta saída para o assistente.")
+    st.stop()
 
         
     df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
