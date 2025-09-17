@@ -121,7 +121,7 @@ def render_new_simulation_page():
 
 def render_history_page():
     st.title("Histórico de Simulações")
-     if not worksheets:
+    if not worksheets:
         st.error("Conexão com a planilha não disponível.")
         return
         
