@@ -25,7 +25,7 @@ for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-worksheets = utils.init_gsheet_connection()
+worksheet = utils.init_gsheet_connection()
 
 
 def render_new_simulation_page():
@@ -73,16 +73,14 @@ def render_new_simulation_page():
                 st.session_state.simulation_results = utils.calculate_financials(params)
                 st.session_state.results_ready = True
     
-    def save_simulation_callback():
-        if not worksheets:
+def save_simulation_callback():
+        if not worksheet:
             st.error("Conexão com a planilha não disponível.")
             return
         with st.spinner("Salvando simulação..."):
             results = st.session_state.simulation_results
-            ws_simulations = worksheets["simulations"]
-            ws_aportes = worksheets["aportes"]
             sim_id = f"sim_{int(datetime.now().timestamp())}"
-            
+           
             main_data = [
                 sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 st.session_state.client_name, st.session_state.client_code,
@@ -98,15 +96,7 @@ def render_new_simulation_page():
                 st.session_state.start_date.strftime('%Y-%m-%d'), 
                 st.session_state.project_end_date.strftime('%Y-%m-%d')
             ]
-            ws_simulations.append_row(main_data, value_input_option='USER_ENTERED')
-            
-            aportes_data_to_save = []
-            aportes_list = results.get('aportes', [])
-            for aporte in aportes_list:
-                aporte_data_str = aporte['date'].strftime('%Y-%m-%d')
-                aporte_to_save = [sim_id, aporte_data_str, aporte['value']]
-                ws_aportes.append_row(aporte_to_save, value_input_option='USER_ENTERED')
-            
+            worksheet.append_row(main_data, value_input_option='USER_ENTERED')
             st.cache_data.clear()
             st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
@@ -120,12 +110,13 @@ def render_new_simulation_page():
         )
 
 def render_history_page():
-    st.title("Histórico de Simulações")
-    if not worksheets:
+    st.title("🗂️ Histórico de Simulações")
+    if not worksheet:
         st.error("Conexão com a planilha não disponível.")
         return
         
-    df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+    df_simulations = utils.load_data_from_sheet(worksheet)
+
     if df_simulations.empty:
         st.info("Nenhuma simulação salva encontrada na planilha.")
         return
@@ -171,11 +162,15 @@ def render_history_page():
 
             with st.expander("Ver resultado completo"):
                 sim_data = row.to_dict()
-                df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
-                if not df_aportes_all.empty and 'simulation_id' in row:
-                    aportes_da_simulacao = df_aportes_all[df_aportes_all['simulation_id'] == row['simulation_id']]
-                    sim_data['aportes'] = [{'date': r['data_aporte'], 'value': r['valor_aporte']} for i, r in aportes_da_simulacao.iterrows()]
-                display_full_results(sim_data, show_download_button=True)
+                if pd.notnull(row.get('total_contribution')) and pd.notnull(row.get('num_months')) and row.get('num_months') > 0:
+                    aportes_list = []
+                    valor_parcela = row['total_contribution'] / row['num_months']
+                    start_date = pd.to_datetime(row['start_date']).date()
+                    for i in range(int(row['num_months'])):
+                        aporte_date = start_date + relativedelta(months=i)
+                        aportes_list.append({'date': aporte_date, 'value': valor_parcela})
+                    sim_data['aportes'] = aportes_list
+                 display_full_results(sim_data, show_download_button=True)
 
 def render_edit_page():
     st.title("Editando Simulação")
@@ -203,16 +198,14 @@ def render_edit_page():
 
     if st.button("💾 Salvar Alterações", use_container_width=True, type="primary"):
         with st.spinner("Recalculando e salvando..."):
-            ws_simulations = worksheets["simulations"]
-            ws_aportes = worksheets["aportes"]
-            sim_id = sim.get('simulation_id')
+            sim = st.session_state.simulation_to_edit
 
             aportes_list = []
             valor_parcela = st.session_state.edit_total_contribution / st.session_state.edit_num_months
             for i in range(st.session_state.edit_num_months):
                 aporte_date = st.session_state.edit_start_date + relativedelta(months=i)
                 aportes_list.append({'date': aporte_date, 'value': valor_parcela})
-            
+
             params = sim.copy()
             params.update({
                 'client_name': st.session_state.edit_client_name,
@@ -226,7 +219,7 @@ def render_edit_page():
             new_results = utils.calculate_financials(params)
 
             main_data_updated = [
-                sim_id, sim.get('created_at').strftime("%Y-%m-%d %H:%M:%S"),
+                sim.get('simulation_id'), sim.get('created_at').strftime("%Y-%m-%d %H:%M:%S"),
                 st.session_state.edit_client_name, st.session_state.edit_client_code,
                 new_results.get('total_contribution', 0), new_results.get('num_months', 0),
                 sim.get('monthly_interest_rate'), sim.get('spe_percentage'), sim.get('land_size'),
@@ -238,7 +231,7 @@ def render_edit_page():
                 st.session_state.edit_start_date.strftime('%Y-%m-%d'),
                 st.session_state.edit_project_end_date.strftime('%Y-%m-%d')
             ]
-            ws_simulations.update(f'A{st.session_state.editing_row}:V{st.session_state.editing_row}', [main_data_updated])
+            worksheet.update(f'A{st.session_state.editing_row}:V{st.session_state.editing_row}', [main_data_updated])
 
             if sim_id:
                 cell_list = ws_aportes.findall(sim_id, in_column=1)
