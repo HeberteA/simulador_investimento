@@ -43,23 +43,26 @@ def load_data_from_sheet(_worksheet):
     all_values = _worksheet.get_all_values()
     if not all_values:
         return pd.DataFrame()
- 
+
     header_row_index = -1
     for i, row in enumerate(all_values):
         if any(cell for cell in row):
             header_row_index = i
             break
-
+    
     if header_row_index == -1:
         return pd.DataFrame()
 
     header = all_values[header_row_index]
     data = all_values[header_row_index + 1:]
+
     df = pd.DataFrame(data, columns=header)
+    df = df.loc[:, df.columns.notna()]
+    df = df.loc[:, [col for col in df.columns if col != '']]
     df.columns = df.columns.str.strip()
     
     if 'row_index' not in df.columns:
-        df['row_index'] = range(2, len(df) + 2)
+        df['row_index'] = range(header_row_index + 2, len(df) + header_row_index + 2)
     
     numeric_cols = [
         'total_contribution', 'num_months', 'monthly_interest_rate', 'spe_percentage', 
