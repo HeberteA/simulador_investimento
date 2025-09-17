@@ -18,7 +18,7 @@ def format_currency(value):
     if value is None: return "N/A"
     return locale.currency(value, grouping=True, symbol='R$')
 
-@@st.cache_resource
+@st.cache_resource
 def init_gsheet_connection():
     try:
         creds = st.secrets["gcp_service_account"]
