@@ -47,6 +47,7 @@ def load_data_from_sheet(_worksheet):
     header = values[0]
     data = values[1:]
     df = pd.DataFrame(data, columns=header)
+    df.columns = df.columns.str.strip()
     
     if 'row_index' not in df.columns:
         df['row_index'] = range(2, len(df) + 2)
