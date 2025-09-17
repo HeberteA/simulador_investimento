@@ -18,7 +18,7 @@ def format_currency(value):
     if value is None: return "N/A"
     return locale.currency(value, grouping=True, symbol='R$')
 
-@st.cache_resource
+@@st.cache_resource
 def init_gsheet_connection():
     try:
         creds = st.secrets["gcp_service_account"]
@@ -26,11 +26,7 @@ def init_gsheet_connection():
         gc = gspread.service_account_from_dict(creds)
         spreadsheet = gc.open(sheet_name)
         worksheet_simulations = spreadsheet.worksheet("simulations")
-        worksheet_aportes = spreadsheet.worksheet("aportes")
-        return {
-            "simulations": worksheet_simulations,
-            "aportes": worksheet_aportes
-        }
+        return worksheet_simulations
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
