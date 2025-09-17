@@ -110,11 +110,11 @@ if st.session_state.get('results_ready', False):
     )
 
 def render_history_page():
-    st.title("🗂️ Histórico de Simulações")
+    st.title("Histórico de Simulações")
     if not worksheet:
         st.error("Conexão com a planilha não disponível.")
         return
-        
+
     df_simulations = utils.load_data_from_sheet(worksheet)
 
     if df_simulations.empty:
@@ -123,38 +123,33 @@ def render_history_page():
 
     st.subheader("Filtro por Cliente")
     client_list = ["Todos"] + df_simulations["client_name"].unique().tolist()
-    selected_client = st.selectbox("Selecione um cliente:", client_list)
+    selected_client = st.selectbox("Selecione um cliente:", client_list, label_visibility="collapsed")
 
     if selected_client != "Todos":
-        filtered_df = df_simulations[df_simulations["client_name"] == selected_client]
+        filtered_df = df_simulations[df_simulations["client_name"] == selected_client].copy()
     else:
-        filtered_df = df_simulations
+        filtered_df = df_simulations.copy()
 
     for index, row in filtered_df.sort_values(by="created_at", ascending=False).iterrows():
         with st.container(border=True):
             c1, c2, c3, c4, c5, c6 = st.columns([2.5, 3, 2, 4, 0.8, 0.8])
             c1.metric("Cliente", row.get('client_name', 'N/A'))
+            
             created_at_date = pd.to_datetime(row.get('created_at'))
             c2.metric("Data", created_at_date.strftime("%d/%m/%Y") if pd.notnull(created_at_date) else "N/A")
+            
             c3.metric("ROI Anualizado", f"{row.get('roi_anualizado', 0):.2f}%")
             c4.metric("VGV", utils.format_currency(row.get('vgv', 0)))
             
-            if c5.button("📝", key=f"edit_{row['row_index']}", help="Editar simulação"):
-                st.session_state.editing_row = row['row_index']
+            if c5.button("📝", key=f"edit_{row.get('row_index', index)}", help="Editar simulação"):
+                st.session_state.editing_row = row.get('row_index', index)
                 st.session_state.simulation_to_edit = row.to_dict()
                 st.session_state.page = "📝 Editar Simulação"
                 st.rerun()
             
-            if c6.button("🗑️", key=f"del_{row['row_index']}", help="Excluir simulação"):
+            if c6.button("🗑️", key=f"del_{row.get('row_index', index)}", help="Excluir simulação"):
                 with st.spinner("Excluindo simulação..."):
-                    sim_id_to_delete = row.get('simulation_id')
-                    ws_simulations = worksheet["df_simulations"]
-                    ws_simulations.delete_rows(row['row_index'])
-                    if sim_id_to_delete:
-                        cell_list = ws_aportes.findall(sim_id_to_delete, in_column=1)
-                        rows_to_delete = sorted([cell.row for cell in cell_list], reverse=True)
-                        for row_idx in rows_to_delete:
-                            ws_aportes.delete_rows(row_idx)
+                    worksheet.delete_rows(int(row.get('row_index', index)))
                     st.cache_data.clear()
                     st.toast("Simulação excluída com sucesso!", icon="✅")
                     st.rerun()
@@ -164,6 +159,7 @@ def render_history_page():
                 total_contribution = row.get('total_contribution', 0)
                 num_months = row.get('num_months', 0)
                 start_date_val = row.get('start_date')
+
                 if pd.notnull(total_contribution) and pd.notnull(num_months) and num_months > 0 and pd.notnull(start_date_val):
                     aportes_list = []
                     valor_parcela = total_contribution / num_months
@@ -172,8 +168,8 @@ def render_history_page():
                         aporte_date = start_date + relativedelta(months=i)
                         aportes_list.append({'date': aporte_date, 'value': valor_parcela})
                     sim_data['aportes'] = aportes_list
+                
                 display_full_results(sim_data, show_download_button=True)
-
 def render_edit_page():
     st.title("Editando Simulação")
     if st.session_state.editing_row is None or st.session_state.simulation_to_edit is None:
