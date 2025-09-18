@@ -29,7 +29,75 @@ worksheet = utils.init_gsheet_connection()
 
 
 def render_new_simulation_page():
+    # --- LÓGICA DE CONTROLE DE TELA (INPUTS VS. RESULTADOS) ---
+    if 'show_results_page' not in st.session_state:
+        st.session_state.show_results_page = False
+
+    def go_to_results():
+        st.session_state.show_results_page = True
+
+    def go_to_inputs():
+        st.session_state.show_results_page = False
+
+    # --- TELA DE RESULTADOS ---
+    if st.session_state.show_results_page:
+        st.title("📊 Resultados da Simulação")
+        
+        if st.button("⬅️ Voltar para os Parâmetros"):
+            go_to_inputs()
+        
+        if st.session_state.get('results_ready', False):
+            # A função de salvar é definida na tela de inputs e armazenada no session_state
+            save_callback_func = st.session_state.get('save_callback_ref')
+            display_full_results(
+                st.session_state.simulation_results,
+                show_save_button=True,
+                show_download_button=True,
+                save_callback=save_callback_func
+            )
+        return
+
+    # --- TELA DE INPUTS ---
     st.title("Nova Simulação Financeira")
+    
+    if 'aportes' not in st.session_state:
+        st.session_state.aportes = []
+
+    with st.container(border=True):
+        st.subheader("Carregar Simulação Salva)")
+      
+        df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+        
+        if not df_simulations.empty:
+            client_list = df_simulations["client_name"].unique().tolist()
+            
+            selected_client_to_load = st.selectbox(
+                "Selecione o cliente para carregar os dados da sua última simulação",
+                options=client_list,
+                index=None,
+                placeholder="Escolha um cliente..."
+            )
+            
+            if st.button("Carregar Dados do Cliente"):
+                if selected_client_to_load:
+                    with st.spinner("Carregando dados..."):
+                        client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
+                        latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
+                        
+                        df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
+                        sim_id = latest_sim['simulation_id']
+                        aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
+                        st.session_state.client_name = latest_sim.get('client_name', '')
+                        st.session_state.client_code = latest_sim.get('client_code', '')
+                        st.session_state.aportes = []
+                        for index, row in aportes_do_cliente.iterrows():
+                            st.session_state.aportes.append({
+                                "data": pd.to_datetime(row['data_aporte']).date(),
+                                "valor": float(row['valor_aporte'])
+                            })
+                        
+                        st.success(f"{len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
+                        st.rerun()
 
     with st.container(border=True):
         st.subheader("Parâmetros do Investidor")
@@ -56,22 +124,18 @@ def render_new_simulation_page():
             st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
 
     if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
-        if st.session_state.total_contribution <= 0 or st.session_state.num_months <= 0:
-            st.warning("O 'Valor do Aporte Total' e a 'Quantidade de Meses' devem ser maiores que zero.")
-            st.session_state.results_ready = False
+        if not st.session_state.aportes:
+            st.warning("Adicione ou carregue pelo menos um aporte para calcular.")
         else:
-            with st.spinner("Gerando parcelas e calculando resultados..."):
-                aportes_list = []
-                valor_parcela = st.session_state.total_contribution / st.session_state.num_months
-                start_date = st.session_state.start_date
-                for i in range(st.session_state.num_months):
-                    aporte_date = start_date + relativedelta(months=i)
-                    aportes_list.append({'date': aporte_date, 'value': valor_parcela})
+            with st.spinner("Realizando cálculos..."):
+                params = {k: st.session_state[k] for k in st.session_state if isinstance(st.session_state[k], (str, int, float, list, bool, type(None)))}
+                params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
+                params['project_end_date'] = st.session_state.project_end_date 
                 
-                params = {k: st.session_state[k] for k in st.session_state if k not in ['results_ready', 'simulation_results']}
-                params['aportes'] = aportes_list
                 st.session_state.simulation_results = utils.calculate_financials(params)
                 st.session_state.results_ready = True
+                go_to_results()
+                st.rerun()
     
 def save_simulation_callback():
         if not worksheet:
@@ -296,11 +360,12 @@ with st.sidebar:
     page_options = ["Nova Simulação", "Histórico", "Dashboard"]
     page_icons = ["house-add", "card-list", "kanban"]
 
-    if st.session_state.editing_row is not None:
-        page_options.append("Editar Simulação")
-        page_icons.append("pencil-square")
+    if 'editing_row' in st.session_state and st.session_state.editing_row is not None:
+        if "Editar Simulação" not in page_options:
+            page_options.append("Editar Simulação")
+            page_icons.append("pencil-square")
         st.session_state.page = "📝 Editar Simulação"
-        
+
     try:
         current_page_key = [key for key, value in page_map.items() if value == st.session_state.page][0]
         default_index = page_options.index(current_page_key)
@@ -311,11 +376,18 @@ with st.sidebar:
         menu_title="Menu Principal", options=page_options, icons=page_icons,
         menu_icon="cast", default_index=default_index, orientation="vertical"
     )
-
-    if st.session_state.page != page_map[selected_page_key]:
-        st.session_state.page = page_map[selected_page_key]
-        st.rerun()
     
+    new_page = page_map[selected_page_key]
+    if st.session_state.page != new_page:
+        st.session_state.results_ready = False
+        st.session_state.simulation_results = {}
+        
+        if st.session_state.page == "📝 Editar Simulação":
+            st.session_state.editing_row = None
+            st.session_state.simulation_to_edit = None
+
+        st.session_state.page = new_page
+        st.rerun()
     if selected_page_key != "Editar Simulação" and st.session_state.editing_row is not None:
         st.session_state.editing_row = None
         st.session_state.simulation_to_edit = None
