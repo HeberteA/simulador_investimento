@@ -20,6 +20,15 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_parcelas:
         st.subheader("📅 Plano de Parcelas Detalhado")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Nome do Cliente", results.get('client_name', "N/A"))
+        with c2:
+            st.metric("Montante Final (Aporte + Juros)", utils.format_currency(results.get('valor_corrigido', 0)))
+        with c3:
+            daily_rate = (results.get('monthly_interest_rate', 0) / 30)
+            st.metric("Taxa de Juros Diária (aprox.)", f"{daily_rate:.4f}%")
+        st.divider()
 
         aportes_list = results.get('aportes', [])
 
