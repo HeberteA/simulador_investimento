@@ -95,6 +95,34 @@ def render_new_simulation_page():
                         
                         st.success(f"{len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
                         st.rerun()
+    with st.container(border=True):
+        st.subheader("Lançamento de Aportes")
+        c1, c2, c3 = st.columns([2, 2, 1])
+        with c1:
+            aporte_date = st.date_input("Data do Aporte", key="new_aporte_date")
+        with c2:
+            aporte_value = st.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
+        with c3:
+            st.write("‎")
+            if st.button("Adicionar", use_container_width=True):
+                if aporte_value > 0:
+                    st.session_state.aportes.append({"data": aporte_date, "valor": aporte_value})
+                    st.session_state.new_aporte_value = 0.0 
+                    st.rerun()
+                else:
+                    st.warning("O valor do aporte deve ser maior que zero.")
+
+    if st.session_state.aportes:
+        st.subheader("Aportes a Simular")
+        aportes_df = pd.DataFrame(st.session_state.aportes)
+        aportes_df_display = aportes_df.copy()
+        aportes_df_display["data"] = pd.to_datetime(aportes_df_display["data"]).dt.strftime('%d/%m/%Y')
+        aportes_df_display["valor"] = aportes_df_display["valor"].apply(utils.format_currency)
+        st.dataframe(aportes_df_display, use_container_width=True, hide_index=True)
+        
+        if st.button("Limpar Todos os Aportes", type="secondary"):
+            st.session_state.aportes = []
+            st.rerun()
 
     with st.container(border=True):
         st.subheader("Parâmetros do Investidor")
