@@ -10,49 +10,32 @@ from utils import format_currency, generate_pdf, calculate_financials
 THEME_PRIMARY_COLOR = "#E37026"
 
 def display_full_results(results, show_save_button=False, show_download_button=False, save_callback=None):
-    unique_id = results.get('created_at', str(datetime.now()))
-    if isinstance(unique_id, pd.Timestamp):
-        unique_id = unique_id.strftime("%Y%m%d%H%M%S")
-    
+    unique_id = results.get('simulation_id', str(datetime.now().timestamp()))
+
     st.header("Resultados da Simulação")
 
-    tab_parcelas, tab_resumo, tab_sensibilidade = st.tabs(["**Plano de Parcelas**", "**Resumo Financeiro**", "**Análise de Cenários**"])
+    tab_aportes, tab_resumo, tab_sensibilidade = st.tabs(["**Plano de Aportes**", "**Resumo Financeiro**", "**Análise de Cenários**"])
 
-    with tab_parcelas:
-        st.subheader("📅 Plano de Parcelas Detalhado")
+    with tab_aportes:
+        st.subheader("📅 Plano de Aportes Detalhado")
         c1, c2, c3 = st.columns(3)
         with c1:
             st.metric("Nome do Cliente", results.get('client_name', "N/A"))
         with c2:
             st.metric("Montante Final (Aporte + Juros)", utils.format_currency(results.get('valor_corrigido', 0)))
         with c3:
-            daily_rate = (results.get('monthly_interest_rate', 0) / 30)
-            st.metric("Taxa de Juros Diária (aprox.)", f"{daily_rate:.4f}%")
+            st.metric("Total Aportado", utils.format_currency(results.get('total_contribution', 0)))
         st.divider()
 
         aportes_list = results.get('aportes', [])
-
-        display_data = []
-        if aportes_list:
-            monthly_rate_dec = results.get('monthly_interest_rate', 0) / 100
-            
-            for i, aporte in enumerate(aportes_list):
-                valor_base = aporte.get('value', 0)
-                juros_mensal_parcela = valor_base * monthly_rate_dec
-                valor_total_parcela = valor_base + juros_mensal_parcela
-
-                display_data.append({
-                    "Parcela Nº": i + 1,
-                    "Vencimento": pd.to_datetime(aporte.get('date')).strftime("%d/%m/%Y"),
-                    "Valor Base": utils.format_currency(valor_base),
-                    "Juros Mensal": utils.format_currency(juros_mensal_parcela),
-                    "Valor Total": utils.format_currency(valor_total_parcela)
-                })
         
-        if display_data:
-            st.dataframe(pd.DataFrame(display_data), use_container_width=True, hide_index=True)
+        if aportes_list:
+            df_aportes_display = pd.DataFrame([{'Data': a['date'], 'Valor': a['value']} for a in aportes_list])
+            df_aportes_display['Data'] = pd.to_datetime(df_aportes_display['Data']).dt.strftime('%d/%m/%Y')
+            df_aportes_display['Valor'] = df_aportes_display['Valor'].apply(utils.format_currency)
+            st.dataframe(df_aportes_display, use_container_width=True, hide_index=True)
         else:
-            st.warning("Nenhuma parcela foi gerada para esta simulação.")
+            st.warning("Nenhum aporte foi encontrado para esta simulação.")
 
 
     with tab_resumo:
@@ -76,8 +59,9 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric("Resultado Operacional do Projeto", format_currency(results.get('final_operational_result', 0)))
             st.divider()
             st.markdown("##### Rentabilidade do Investimento")
+            
             roi_anualizado = results.get('roi_anualizado', 0)
-            gauge_max_range_anual = roi_anualizado * 1.5 if roi_anualizado > 10 else 30
+            gauge_max_range_anual = max(30, roi_anualizado * 1.5)
             fig_gauge_anual = go.Figure(go.Indicator(
                 mode="gauge+number", value=roi_anualizado,
                 domain={'x': [0, 1], 'y': [0, 1]},
@@ -89,11 +73,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_anual, use_container_width=True, key=f"gauge_anual_{unique_id}")
 
             roi_periodo = results.get('roi', 0)
-            gauge_max_range_periodo = roi_periodo * 1.5 if roi_periodo > 10 else 30
+            duracao_meses = results.get('num_months', 0)
+            gauge_max_range_periodo = max(30, roi_periodo * 1.5)
             fig_gauge_periodo = go.Figure(go.Indicator(
                 mode="gauge+number", value=roi_periodo,
                 domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': f"ROI no Período ({results.get('num_months')} meses)", 'font': {'size': 20}},
+                title={'text': f"ROI no Período ({duracao_meses} meses)", 'font': {'size': 20}},
                 number={'suffix': "%", 'font': {'size': 24}},
                 gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
             ))
@@ -107,14 +92,17 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         scenarios = {}
         base_params = results.copy()
         scenarios['Realista'] = calculate_financials(base_params)
+        
         pessimistic_params = base_params.copy()
         pessimistic_params['value_m2'] *= 0.85
         pessimistic_params['construction_cost_m2'] *= 1.15
         scenarios['Pessimista'] = calculate_financials(pessimistic_params)
+        
         optimistic_params = base_params.copy()
         optimistic_params['value_m2'] *= 1.15
         optimistic_params['construction_cost_m2'] *= 0.85
         scenarios['Otimista'] = calculate_financials(optimistic_params)
+
         c1, c2, c3 = st.columns(3)
         with c1:
             with st.container(border=True):
@@ -174,8 +162,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 delta_roi = sensitive_results.get('roi', 0) - results.get('roi', 0)
                 scol3.metric("Novo ROI (Período)", f"{sensitive_results.get('roi', 0):.2f}%", delta=f"{delta_roi:.2f}%")
               
-            pass
-
     buttons_to_show = []
     if show_download_button:
         buttons_to_show.append("download")
@@ -186,15 +172,20 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         st.divider()
         st.subheader("Ações")
         
-        cols = st.columns(len(buttons_to_show))
+        cols = st.columns(len(buttons_to_show) or 1)
         col_index = 0
         
         if "download" in buttons_to_show:
             with cols[col_index]:
-                pdf_bytes = utils.generate_pdf(results)
-                client_name = results.get('client_name', 'simulacao').replace(' ', '_').lower()
-                timestamp = pd.to_datetime(results.get('created_at')).strftime('%Y%m%d') if results.get('created_at') else datetime.now().strftime('%Y%m%d')
-                file_name = f"relatorio_{client_name}_{timestamp}.pdf"
+                # Passa a lista de aportes para a função de gerar PDF
+                pdf_data = results.copy()
+                pdf_data['aportes'] = results.get('aportes', []) 
+                pdf_bytes = utils.generate_pdf(pdf_data)
+                
+                client_name_safe = "".join(c for c in results.get('client_name', 'simulacao') if c.isalnum() or c in (' ', '_')).rstrip()
+                client_name_safe = client_name_safe.replace(' ', '_').lower()
+                timestamp = datetime.now().strftime('%Y%m%d')
+                file_name = f"relatorio_{client_name_safe}_{timestamp}.pdf"
 
                 st.download_button(
                     label="📄 Baixar Relatório em PDF",
