@@ -185,14 +185,13 @@ def display_full_results(results, show_save_button=False, show_download_button=F
     if buttons_to_show:
         st.divider()
         st.subheader("Ações")
-
-        cols = st.columns(len(buttons_to_show))
         
+        cols = st.columns(len(buttons_to_show))
         col_index = 0
-
+        
         if "download" in buttons_to_show:
             with cols[col_index]:
-                pdf_bytes = generate_pdf(results)
+                pdf_bytes = utils.generate_pdf(results)
                 client_name = results.get('client_name', 'simulacao').replace(' ', '_').lower()
                 timestamp = pd.to_datetime(results.get('created_at')).strftime('%Y%m%d') if results.get('created_at') else datetime.now().strftime('%Y%m%d')
                 file_name = f"relatorio_{client_name}_{timestamp}.pdf"
@@ -203,13 +202,18 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     file_name=file_name,
                     mime="application/pdf",
                     use_container_width=True,
-                    key=f"pdf_dl_{unique_id}" 
+                    key=f"pdf_dl_{unique_id}"
                 )
             col_index += 1
 
         if "save" in buttons_to_show:
             with cols[col_index]:
-                if st.button("💾 Salvar Simulação na Planilha", use_container_width=True, type="primary"):
+                if st.button(
+                    "💾 Salvar Simulação na Planilha", 
+                    use_container_width=True, 
+                    type="primary", 
+                    key=f"save_btn_{unique_id}" 
+                ):
                     if save_callback:
                         save_callback()
             col_index += 1
