@@ -95,22 +95,27 @@ def render_new_simulation_page():
                         
                         st.success(f"{len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
                         st.rerun()
+    def add_aporte_callback():
+        aporte_val = st.session_state.new_aporte_value
+        aporte_dt = st.session_state.new_aporte_date
+
+        if aporte_val > 0:
+            st.session_state.aportes.append({"data": aporte_dt, "valor": aporte_val})
+            st.session_state.new_aporte_value = 0.0
+        else:
+            st.warning("O valor do aporte deve ser maior que zero.")
+
     with st.container(border=True):
         st.subheader("Lançamento de Aportes")
         c1, c2, c3 = st.columns([2, 2, 1])
         with c1:
-            aporte_date = st.date_input("Data do Aporte", key="new_aporte_date")
+            st.date_input("Data do Aporte", key="new_aporte_date")
         with c2:
-            aporte_value = st.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
+            st.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
         with c3:
             st.write("‎")
-            if st.button("Adicionar", use_container_width=True):
-                if aporte_value > 0:
-                    st.session_state.aportes.append({"data": aporte_date, "valor": aporte_value})
-                    st.session_state.new_aporte_value = 0.0 
-                    st.rerun()
-                else:
-                    st.warning("O valor do aporte deve ser maior que zero.")
+            st.button("Adicionar", on_click=add_aporte_callback, use_container_width=True)
+    
 
     if st.session_state.aportes:
         st.subheader("Aportes a Simular")
