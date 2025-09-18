@@ -14,10 +14,10 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     st.header("Resultados da Simulação")
 
-    tab_aportes, tab_resumo, tab_sensibilidade = st.tabs(["**Plano de Aportes**", "**Resumo Financeiro**", "**Análise de Cenários**"])
+    tab_vencimentos, tab_resumo, tab_sensibilidade = st.tabs(["**Cronograma de Vencimentos**", "**Resumo Financeiro**", "**Análise de Cenários**"])
 
-    with tab_aportes:
-        st.subheader("📅 Plano de Aportes Detalhado")
+    with tab_vencimentos:
+        st.subheader("📅 Cronograma de Vencimentos Detalhado")
         c1, c2, c3 = st.columns(3)
         with c1:
             st.metric("Nome do Cliente", results.get('client_name', "N/A"))
@@ -30,13 +30,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         aportes_list = results.get('aportes', [])
         
         if aportes_list:
-            df_aportes_display = pd.DataFrame([{'Data': a['date'], 'Valor': a['value']} for a in aportes_list])
-            df_aportes_display['Data'] = pd.to_datetime(df_aportes_display['Data']).dt.strftime('%d/%m/%Y')
+            df_aportes_display = pd.DataFrame([{'Vencimento': a['date'], 'Valor': a['value']} for a in aportes_list])
+            df_aportes_display['Vencimento'] = pd.to_datetime(df_aportes_display['Vencimento']).dt.strftime('%d/%m/%Y')
             df_aportes_display['Valor'] = df_aportes_display['Valor'].apply(utils.format_currency)
             st.dataframe(df_aportes_display, use_container_width=True, hide_index=True)
         else:
             st.warning("Nenhum aporte foi encontrado para esta simulação.")
-
 
     with tab_resumo:
         st.subheader("📈 Resumo Financeiro")
@@ -163,10 +162,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 scol3.metric("Novo ROI (Período)", f"{sensitive_results.get('roi', 0):.2f}%", delta=f"{delta_roi:.2f}%")
               
     buttons_to_show = []
-    if show_download_button:
-        buttons_to_show.append("download")
-    if show_save_button:
-        buttons_to_show.append("save")
+    if show_download_button: buttons_to_show.append("download")
+    if show_save_button: buttons_to_show.append("save")
 
     if buttons_to_show:
         st.divider()
@@ -177,7 +174,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         
         if "download" in buttons_to_show:
             with cols[col_index]:
-                # Passa a lista de aportes para a função de gerar PDF
                 pdf_data = results.copy()
                 pdf_data['aportes'] = results.get('aportes', []) 
                 pdf_bytes = utils.generate_pdf(pdf_data)
