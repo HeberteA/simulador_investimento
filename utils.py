@@ -20,10 +20,6 @@ def format_currency(value):
 
 @st.cache_resource
 def init_gsheet_connection():
-    """
-    Inicializa a conexão com o Google Sheets e retorna um dicionário
-    com as worksheets 'simulations' e 'aportes'.
-    """
     try:
         creds = st.secrets["gcp_service_account"]
         sheet_name = st.secrets["g_sheet_name"]
@@ -102,7 +98,6 @@ def calculate_financials(params):
         delta_total = relativedelta(project_end_date, first_contribution_date)
         num_months_for_roi = delta_total.years * 12 + delta_total.months
         
-        # Garante que o número de meses não seja zero ou negativo para evitar erros de cálculo
         if num_months_for_roi <= 0:
             num_months_for_roi = 1
             
@@ -122,7 +117,7 @@ def calculate_financials(params):
 
     results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
-    results['num_months'] = num_months_for_roi # Salva o número de meses calculado
+    results['num_months'] = num_months_for_roi
     
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     results['total_construction_cost'] = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
@@ -154,8 +149,6 @@ def calculate_financials(params):
     return results
     
 def generate_pdf(data):
-    # A função generate_pdf permanece a mesma, pois sua lógica interna já estava correta.
-    # Apenas garantimos que os dados passados para ela sejam consistentes.
     try:
         def to_latin1(text):
             if text is None: return ''
@@ -203,11 +196,11 @@ def generate_pdf(data):
         aportes = data.get('aportes', [])
         if aportes:
             pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, to_latin1("Plano de Aportes"), 0, 1, "L")
+            pdf.cell(0, 10, to_latin1("Cronograma de Vencimentos"), 0, 1, "L")
             pdf.set_font("Arial", "B", 9)
             
-            col_widths = [30, 80]
-            header = [to_latin1("Data do Aporte"), to_latin1("Valor do Aporte")]
+            col_widths = [60, 80]
+            header = [to_latin1("Data de Vencimento"), to_latin1("Valor do Aporte")]
             for i, item in enumerate(header):
                 pdf.cell(col_widths[i], 8, item, 1, 0, 'C')
             pdf.ln()
