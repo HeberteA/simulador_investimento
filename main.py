@@ -14,11 +14,12 @@ st.set_page_config(
 
 defaults = {
     'page': "➕ Nova Simulação", 'results_ready': False, 'simulation_results': {},
-    'editing_row': None, 'simulation_to_edit': None, 'deleting_row_index': None,
+    'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
     'client_name': "", 'client_code': "", 'monthly_interest_rate': 1.0, 'spe_percentage': 50.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
-    'land_size': 1000, 'construction_cost_m2': 2500.0, 'value_m2': 6000.0, 'area_exchange_percentage': 10.0
+    'land_size': 1000, 'construction_cost_m2': 2500.0, 'value_m2': 6000.0, 'area_exchange_percentage': 10.0,
+    'aportes': []
 }
 
 for key, value in defaults.items():
@@ -29,7 +30,6 @@ worksheet = utils.init_gsheet_connection()
 
 
 def render_new_simulation_page():
-    # --- LÓGICA DE CONTROLE DE TELA (INPUTS VS. RESULTADOS) ---
     if 'show_results_page' not in st.session_state:
         st.session_state.show_results_page = False
 
@@ -39,7 +39,6 @@ def render_new_simulation_page():
     def go_to_inputs():
         st.session_state.show_results_page = False
 
-    # --- TELA DE RESULTADOS ---
     if st.session_state.show_results_page:
         st.title("📊 Resultados da Simulação")
         
@@ -47,7 +46,6 @@ def render_new_simulation_page():
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
-            # A função de salvar é definida na tela de inputs e armazenada no session_state
             save_callback_func = st.session_state.get('save_callback_ref')
             display_full_results(
                 st.session_state.simulation_results,
@@ -57,16 +55,15 @@ def render_new_simulation_page():
             )
         return
 
-    # --- TELA DE INPUTS ---
     st.title("Nova Simulação Financeira")
     
     if 'aportes' not in st.session_state:
         st.session_state.aportes = []
 
     with st.container(border=True):
-        st.subheader("Carregar Simulação Salva)")
+        st.subheader("Carregar Simulação Salva")
       
-        df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+        df_simulations = utils.load_data_from_sheet(worksheet)
         
         if not df_simulations.empty:
             client_list = df_simulations["client_name"].unique().tolist()
@@ -315,11 +312,10 @@ def render_edit_page():
 
 def render_dashboard_page():
     st.title("Dashboard de Simulações")
-    if worksheets:
-        df = utils.load_data_from_sheet(worksheets["simulations"])
+    if worksheet:
+        df = utils.load_data_from_sheet(worksheet)
     else:
         df = pd.DataFrame()
-
     if df.empty:
         st.info("Ainda não há dados para exibir.")
         return
