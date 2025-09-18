@@ -11,6 +11,8 @@ st.set_page_config(
     page_icon="Lavie1.png",
     layout="wide"
 )
+
+# --- Inicialização do Session State ---
 defaults = {
     'page': "➕ Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
@@ -25,6 +27,7 @@ for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
+# --- Conexão com Google Sheets ---
 worksheets = utils.init_gsheet_connection()
 
 
@@ -39,7 +42,7 @@ def render_new_simulation_page():
         st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
-        st.title("Resultados da Simulação")
+        st.title("📊 Resultados da Simulação")
         
         if st.button("⬅️ Voltar para os Parâmetros"):
             go_to_inputs()
@@ -54,7 +57,7 @@ def render_new_simulation_page():
         return
 
     st.title("Nova Simulação Financeira")
-
+    
     with st.expander("Carregar Simulação Salva", expanded=False):
         if worksheets and worksheets.get("simulations"):
             df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
@@ -74,14 +77,10 @@ def render_new_simulation_page():
                             
                             for key, value in latest_sim.items():
                                 if key in st.session_state:
-                                    if isinstance(st.session_state[key], float):
-                                        st.session_state[key] = float(value)
-                                    elif isinstance(st.session_state[key], int):
-                                        st.session_state[key] = int(value)
-                                    elif isinstance(st.session_state[key], type(datetime.today().date())):
-                                        st.session_state[key] = pd.to_datetime(value).date()
-                                    else:
-                                        st.session_state[key] = value
+                                    if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
+                                    elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
+                                    elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
+                                    else: st.session_state[key] = value
                             
                             df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
                             sim_id = latest_sim['simulation_id']
@@ -100,13 +99,13 @@ def render_new_simulation_page():
     def add_aporte_callback():
         if st.session_state.new_aporte_value > 0:
             st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
-            st.session_state.new_aporte_value = 0.0 # Limpa o campo
+            st.session_state.new_aporte_value = 0.0
         else:
             st.warning("O valor do aporte deve ser maior que zero.")
 
     with st.expander("Lançamento de Aportes", expanded=True):
         c1, c2, c3 = st.columns([2, 2, 1])
-        c1.date_input("Data do Aporte", key="new_aporte_date")
+        c1.date_input("Data de Vencimento", key="new_aporte_date")
         c2.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
         with c3:
             st.write("‎")
@@ -114,17 +113,21 @@ def render_new_simulation_page():
 
         if st.session_state.aportes:
             st.divider()
-            st.subheader("Aportes a Simular")
+
+            st.subheader("Cronograma de Vencimentos")
             aportes_df = pd.DataFrame(st.session_state.aportes).sort_values(by="data").reset_index(drop=True)
+            
             aportes_df_display = aportes_df.copy()
             aportes_df_display.index += 1
-            aportes_df_display["data"] = pd.to_datetime(aportes_df_display["data"]).dt.strftime('%d/%m/%Y')
-            aportes_df_display["valor"] = aportes_df_display["valor"].apply(utils.format_currency)
-            st.dataframe(aportes_df_display, use_container_width=True)
+            aportes_df_display["Vencimento"] = pd.to_datetime(aportes_df_display["data"]).dt.strftime('%d/%m/%Y')
+            aportes_df_display["Valor"] = aportes_df_display["valor"].apply(utils.format_currency)
+            
+            st.dataframe(aportes_df_display[["Vencimento", "Valor"]], use_container_width=True)
             
             if st.button("Limpar Todos os Aportes", type="secondary"):
                 st.session_state.aportes = []
                 st.rerun()
+
     with st.expander("Parâmetros Gerais da Simulação", expanded=True):
         st.subheader("Dados do Investidor e Projeto")
         col1, col2 = st.columns(2)
@@ -135,7 +138,7 @@ def render_new_simulation_page():
             st.text_input("Código do Cliente", key="client_code")
             st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
         with col2:
-            st.date_input("Data de Início (Primeiro Aporte)", value=st.session_state.aportes[0]['data'] if st.session_state.aportes else datetime.today().date(), key="start_date", disabled=True)
+            st.date_input("Data de Início (Primeiro Vencimento)", value=st.session_state.aportes[0]['data'] if st.session_state.aportes else datetime.today().date(), key="start_date", disabled=True)
             st.date_input("Data Final do Projeto", key="project_end_date")
 
         st.divider()
@@ -203,7 +206,7 @@ def save_simulation_callback():
         st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
 def render_history_page():
-    st.title("🗂️ Histórico de Simulações")
+    st.title("Histórico de Simulações")
     if not worksheets or not worksheets.get("simulations"):
         st.error("Conexão com a planilha de simulações não disponível.")
         return
@@ -281,7 +284,7 @@ def render_history_page():
                     display_full_results(full_results, show_download_button=True)
 
 def render_edit_page():
-    st.title("📝 Editando Simulação")
+    st.title("Editando Simulação")
     if 'simulation_to_edit' not in st.session_state or st.session_state.simulation_to_edit is None:
         st.warning("Nenhuma simulação selecionada para edição.")
         if st.button("Voltar para o Histórico"):
