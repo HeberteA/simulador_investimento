@@ -12,7 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Inicialização do Session State ---
 defaults = {
     'page': "➕ Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
@@ -26,9 +25,19 @@ defaults = {
 for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
-
-# --- Conexão com Google Sheets ---
+        
 worksheets = utils.init_gsheet_connection()
+
+if worksheets and worksheets.get("aportes"):
+    try:
+        st.warning("--- INÍCIO DO DIAGNÓSTICO ---")
+        st.subheader("Cabeçalhos lidos da planilha 'aportes':")
+        headers = worksheets['aportes'].row_values(1)
+        st.write("A Linha 1 da sua planilha contém:")
+        st.write(headers)
+        st.warning("--- FIM DO DIAGNÓSTICO ---")
+    except Exception as e:
+        st.error(f"Não foi possível ler os cabeçalhos: {e}")
 
 
 def render_new_simulation_page():
@@ -42,7 +51,7 @@ def render_new_simulation_page():
         st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
-        st.title("📊 Resultados da Simulação")
+        st.title("Resultados da Simulação")
         
         if st.button("⬅️ Voltar para os Parâmetros"):
             go_to_inputs()
