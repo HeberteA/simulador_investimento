@@ -104,7 +104,7 @@ def render_new_simulation_page():
         else:
             st.warning("O valor do aporte deve ser maior que zero.")
 
-    with st.expander("💰 Lançamento de Aportes", expanded=True):
+    with st.expander("Lançamento de Aportes", expanded=True):
         c1, c2, c3 = st.columns([2, 2, 1])
         c1.date_input("Data do Aporte", key="new_aporte_date")
         c2.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
@@ -125,7 +125,7 @@ def render_new_simulation_page():
             if st.button("Limpar Todos os Aportes", type="secondary"):
                 st.session_state.aportes = []
                 st.rerun()
-    with st.expander("⚙️ Parâmetros Gerais da Simulação", expanded=True):
+    with st.expander("Parâmetros Gerais da Simulação", expanded=True):
         st.subheader("Dados do Investidor e Projeto")
         col1, col2 = st.columns(2)
         total_aportes = sum(a['valor'] for a in st.session_state.aportes)
