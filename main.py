@@ -167,6 +167,7 @@ def render_new_simulation_page():
                 go_to_results()
                 st.rerun()
     
+    
 def save_simulation_callback():
         if not worksheet:
             st.error("Conexão com a planilha não disponível.")
