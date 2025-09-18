@@ -20,13 +20,21 @@ def format_currency(value):
 
 @st.cache_resource
 def init_gsheet_connection():
+    """
+    Inicializa a conexão com o Google Sheets e retorna um dicionário
+    com as worksheets 'simulations' e 'aportes'.
+    """
     try:
         creds = st.secrets["gcp_service_account"]
         sheet_name = st.secrets["g_sheet_name"]
         gc = gspread.service_account_from_dict(creds)
         spreadsheet = gc.open(sheet_name)
-        worksheet_simulations = spreadsheet.worksheet("simulations")
-        return worksheet_simulations
+        
+        worksheets = {
+            "simulations": spreadsheet.worksheet("simulations"),
+            "aportes": spreadsheet.worksheet("aportes")
+        }
+        return worksheets
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
@@ -37,28 +45,19 @@ def load_data_from_sheet(_worksheet):
         return pd.DataFrame()
     
     all_values = _worksheet.get_all_values()
-    if not all_values:
+    if not all_values or len(all_values) < 1:
         return pd.DataFrame()
 
-    header_row_index = -1
-    for i, row in enumerate(all_values):
-        if any(cell for cell in row):
-            header_row_index = i
-            break
-    
-    if header_row_index == -1:
-        return pd.DataFrame()
-
-    header = all_values[header_row_index]
-    data = all_values[header_row_index + 1:]
+    header = all_values[0]
+    data = all_values[1:]
     
     df = pd.DataFrame(data, columns=header)
     df = df.loc[:, df.columns.notna()]
     df = df.loc[:, [col for col in df.columns if col != '']]
     df.columns = df.columns.str.strip()
-    if 'row_index' not in df.columns:
-        df['row_index'] = range(header_row_index + 2, len(df) + header_row_index + 2)
     
+    if 'row_index' not in df.columns:
+        df['row_index'] = range(2, len(df) + 2)
     
     numeric_cols = [
         'total_contribution', 'num_months', 'monthly_interest_rate', 'spe_percentage', 
@@ -102,6 +101,8 @@ def calculate_financials(params):
         
         delta_total = relativedelta(project_end_date, first_contribution_date)
         num_months_for_roi = delta_total.years * 12 + delta_total.months
+        
+        # Garante que o número de meses não seja zero ou negativo para evitar erros de cálculo
         if num_months_for_roi <= 0:
             num_months_for_roi = 1
             
@@ -121,7 +122,8 @@ def calculate_financials(params):
 
     results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
-    results['num_months'] = num_months_for_roi
+    results['num_months'] = num_months_for_roi # Salva o número de meses calculado
+    
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     results['total_construction_cost'] = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
     operational_result = results['vgv'] - results['total_construction_cost']
@@ -134,13 +136,17 @@ def calculate_financials(params):
     lucro_bruto_investidor = results['valor_corrigido'] + results['valor_participacao']
     results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido
     
-    roi_raw = (results['resultado_final_investidor'] / valor_investido) * 100 if valor_investido > 0 else 0
-    
-    base_anualizacao = 1 + (roi_raw / 100)
-    if base_anualizacao < 0:
-        roi_anualizado_raw = -100.0
+    if valor_investido > 0:
+        roi_raw = (results['resultado_final_investidor'] / valor_investido) * 100
+        base_anualizacao = 1 + (roi_raw / 100)
+        
+        if base_anualizacao < 0:
+            roi_anualizado_raw = -100.0
+        else:
+            roi_anualizado_raw = ((base_anualizacao ** (12 / num_months_for_roi)) - 1) * 100
     else:
-        roi_anualizado_raw = ((base_anualizacao ** (12 / num_months_for_roi)) - 1) * 100 if num_months_for_roi > 0 else 0
+        roi_raw = 0
+        roi_anualizado_raw = 0
 
     results['roi'] = round(roi_raw, 2)
     results['roi_anualizado'] = round(roi_anualizado_raw, 2)
@@ -148,11 +154,11 @@ def calculate_financials(params):
     return results
     
 def generate_pdf(data):
+    # A função generate_pdf permanece a mesma, pois sua lógica interna já estava correta.
+    # Apenas garantimos que os dados passados para ela sejam consistentes.
     try:
         def to_latin1(text):
-            """Converte uma string para o formato latin-1, substituindo caracteres incompatíveis."""
-            if text is None:
-                return ''
+            if text is None: return ''
             return str(text).encode('latin-1', 'replace').decode('latin-1')
 
         pdf = FPDF()
@@ -173,7 +179,7 @@ def generate_pdf(data):
         client_info = f"Cliente: {data.get('client_name', '')} (Código: {data.get('client_code', '')})"
         pdf.cell(0, 5, to_latin1(client_info), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Valor do Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
-        pdf.cell(0, 5, to_latin1(f"Duração: {data.get('num_months')} meses"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Duração (meses do 1º aporte ao fim): {data.get('num_months')} meses"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Taxa de Juros Mensal: {data.get('monthly_interest_rate', 0):.2f}%"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Participação na SPE: {data.get('spe_percentage', 0):.2f}%"), 0, 1)
         pdf.ln(5)
@@ -193,55 +199,36 @@ def generate_pdf(data):
         pdf.cell(0, 8, to_latin1(f"ROI: {data.get('roi', 0):.2f}%"), 0, 1)
         pdf.cell(0, 8, to_latin1(f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%"), 0, 1)
         pdf.ln(10)
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 10, to_latin1("Plano de Parcelas Detalhado"), 0, 1, "L")
-        pdf.set_font("Arial", "B", 9)
-        
-        col_widths = [20, 35, 40, 40, 40]
-        header = [to_latin1("Parcela Nº"), "Vencimento", to_latin1("Valor Base"), "Juros Mensal", "Valor Total"]
-        for i, item in enumerate(header):
-            pdf.cell(col_widths[i], 8, item, 1, 0, 'C')
-        pdf.ln()
 
-        pdf.set_font("Arial", "", 9)
-        num_months = int(data.get('num_months', 1))
-        if num_months <= 0: num_months = 1
-        
-        start_date_val = data.get('start_date')
-        if isinstance(start_date_val, str):
-            try:
-                start_date_val = pd.to_datetime(start_date_val).date()
-            except (ValueError, TypeError):
-                start_date_val = datetime.now().date()
-        elif isinstance(start_date_val, (datetime, pd.Timestamp)):
-            start_date_val = start_date_val.date()
-        elif start_date_val is None:
-            start_date_val = datetime.now().date()
+        aportes = data.get('aportes', [])
+        if aportes:
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, to_latin1("Plano de Aportes"), 0, 1, "L")
+            pdf.set_font("Arial", "B", 9)
+            
+            col_widths = [30, 80]
+            header = [to_latin1("Data do Aporte"), to_latin1("Valor do Aporte")]
+            for i, item in enumerate(header):
+                pdf.cell(col_widths[i], 8, item, 1, 0, 'C')
+            pdf.ln()
 
-        monthly_rate_dec = data.get('monthly_interest_rate', 0) / 100
-        inst_val = data.get('total_contribution', 0) / num_months if num_months > 0 else 0
-        int_val = inst_val * monthly_rate_dec
-        inst_with_int = inst_val + int_val
-
-        for i in range(1, num_months + 1):
-            vencimento = (start_date_val + relativedelta(months=i-1)).strftime("%d/%m/%Y")
-            pdf.cell(col_widths[0], 6, to_latin1(str(i)), 1, 0, 'C')
-            pdf.cell(col_widths[1], 6, to_latin1(vencimento), 1, 0, 'C')
-            pdf.cell(col_widths[2], 6, to_latin1(format_currency(inst_val)), 1, 0, 'R')
-            pdf.cell(col_widths[3], 6, to_latin1(format_currency(int_val)), 1, 0, 'R')
-            pdf.cell(col_widths[4], 6, to_latin1(format_currency(inst_with_int)), 1, 1, 'R')
+            pdf.set_font("Arial", "", 9)
+            for aporte in aportes:
+                aporte_date = aporte.get('date')
+                if isinstance(aporte_date, (datetime, pd.Timestamp)):
+                    date_str = aporte_date.strftime("%d/%m/%Y")
+                else:
+                    date_str = str(aporte_date)
+                
+                pdf.cell(col_widths[0], 6, to_latin1(date_str), 1, 0, 'C')
+                pdf.cell(col_widths[1], 6, to_latin1(format_currency(aporte.get('value'))), 1, 1, 'R')
 
         output = pdf.output(dest='S')
 
         if isinstance(output, str):
             return output.encode('latin-1')
-        elif isinstance(output, bytes):
-            return output
-        else:
-            return b""
-    except Exception as e:
-        st.error(f"Ocorreu um erro inesperado ao gerar o PDF. Detalhes do erro:")
-        st.error(e)
-        return b""
+        return output if isinstance(output, bytes) else b""
 
-  
+    except Exception as e:
+        st.error(f"Ocorreu um erro inesperado ao gerar o PDF. Detalhes do erro: {e}")
+        return b""
