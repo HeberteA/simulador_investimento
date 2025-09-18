@@ -39,7 +39,7 @@ def render_new_simulation_page():
         st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
-        st.title("📊 Resultados da Simulação")
+        st.title("Resultados da Simulação")
         
         if st.button("⬅️ Voltar para os Parâmetros"):
             go_to_inputs()
@@ -53,9 +53,9 @@ def render_new_simulation_page():
             )
         return
 
-    st.title("➕ Nova Simulação Financeira")
+    st.title("Nova Simulação Financeira")
 
-    with st.expander("📂 Carregar Simulação Salva", expanded=False):
+    with st.expander("Carregar Simulação Salva", expanded=False):
         if worksheets and worksheets.get("simulations"):
             df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
             
