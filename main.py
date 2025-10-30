@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 defaults = {
-    'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
+    'page': "➕ Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
     'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 50.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
@@ -178,9 +178,10 @@ def render_new_simulation_page():
                         ),
                     },
                     use_container_width=True,
-                    num_rows="dynamic", 
+                    num_rows="dynamic",
                     key="aportes_editor"
                 )
+                
                 st.session_state.aportes = edited_df.to_dict('records')
             
             except Exception as e:
@@ -311,7 +312,7 @@ def render_history_page():
             if c5.button("📝", key=f"edit_{row_index}", help="Editar simulação"):
                 st.session_state.editing_row = row_index
                 st.session_state.simulation_to_edit = row.to_dict()
-                st.session_state.page = "📝 Editar Simulação"
+                st.session_state.page = "Editar Simulação"
                 st.rerun()
             
             if c6.button("🗑️", key=f"del_{row_index}", help="Excluir simulação"):
@@ -352,7 +353,7 @@ def render_history_page():
                         date_val = None
                         if 'data_aporte' in aporte_row:
                             date_val = aporte_row['data_aporte']
-                        elif 'data' in aporte_row:
+                        elif 'data' in aporte_row: 
                             date_val = aporte_row['data']
                         
                         value_val = None
@@ -368,7 +369,6 @@ def render_history_page():
                             })
                         else:
                             st.warning(f"Aporte inválido encontrado no histórico (sim_id: {sim_id}). Pulando.")
-
                     
                     sim_data['aportes'] = aportes_list
                     
@@ -458,7 +458,7 @@ def render_edit_page():
             st.rerun()
 
 def render_dashboard_page():
-    st.title("Dashboard de Análise de Portfólio")
+    st.title("📊 Dashboard de Análise de Portfólio")
     if worksheets and worksheets.get("simulations"):
         df_sim = utils.load_data_from_sheet(worksheets["simulations"])
     else:
@@ -468,6 +468,8 @@ def render_dashboard_page():
     if df_sim.empty:
         st.info("Ainda não há dados para exibir no dashboard.")
         return
+
+    THEME_COLOR = "#E37026"
 
     st.subheader("Indicadores Chave de Performance (KPIs)")
     k1, k2, k3, k4 = st.columns(4)
@@ -495,6 +497,7 @@ def render_dashboard_page():
             title="Distribuição do ROI Anualizado",
             labels={'roi_anualizado': 'ROI Anualizado (%)'}
         )
+        fig_hist_roi.update_traces(marker_color=THEME_COLOR)
         st.plotly_chart(fig_hist_roi, use_container_width=True)
 
     with c2:
@@ -508,6 +511,7 @@ def render_dashboard_page():
             trendline="ols",
             trendline_color_override="red"
         )
+        fig_scatter_roi.update_traces(marker_color=THEME_COLOR)
         st.plotly_chart(fig_scatter_roi, use_container_width=True)
 
     st.divider()
@@ -528,7 +532,8 @@ def render_dashboard_page():
             y='aportes_total', 
             title="Top 10 Clientes por Valor Total Aportado",
             labels={'client_name': 'Cliente', 'aportes_total': 'Valor Total Aportado'},
-            hover_data=['roi_medio', 'contagem_sims']
+            hover_data=['roi_medio', 'contagem_sims'],
+            color_discrete_sequence=[THEME_COLOR]
         )
         st.plotly_chart(fig_bar_client, use_container_width=True)
 
@@ -547,6 +552,7 @@ def render_dashboard_page():
             labels={'created_at_month': 'Mês', 'contagem_sims': 'Número de Simulações'},
             markers=True
         )
+        fig_line_time.update_traces(line_color=THEME_COLOR)
         st.plotly_chart(fig_line_time, use_container_width=True)
 
     if worksheets.get("aportes"):
@@ -554,16 +560,24 @@ def render_dashboard_page():
         if not df_aportes.empty:
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
-            df_aportes['data_aporte'] = pd.to_datetime(df_aportes['data_aporte'])
-            df_aportes['mes_aporte'] = df_aportes['data_aporte'].dt.to_period('M').astype(str)
-            aportes_agg = df_aportes.groupby('mes_aporte')['valor_aporte'].sum().reset_index()
+            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
+
+            if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
+                st.error("Não foi possível encontrar as colunas 'data_aporte'/'data' ou 'valor_aporte'/'valor' na planilha de aportes.")
+                return
+
+            df_aportes[date_col] = pd.to_datetime(df_aportes[date_col])
+            df_aportes['mes_aporte'] = df_aportes[date_col].dt.to_period('M').astype(str)
+            aportes_agg = df_aportes.groupby('mes_aporte')[value_col].sum().reset_index()
 
             fig_bar_aportes = px.bar(
                 aportes_agg,
                 x='mes_aporte',
-                y='valor_aporte',
+                y=value_col,
                 title="Volume Total de Aportes Recebidos por Mês",
-                labels={'mes_aporte': 'Mês', 'valor_aporte': 'Valor Aportado'}
+                labels={'mes_aporte': 'Mês', value_col: 'Valor Aportado'},
+                color_discrete_sequence=[THEME_COLOR]
             )
             st.plotly_chart(fig_bar_aportes, use_container_width=True)
 
@@ -581,7 +595,7 @@ with st.sidebar:
             page_icons.append("pencil-square")
         default_index = page_options.index("Editar Simulação")
     else:
-        page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
+        page_map = {"➕ Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
         current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
         default_index = page_options.index(current_page_title)
 
@@ -618,5 +632,6 @@ elif st.session_state.page == "Editar Simulação":
     render_edit_page()
 elif st.session_state.page == "Dashboard":
     render_dashboard_page()
+
 
 
