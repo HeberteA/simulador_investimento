@@ -235,7 +235,7 @@ def generate_pdf(data):
             pdf.set_font("Arial", "", 9)
             for aporte in aportes:
                 aporte_date = aporte.get('date')
-                if isinstance(aporte_date, (datetime, pd.Timestamp, pd.Timestamp.date_type)):
+                if isinstance(aporte_date, (datetime, pd.Timestamp, datetime.date)):
                     date_str = aporte_date.strftime("%d/%m/%Y")
                 else:
                     try:
@@ -255,4 +255,5 @@ def generate_pdf(data):
     except Exception as e:
         st.error(f"Ocorreu um erro inesperado ao gerar o PDF. Detalhes do erro: {e}")
         return b""
+
 
