@@ -30,7 +30,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         aportes_list = results.get('aportes', [])
         
         if aportes_list:
-            df_aportes_display = pd.DataFrame([{'Vencimento': a['date'], 'Valor': a['value']} for a in aportes_list])
+            aportes_list_sorted = sorted(aportes_list, key=lambda x: x['date'])
+            df_aportes_display = pd.DataFrame([{'Vencimento': a['date'], 'Valor': a['value']} for a in aportes_list_sorted])
             df_aportes_display['Vencimento'] = pd.to_datetime(df_aportes_display['Vencimento']).dt.strftime('%d/%m/%Y')
             df_aportes_display['Valor'] = df_aportes_display['Valor'].apply(utils.format_currency)
             st.dataframe(df_aportes_display, use_container_width=True, hide_index=True)
@@ -60,7 +61,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.markdown("##### Rentabilidade do Investimento")
             
             roi_anualizado = results.get('roi_anualizado', 0)
-            gauge_max_range_anual = max(30, roi_anualizado * 1.5)
+            gauge_max_range_anual = max(30, (np.ceil(roi_anualizado / 10) * 10) * 1.5) if roi_anualizado > 0 else 30
             fig_gauge_anual = go.Figure(go.Indicator(
                 mode="gauge+number", value=roi_anualizado,
                 domain={'x': [0, 1], 'y': [0, 1]},
@@ -72,12 +73,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_anual, use_container_width=True, key=f"gauge_anual_{unique_id}")
 
             roi_periodo = results.get('roi', 0)
-            duracao_meses = results.get('num_months', 0)
-            gauge_max_range_periodo = max(30, roi_periodo * 1.5)
+            duracao_meses = results.get('num_months', 0) 
+            gauge_max_range_periodo = max(30, (np.ceil(roi_periodo / 10) * 10) * 1.5) if roi_periodo > 0 else 30
             fig_gauge_periodo = go.Figure(go.Indicator(
                 mode="gauge+number", value=roi_periodo,
                 domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': f"ROI no Período ({duracao_meses} meses)", 'font': {'size': 20}},
+                title={'text': f"ROI no Período ({duracao_meses} meses aprox.)", 'font': {'size': 20}},
                 number={'suffix': "%", 'font': {'size': 24}},
                 gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
             ))
@@ -121,9 +122,10 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 st.metric("ROI Anualizado", f"{scenarios['Otimista']['roi_anualizado']:.2f}%")
                 st.metric("Lucro do Investidor", format_currency(scenarios['Otimista']['resultado_final_investidor']))
                 st.caption(f"Venda m²: {format_currency(optimistic_params['value_m2'])} | Custo m²: {format_currency(optimistic_params['construction_cost_m2'])}")
+        
         st.divider()
 
-        with st.expander("**Análise Interativa (What-If)**", expanded=True):
+        with st.expander("**Análise Interativa (What-If)**", expanded=False):
             st.markdown("Ajuste as variáveis abaixo para simular seu próprio cenário.")
             
             original_value_m2 = results.get('value_m2', 0)
@@ -160,6 +162,47 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
                 delta_roi = sensitive_results.get('roi', 0) - results.get('roi', 0)
                 scol3.metric("Novo ROI (Período)", f"{sensitive_results.get('roi', 0):.2f}%", delta=f"{delta_roi:.2f}%")
+
+        st.divider()
+        st.subheader("Mapa de Calor: Análise de Sensibilidade do ROI")
+        
+        original_value_m2 = results.get('value_m2', 6000)
+        original_cost_m2 = results.get('construction_cost_m2', 2500)
+
+        m2_venda_range = np.linspace(original_value_m2 * 0.8, original_value_m2 * 1.2, 5)
+        m2_custo_range = np.linspace(original_cost_m2 * 0.8, original_cost_m2 * 1.2, 5)
+
+        heatmap_data = []
+        temp_params = results.copy()
+        
+        for custo in m2_custo_range:
+            row = []
+            for venda in m2_venda_range:
+                temp_params['value_m2'] = venda
+                temp_params['construction_cost_m2'] = custo
+                res = calculate_financials(temp_params)
+                row.append(res['roi_anualizado'])
+            heatmap_data.append(row)
+
+        fig_heatmap = go.Figure(data=go.Heatmap(
+            z=heatmap_data,
+            x=[f"{v/1000:.1f}k" for v in m2_venda_range],
+            y=[f"{c/1000:.1f}k" for c in m2_custo_range],
+            hoverongaps=False,
+            colorscale='RdYlGn',
+            zmin=np.min(heatmap_data),
+            zmax=np.max(heatmap_data),
+            text=[[f"{val:.2f}%" for val in row] for row in heatmap_data],
+            texttemplate="%{text}",
+            textfont={"size":10}
+        ))
+        fig_heatmap.update_layout(
+            title="Mapa de Calor: ROI Anualizado (Venda vs. Custo)",
+            xaxis_title="Valor de Venda m² (Simulado)",
+            yaxis_title="Custo da Obra m² (Simulado)",
+            margin=dict(l=40, r=40, t=40, b=40)
+        )
+        st.plotly_chart(fig_heatmap, use_container_width=True)
               
     buttons_to_show = []
     if show_download_button: buttons_to_show.append("download")
@@ -204,3 +247,4 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     if save_callback:
                         save_callback()
             col_index += 1
+
