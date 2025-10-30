@@ -155,15 +155,37 @@ def render_new_simulation_page():
         if st.session_state.aportes:
             st.divider()
 
-            st.subheader("Cronograma de Vencimentos")
-            aportes_df = pd.DataFrame(st.session_state.aportes).sort_values(by="data").reset_index(drop=True)
+            st.subheader("Cronograma de Vencimentos (Editável)")
             
-            aportes_df_display = aportes_df.copy()
-            aportes_df_display.index += 1
-            aportes_df_display["Vencimento"] = pd.to_datetime(aportes_df_display["data"]).dt.strftime('%d/%m/%Y')
-            aportes_df_display["Valor"] = aportes_df_display["valor"].apply(utils.format_currency)
+            try:
+                aportes_df = pd.DataFrame(st.session_state.aportes)
+                
+                if not aportes_df.empty:
+                    aportes_df['data'] = pd.to_datetime(aportes_df['data'])
+                    aportes_df = aportes_df.sort_values(by="data").reset_index(drop=True)
+                
+                edited_df = st.data_editor(
+                    aportes_df,
+                    column_config={
+                        "data": st.column_config.DateColumn(
+                            "Data de Vencimento",
+                            format="DD/MM/YYYY",
+                            step=1,
+                        ),
+                        "valor": st.column_config.NumberColumn(
+                            "Valor (R$)",
+                            format="R$ %.2f",
+                        ),
+                    },
+                    use_container_width=True,
+                    num_rows="dynamic", 
+                    key="aportes_editor"
+                )
+                st.session_state.aportes = edited_df.to_dict('records')
             
-            st.dataframe(aportes_df_display[["Vencimento", "Valor"]], use_container_width=True)
+            except Exception as e:
+                st.error(f"Erro ao processar aportes: {e}")
+                st.warning("Se o erro persistir, tente 'Limpar Todos os Aportes'.")
             
             if st.button("Limpar Todos os Aportes", type="secondary"):
                 st.session_state.aportes = []
@@ -205,7 +227,7 @@ def render_new_simulation_page():
             st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%", help="Percentual do VGV que será pago em permuta (ex: troca pelo terreno).")
 
     st.divider()
-    if st.button("Calcular Resultado Completo", use_container_width=True, type="primary"):
+    if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
         if not st.session_state.aportes:
             st.warning("Adicione pelo menos um aporte para calcular.")
         else:
@@ -327,10 +349,27 @@ def render_history_page():
                     
                     aportes_list = []
                     for _, aporte_row in aportes_sim.iterrows():
-                        aportes_list.append({
-                            'date': pd.to_datetime(aporte_row['data_aporte']).date(),
-                            'value': float(aporte_row['valor_aporte'])
-                        })
+                        date_val = None
+                        if 'data_aporte' in aporte_row:
+                            date_val = aporte_row['data_aporte']
+                        elif 'data' in aporte_row:
+                            date_val = aporte_row['data']
+                        
+                        value_val = None
+                        if 'valor_aporte' in aporte_row:
+                            value_val = aporte_row['valor_aporte']
+                        elif 'valor' in aporte_row: 
+                            value_val = aporte_row['valor']
+
+                        if date_val is not None and value_val is not None:
+                            aportes_list.append({
+                                'date': pd.to_datetime(date_val).date(),
+                                'value': float(value_val)
+                            })
+                        else:
+                            st.warning(f"Aporte inválido encontrado no histórico (sim_id: {sim_id}). Pulando.")
+
+                    
                     sim_data['aportes'] = aportes_list
                     
                     if 'annual_interest_rate' not in sim_data:
@@ -371,7 +410,7 @@ def render_edit_page():
             st.number_input("Valor de Venda do m²", value=float(sim.get('value_m2',0)), key="edit_value_m2")
             st.slider("% de Troca de Área", 0.0, 100.0, value=float(sim.get('area_exchange_percentage',0)), key="edit_area_exchange_percentage")
     
-    if st.button("Salvar Alterações", use_container_width=True, type="primary"):
+    if st.button("💾 Salvar Alterações", use_container_width=True, type="primary"):
         with st.spinner("Recalculando e salvando..."):
             sim_id = sim.get('simulation_id')
 
@@ -559,7 +598,7 @@ with st.sidebar:
     new_page_state = page_map_to_state.get(selected_page_key)
 
     if st.session_state.page != new_page_state:
-        if st.session_state.page == "Editar Simulação":
+        if st.session_state.page == "📝 Editar Simulação":
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
         
@@ -579,4 +618,5 @@ elif st.session_state.page == "Editar Simulação":
     render_edit_page()
 elif st.session_state.page == "Dashboard":
     render_dashboard_page()
+
 
