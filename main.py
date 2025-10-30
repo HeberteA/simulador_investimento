@@ -28,16 +28,7 @@ for key, value in defaults.items():
         
 worksheets = utils.init_gsheet_connection()
 
-if worksheets and worksheets.get("aportes"):
-    try:
-        st.warning("--- INÍCIO DO DIAGNÓSTICO ---")
-        st.subheader("Cabeçalhos lidos da planilha 'aportes':")
-        headers = worksheets['aportes'].row_values(1)
-        st.write("A Linha 1 da sua planilha contém:")
-        st.write(headers)
-        st.warning("--- FIM DO DIAGNÓSTICO ---")
-    except Exception as e:
-        st.error(f"Não foi possível ler os cabeçalhos: {e}")
+
 
 
 def render_new_simulation_page():
