@@ -5,6 +5,8 @@ from streamlit_option_menu import option_menu
 from dateutil.relativedelta import relativedelta 
 import utils
 from ui_components import display_full_results
+import plotly.express as px
+import numpy as np
 
 st.set_page_config(
     page_title="Simulador Financeiro Avançado",
@@ -13,9 +15,9 @@ st.set_page_config(
 )
 
 defaults = {
-    'page': "➕ Nova Simulação", 'results_ready': False, 'simulation_results': {},
+    'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
-    'client_name': "", 'client_code': "", 'monthly_interest_rate': 1.0, 'spe_percentage': 50.0,
+    'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 50.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 2500.0, 'value_m2': 6000.0, 'area_exchange_percentage': 10.0,
@@ -27,8 +29,6 @@ for key, value in defaults.items():
         st.session_state[key] = value
         
 worksheets = utils.init_gsheet_connection()
-
-
 
 
 def render_new_simulation_page():
@@ -77,10 +77,13 @@ def render_new_simulation_page():
                             
                             for key, value in latest_sim.items():
                                 if key in st.session_state:
-                                    if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
-                                    elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
-                                    elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
-                                    else: st.session_state[key] = value
+                                    if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
+                                        st.session_state['annual_interest_rate'] = float(value)
+                                    elif key in st.session_state:
+                                        if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
+                                        elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
+                                        elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
+                                        else: st.session_state[key] = value
                             
                             df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
                             sim_id = latest_sim['simulation_id']
@@ -102,14 +105,52 @@ def render_new_simulation_page():
             st.session_state.new_aporte_value = 0.0
         else:
             st.warning("O valor do aporte deve ser maior que zero.")
+            
+    def add_aportes_parcelados_callback():
+        total_valor = st.session_state.get('parcelado_total_valor', 0.0)
+        num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
+        data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
+        
+        if total_valor <= 0:
+            st.warning("O valor total do aporte deve ser maior que zero.")
+            return
+        if num_parcelas <= 0:
+            st.warning("O número de parcelas deve ser pelo menos 1.")
+            return
+            
+        valor_parcela = round(total_valor / num_parcelas, 2)
+        
+        novos_aportes = []
+        for i in range(num_parcelas):
+            data_vencimento = data_inicio + relativedelta(months=i)
+            novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
+            
+        st.session_state.aportes.extend(novos_aportes)
+        st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
+        st.session_state.parcelado_total_valor = 0.0
+        st.session_state.parcelado_num_parcelas = 1
 
     with st.expander("Lançamento de Aportes", expanded=True):
-        c1, c2, c3 = st.columns([2, 2, 1])
-        c1.date_input("Data de Vencimento", key="new_aporte_date")
-        c2.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
-        with c3:
-            st.write("‎")
-            st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True)
+        
+        tab_unico, tab_parcelado = st.tabs(["📈 Aporte Único", "🗓️ Aporte Parcelado"])
+
+        with tab_unico:
+            st.subheader("Adicionar Aporte Único")
+            c1, c2, c3 = st.columns([2, 2, 1])
+            c1.date_input("Data de Vencimento", key="new_aporte_date")
+            c2.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
+            with c3:
+                st.write("‎") 
+                st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
+
+        with tab_parcelado:
+            st.subheader("Adicionar Aportes Parcelados")
+            p1, p2, p3 = st.columns(3)
+            p1.number_input("Valor Total do Aporte", min_value=0.0, step=1000.0, format="%.2f", key="parcelado_total_valor")
+            p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
+            p3.date_input("Data do Primeiro Vencimento", key="parcelado_data_inicio")
+            
+            st.button("Adicionar Aportes Parcelados", on_click=add_aportes_parcelados_callback, use_container_width=True, key="btn_aporte_parcelado")
 
         if st.session_state.aportes:
             st.divider()
@@ -128,33 +169,43 @@ def render_new_simulation_page():
                 st.session_state.aportes = []
                 st.rerun()
 
-    with st.expander("Parâmetros Gerais da Simulação", expanded=True):
-        st.subheader("Dados do Investidor e Projeto")
+    st.subheader("Parâmetros Gerais da Simulação")
+    tab_investidor, tab_projeto = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
+    
+    with tab_investidor:
         col1, col2 = st.columns(2)
         total_aportes = sum(a['valor'] for a in st.session_state.aportes)
 
         with col1:
             st.text_input("Nome do Cliente", key="client_name")
             st.text_input("Código do Cliente", key="client_code")
-            st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
+            
         with col2:
             st.date_input("Data de Início (Primeiro Vencimento)", value=st.session_state.aportes[0]['data'] if st.session_state.aportes else datetime.today().date(), key="start_date", disabled=True)
             st.date_input("Data Final do Projeto", key="project_end_date")
 
-        st.divider()
-        st.subheader("Dados do Projeto Imobiliário")
+        st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
+
+    with tab_projeto:
         c1, c2 = st.columns(2)
         with c1:
             st.number_input("Tamanho do Terreno (m²)", min_value=0, step=100, key="land_size")
-            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
-            st.number_input("Taxa de Juros Mensal (%)", min_value=0.0, step=0.1, format="%.2f", key="monthly_interest_rate")
+            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", help="Custo total de construção dividido pela área do terreno.")
+            st.number_input(
+                "Taxa de Juros Anual (%)", 
+                min_value=0.0, 
+                step=0.1, 
+                format="%.2f", 
+                key="annual_interest_rate",
+                help="Taxa de juros nominal anual. O cálculo de juros compostos será feito com base na taxa diária equivalente."
+            )
         with c2:
-            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
-            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-            st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
+            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2", help="Valor de Venda Geral (VGV) dividido pela área do terreno.")
+            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", help="Percentual do resultado do projeto destinado ao investidor.")
+            st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%", help="Percentual do VGV que será pago em permuta (ex: troca pelo terreno).")
 
     st.divider()
-    if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
+    if st.button("Calcular Resultado Completo", use_container_width=True, type="primary"):
         if not st.session_state.aportes:
             st.warning("Adicione pelo menos um aporte para calcular.")
         else:
@@ -179,8 +230,9 @@ def save_simulation_callback():
         main_data = [
             sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             st.session_state.client_name, st.session_state.client_code,
-            results.get('total_contribution', 0), results.get('num_months', 0),
-            st.session_state.monthly_interest_rate, st.session_state.spe_percentage,
+            results.get('total_contribution', 0), results.get('num_months', 0), 
+            st.session_state.annual_interest_rate, 
+            st.session_state.spe_percentage,
             st.session_state.land_size, st.session_state.construction_cost_m2,
             st.session_state.value_m2, st.session_state.area_exchange_percentage,
             results.get('vgv', 0), results.get('total_construction_cost', 0),
@@ -280,6 +332,10 @@ def render_history_page():
                             'value': float(aporte_row['valor_aporte'])
                         })
                     sim_data['aportes'] = aportes_list
+                    
+                    if 'annual_interest_rate' not in sim_data:
+                         sim_data['annual_interest_rate'] = sim_data.get('monthly_interest_rate', 12.0) 
+                         
                     full_results = utils.calculate_financials(sim_data)
                     display_full_results(full_results, show_download_button=True)
 
@@ -288,7 +344,7 @@ def render_edit_page():
     if 'simulation_to_edit' not in st.session_state or st.session_state.simulation_to_edit is None:
         st.warning("Nenhuma simulação selecionada para edição.")
         if st.button("Voltar para o Histórico"):
-            st.session_state.page = "🗂️ Histórico de Simulações"
+            st.session_state.page = "Histórico de Simulações"
             st.rerun()
         return
 
@@ -302,7 +358,12 @@ def render_edit_page():
         with c1:
             st.text_input("Nome do Cliente", value=sim.get('client_name'), key="edit_client_name")
             st.text_input("Código do Cliente", value=sim.get('client_code'), key="edit_client_code")
-            st.number_input("Taxa de Juros Mensal (%)", value=float(sim.get('monthly_interest_rate',0)), key="edit_monthly_interest_rate")
+            default_rate = sim.get('annual_interest_rate', sim.get('monthly_interest_rate', 0))
+            st.number_input(
+                "Taxa de Juros Anual (%)", 
+                value=float(default_rate), 
+                key="edit_annual_interest_rate"
+            )
             st.number_input("Participação na SPE (%)", value=float(sim.get('spe_percentage',0)), key="edit_spe_percentage")
         with c2:
             st.number_input("Tamanho do Terreno (m²)", value=int(sim.get('land_size',0)), key="edit_land_size")
@@ -310,7 +371,7 @@ def render_edit_page():
             st.number_input("Valor de Venda do m²", value=float(sim.get('value_m2',0)), key="edit_value_m2")
             st.slider("% de Troca de Área", 0.0, 100.0, value=float(sim.get('area_exchange_percentage',0)), key="edit_area_exchange_percentage")
     
-    if st.button("💾 Salvar Alterações", use_container_width=True, type="primary"):
+    if st.button("Salvar Alterações", use_container_width=True, type="primary"):
         with st.spinner("Recalculando e salvando..."):
             sim_id = sim.get('simulation_id')
 
@@ -322,7 +383,7 @@ def render_edit_page():
             params.update({
                 'client_name': st.session_state.edit_client_name,
                 'client_code': st.session_state.edit_client_code,
-                'monthly_interest_rate': st.session_state.edit_monthly_interest_rate,
+                'annual_interest_rate': st.session_state.edit_annual_interest_rate, 
                 'spe_percentage': st.session_state.edit_spe_percentage,
                 'land_size': st.session_state.edit_land_size,
                 'construction_cost_m2': st.session_state.edit_construction_cost_m2,
@@ -335,8 +396,9 @@ def render_edit_page():
             main_data_updated = [
                 sim_id, pd.to_datetime(sim.get('created_at')).strftime("%Y-%m-%d %H:%M:%S"),
                 new_results['client_name'], new_results['client_code'],
-                new_results.get('total_contribution', 0), new_results.get('num_months', 0),
-                new_results['monthly_interest_rate'], new_results['spe_percentage'],
+                new_results.get('total_contribution', 0), new_results.get('num_months', 0), 
+                new_results['annual_interest_rate'], 
+                new_results['spe_percentage'],
                 new_results['land_size'], new_results['construction_cost_m2'], new_results['value_m2'],
                 new_results['area_exchange_percentage'], new_results.get('vgv', 0),
                 new_results.get('total_construction_cost', 0), new_results.get('final_operational_result', 0),
@@ -352,47 +414,120 @@ def render_edit_page():
             st.cache_data.clear()
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
-            st.session_state.page = "🗂️ Histórico de Simulações"
+            st.session_state.page = "Histórico de Simulações"
             st.toast("Simulação atualizada com sucesso!", icon="🎉")
             st.rerun()
 
 def render_dashboard_page():
-    st.title("📊 Dashboard de Simulações")
+    st.title("Dashboard de Análise de Portfólio")
     if worksheets and worksheets.get("simulations"):
-        df = utils.load_data_from_sheet(worksheets["simulations"])
+        df_sim = utils.load_data_from_sheet(worksheets["simulations"])
     else:
         st.error("Conexão com a planilha de simulações não disponível.")
         return
-
-    if df.empty:
+        
+    if df_sim.empty:
         st.info("Ainda não há dados para exibir no dashboard.")
         return
-        
-    st.subheader("Indicadores Gerais")
-    col1, col2, col3 = st.columns(3)
-    vgv_total = df['vgv'].sum()
-    roi_medio = df['roi_anualizado'].mean()
-    col1.metric("VGV Total Simulado", utils.format_currency(vgv_total))
-    col2.metric("ROI Anualizado Médio", f"{roi_medio:.2f}%")
-    col3.metric("Total de Simulações", len(df))
-    st.divider()
-    
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.subheader("Últimas Simulações")
-        cols_to_display = ['created_at', 'client_name', 'roi_anualizado', 'vgv']
-        df_display = df[cols_to_display].copy()
-        df_display['created_at'] = pd.to_datetime(df_display['created_at']).dt.strftime('%d/%m/%Y')
-        df_display['roi_anualizado'] = df_display['roi_anualizado'].apply(lambda x: f"{x:.2f}%")
-        df_display['vgv'] = df_display['vgv'].apply(utils.format_currency)
-        st.dataframe(df_display.sort_values(by="created_at", ascending=False).head(5), hide_index=True, use_container_width=True)
 
-    with col2:
-        st.subheader("Simulações por Mês")
-        df['created_at'] = pd.to_datetime(df['created_at'])
-        simulations_per_month = df['created_at'].dt.to_period('M').value_counts().sort_index()
-        simulations_per_month.index = simulations_per_month.index.strftime('%Y-%m')
-        st.bar_chart(simulations_per_month)
+    st.subheader("Indicadores Chave de Performance (KPIs)")
+    k1, k2, k3, k4 = st.columns(4)
+    
+    total_vgv = df_sim['vgv'].sum()
+    avg_roi_anual = df_sim['roi_anualizado'].mean()
+    total_investido = df_sim['total_contribution'].sum()
+    total_sims = len(df_sim)
+    
+    k1.metric("VGV Total Simulado", utils.format_currency(total_vgv))
+    k2.metric("ROI Anualizado Médio", f"{avg_roi_anual:.2f}%")
+    k3.metric("Capital Aportado Total", utils.format_currency(total_investido))
+    k4.metric("Total de Simulações", f"{total_sims} simulações")
+    
+    st.divider()
+
+    st.subheader("Análise de Rentabilidade e Risco")
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        fig_hist_roi = px.histogram(
+            df_sim, 
+            x='roi_anualizado', 
+            nbins=20, 
+            title="Distribuição do ROI Anualizado",
+            labels={'roi_anualizado': 'ROI Anualizado (%)'}
+        )
+        st.plotly_chart(fig_hist_roi, use_container_width=True)
+
+    with c2:
+        fig_scatter_roi = px.scatter(
+            df_sim, 
+            x='total_contribution', 
+            y='roi_anualizado', 
+            title="ROI vs. Valor Aportado",
+            labels={'total_contribution': 'Valor Total Aportado', 'roi_anualizado': 'ROI Anualizado (%)'},
+            hover_data=['client_name'],
+            trendline="ols",
+            trendline_color_override="red"
+        )
+        st.plotly_chart(fig_scatter_roi, use_container_width=True)
+
+    st.divider()
+    st.subheader("Análise de Clientes e Projetos")
+    c3, c4 = st.columns(2)
+
+    with c3:
+        df_client_agg = df_sim.groupby('client_name').agg(
+            vgv_total=('vgv', 'sum'),
+            aportes_total=('total_contribution', 'sum'),
+            roi_medio=('roi_anualizado', 'mean'),
+            contagem_sims=('simulation_id', 'count')
+        ).reset_index().sort_values(by='aportes_total', ascending=False)
+        
+        fig_bar_client = px.bar(
+            df_client_agg.head(10), 
+            x='client_name', 
+            y='aportes_total', 
+            title="Top 10 Clientes por Valor Total Aportado",
+            labels={'client_name': 'Cliente', 'aportes_total': 'Valor Total Aportado'},
+            hover_data=['roi_medio', 'contagem_sims']
+        )
+        st.plotly_chart(fig_bar_client, use_container_width=True)
+
+    with c4:
+        df_sim['created_at_month'] = pd.to_datetime(df_sim['created_at']).dt.to_period('M').astype(str)
+        sims_per_month = df_sim.groupby('created_at_month').agg(
+            contagem_sims=('simulation_id', 'count'),
+            vgv_total_mes=('vgv', 'sum')
+        ).reset_index()
+        
+        fig_line_time = px.line(
+            sims_per_month, 
+            x='created_at_month', 
+            y='contagem_sims', 
+            title="Volume de Simulações ao Longo do Tempo",
+            labels={'created_at_month': 'Mês', 'contagem_sims': 'Número de Simulações'},
+            markers=True
+        )
+        st.plotly_chart(fig_line_time, use_container_width=True)
+
+    if worksheets.get("aportes"):
+        df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
+        if not df_aportes.empty:
+            st.divider()
+            st.subheader("Análise de Captação (Aportes)")
+            df_aportes['data_aporte'] = pd.to_datetime(df_aportes['data_aporte'])
+            df_aportes['mes_aporte'] = df_aportes['data_aporte'].dt.to_period('M').astype(str)
+            aportes_agg = df_aportes.groupby('mes_aporte')['valor_aporte'].sum().reset_index()
+
+            fig_bar_aportes = px.bar(
+                aportes_agg,
+                x='mes_aporte',
+                y='valor_aporte',
+                title="Volume Total de Aportes Recebidos por Mês",
+                labels={'mes_aporte': 'Mês', 'valor_aporte': 'Valor Aportado'}
+            )
+            st.plotly_chart(fig_bar_aportes, use_container_width=True)
+
 
 with st.sidebar:
     st.image("Lavie.png")
@@ -407,7 +542,7 @@ with st.sidebar:
             page_icons.append("pencil-square")
         default_index = page_options.index("Editar Simulação")
     else:
-        page_map = {"➕ Nova Simulação": "Nova Simulação", "🗂️ Histórico de Simulações": "Histórico", "📊 Dashboard": "Dashboard"}
+        page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
         current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
         default_index = page_options.index(current_page_title)
 
@@ -417,14 +552,14 @@ with st.sidebar:
     )
     
     page_map_to_state = {
-        "Nova Simulação": "➕ Nova Simulação", "Histórico": "🗂️ Histórico de Simulações",
-        "Dashboard": "📊 Dashboard", "Editar Simulação": "📝 Editar Simulação"
+        "Nova Simulação": "Nova Simulação", "Histórico": "Histórico de Simulações",
+        "Dashboard": "Dashboard", "Editar Simulação": "Editar Simulação"
     }
     
     new_page_state = page_map_to_state.get(selected_page_key)
 
     if st.session_state.page != new_page_state:
-        if st.session_state.page == "📝 Editar Simulação":
+        if st.session_state.page == "Editar Simulação":
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
         
@@ -436,11 +571,12 @@ with st.sidebar:
         st.session_state.simulation_to_edit = None
         st.rerun()
 
-if st.session_state.page == "➕ Nova Simulação":
+if st.session_state.page == "Nova Simulação":
     render_new_simulation_page()
-elif st.session_state.page == "🗂️ Histórico de Simulações":
+elif st.session_state.page == "Histórico de Simulações":
     render_history_page()
-elif st.session_state.page == "📝 Editar Simulação":
+elif st.session_state.page == "Editar Simulação":
     render_edit_page()
-elif st.session_state.page == "📊 Dashboard":
+elif st.session_state.page == "Dashboard":
     render_dashboard_page()
+
