@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 defaults = {
-    'page': "➕ Nova Simulação", 'results_ready': False, 'simulation_results': {},
+    'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
     'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 50.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
@@ -359,7 +359,7 @@ def render_history_page():
                         value_val = None
                         if 'valor_aporte' in aporte_row:
                             value_val = aporte_row['valor_aporte']
-                        elif 'valor' in aporte_row: 
+                        elif 'valor' in aporte_row:
                             value_val = aporte_row['valor']
 
                         if date_val is not None and value_val is not None:
@@ -416,8 +416,19 @@ def render_edit_page():
 
             df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
-            aportes_list = [{'date': pd.to_datetime(r['data_aporte']).date(), 'value': float(r['valor_aporte'])} for _, r in aportes_do_cliente.iterrows()]
-
+            
+            aportes_list = []
+            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+            
+            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                for _, r in aportes_do_cliente.iterrows():
+                    aportes_list.append({
+                        'date': pd.to_datetime(r[date_col]).date(), 
+                        'value': float(r[value_col])
+                    })
+            else:
+                st.error("Erro ao ler aportes salvos. Colunas 'data' ou 'valor' não encontradas.")
             params = sim.copy()
             params.update({
                 'client_name': st.session_state.edit_client_name,
@@ -560,6 +571,7 @@ def render_dashboard_page():
         if not df_aportes.empty:
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
+
             date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
             value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
 
@@ -595,7 +607,7 @@ with st.sidebar:
             page_icons.append("pencil-square")
         default_index = page_options.index("Editar Simulação")
     else:
-        page_map = {"➕ Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
+        page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
         current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
         default_index = page_options.index(current_page_title)
 
@@ -632,6 +644,7 @@ elif st.session_state.page == "Editar Simulação":
     render_edit_page()
 elif st.session_state.page == "Dashboard":
     render_dashboard_page()
+
 
 
 
