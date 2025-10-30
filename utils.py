@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import locale
 import io
@@ -51,6 +51,7 @@ def load_data_from_sheet(_worksheet):
     df = df.loc[:, df.columns.notna()]
     df = df.loc[:, [col for col in df.columns if col != '']]
     df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.lower()
     
     if 'row_index' not in df.columns:
         df['row_index'] = range(2, len(df) + 2)
@@ -139,12 +140,17 @@ def calculate_financials(params):
             else:
                 total_montante += contribution_value
 
+    juros_investidor = max(0, total_montante - total_contribution)
+
     results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
     results['num_months'] = num_months_for_roi_display 
     
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
-    results['total_construction_cost'] = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
+    
+    cost_obra_fisica = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
+    results['total_construction_cost'] = cost_obra_fisica + juros_investidor
+
     operational_result = results['vgv'] - results['total_construction_cost']
     area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
     results['final_operational_result'] = operational_result - area_exchange_value
@@ -235,7 +241,8 @@ def generate_pdf(data):
             pdf.set_font("Arial", "", 9)
             for aporte in aportes:
                 aporte_date = aporte.get('date')
-                if isinstance(aporte_date, (datetime, pd.Timestamp, datetime.date)):
+                
+                if isinstance(aporte_date, (datetime, pd.Timestamp, date)):
                     date_str = aporte_date.strftime("%d/%m/%Y")
                 else:
                     try:
@@ -255,5 +262,6 @@ def generate_pdf(data):
     except Exception as e:
         st.error(f"Ocorreu um erro inesperado ao gerar o PDF. Detalhes do erro: {e}")
         return b""
+
 
 
