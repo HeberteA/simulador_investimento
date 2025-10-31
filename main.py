@@ -43,6 +43,9 @@ def render_new_simulation_page():
 
     if st.session_state.show_results_page:
         st.title("Resultados da Simulação")
+        if 'save_error' in st.session_state and st.session_state.save_error:
+            st.error(st.session_state.save_error)
+            del st.session_state.save_error
         
         if st.button("Voltar para os Parâmetros"):
             go_to_inputs()
@@ -265,15 +268,18 @@ def render_new_simulation_page():
                 st.rerun()
     
 def save_simulation_callback():
+    if 'save_error' in st.session_state:
+        del st.session_state.save_error
+
     if not worksheets or not worksheets.get("simulations") or not worksheets.get("aportes"):
-        st.error("Conexão com as planilhas não disponível.")
+        st.session_state.save_error = "Conexão com as planilhas não disponível."
         return
 
     with st.spinner("Salvando simulação..."):
         results = st.session_state.simulation_results
         
         if not results or 'total_contribution' not in results:
-            st.error("Erro: Resultados da simulação não encontrados. Tente calcular novamente antes de salvar.")
+            st.session_state.save_error = "Erro: Resultados da simulação não encontrados. Tente calcular novamente antes de salvar."
             return
 
         sim_id = f"sim_{int(datetime.now().timestamp())}"
@@ -303,8 +309,8 @@ def save_simulation_callback():
                 pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
             ]
             worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
-        except Exception as e:
-            st.error(f"Erro ao salvar dados principais: {e}")
+        except BaseException as e: 
+            st.session_state.save_error = f"Erro ao salvar dados principais: {e}"
             return
 
         aportes_data = []
@@ -324,8 +330,8 @@ def save_simulation_callback():
         try:
             if aportes_data:
                 worksheets["aportes"].append_rows(aportes_data, value_input_option='USER_ENTERED')
-        except Exception as e:
-            st.error(f"Erro ao salvar aportes: {e}")
+        except BaseException as e:
+            st.session_state.save_error = f"Erro ao salvar aportes: {e}"
             return
 
         st.cache_data.clear()
