@@ -141,6 +141,7 @@ def calculate_financials(params):
                 total_montante += contribution_value
 
     juros_investidor = max(0, total_montante - total_contribution)
+    results['juros_investidor'] = juros_investidor
 
     results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
@@ -149,6 +150,7 @@ def calculate_financials(params):
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     
     cost_obra_fisica = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
+    results['cost_obra_fisica'] = cost_obra_fisica
     results['total_construction_cost'] = cost_obra_fisica + juros_investidor
 
     operational_result = results['vgv'] - results['total_construction_cost']
