@@ -109,7 +109,7 @@ def render_new_simulation_page():
         else:
             st.warning("O valor do aporte deve ser maior que zero.")
             
-    def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
+def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
     """Converte uma data para string de forma segura, retornando "" se for nula ou inválida."""
     if pd.isna(date_val):
         return "" 
@@ -117,10 +117,6 @@ def render_new_simulation_page():
         return pd.to_datetime(date_val).strftime(fmt)
     except (ValueError, TypeError):
         return ""  
-
-
-
-
 
 st.set_page_config(
     page_title="Simulador Financeiro",
