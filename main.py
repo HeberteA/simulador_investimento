@@ -141,7 +141,7 @@ def render_new_simulation_page():
             st.subheader("Adicionar Aporte Único")
             c1, c2, c3 = st.columns([2, 2, 1])
             c1.date_input("Data de Vencimento", key="new_aporte_date")
-            c2.number_input("Valor do Aporte", min_value=0.0, step=500.0, format="%.2f", key="new_aporte_value")
+            c2.number_input("Valor do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
             with c3:
                 st.write("‎") 
                 st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
@@ -149,7 +149,7 @@ def render_new_simulation_page():
         with tab_parcelado:
             st.subheader("Adicionar Aportes Parcelados")
             p1, p2, p3 = st.columns(3)
-            p1.number_input("Valor Total do Aporte", min_value=0.0, step=1000.0, format="%.2f", key="parcelado_total_valor")
+            p1.number_input("Valor Total do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="parcelado_total_valor")
             p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
             p3.date_input("Data do Primeiro Vencimento", key="parcelado_data_inicio")
             
@@ -652,7 +652,7 @@ def render_dashboard_page():
 
 
 with st.sidebar:
-    st.image("Lavie.png")
+    st.image("Lavie1.png")
     st.markdown("<br>", unsafe_allow_html=True)
     
     page_options = ["Nova Simulação", "Histórico", "Dashboard"]
