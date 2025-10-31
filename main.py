@@ -222,8 +222,15 @@ def render_new_simulation_page():
                 st.date_input("Data de Início (Primeiro Vencimento)", 
                               value=current_start_date, 
                               disabled=True)
-                st.date_input("Data Final do Projeto", key="project_end_date")
-                st.date_input("Data Final do Projeto", key="project_end_date")
+                def update_project_end_date():
+                    st.session_state.project_end_date = st.session_state.project_end_date_widget
+
+                st.date_input("Data Final do Projeto", 
+                              value=st.session_state.project_end_date,
+                              key="project_end_date_widget", 
+                              on_change=update_project_end_date 
+                              )
+
 
 
         st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
