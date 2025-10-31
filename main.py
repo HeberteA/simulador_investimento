@@ -205,7 +205,7 @@ def render_new_simulation_page():
             
         with col2:
                 st.date_input("Data de Início (Primeiro Vencimento)", 
-                              key="start_date", 
+                              value=current_start_date,
                               disabled=True)
                 st.date_input("Data Final do Projeto", key="project_end_date")
 
