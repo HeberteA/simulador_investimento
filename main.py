@@ -232,7 +232,7 @@ def render_new_simulation_page():
                               )
 
 
-    with tab_projeto:
+    with tab_proj:
         c1, c2 = st.columns(2)
         with c1:
             st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
