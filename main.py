@@ -338,7 +338,16 @@ def save_simulation_callback():
         
         try:
             if aportes_data:
-                worksheets["aportes"].append_rows(aportes_data, value_input_option='USER_ENTERED')
+                ws_aportes = worksheets["aportes"]
+                all_values = ws_aportes.get_all_values()
+                if not all_values:
+                    ws_aportes.append_row(
+                        ['simulation_id', 'data_aporte', 'valor_aporte'], 
+                        value_input_option='USER_ENTERED'
+                    )
+                
+                ws_aportes.append_rows(aportes_data, value_input_option='USER_ENTERED')
+                
         except BaseException as e:
             st.session_state.save_error = f"Erro ao salvar aportes: {e}"
             return
