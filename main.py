@@ -204,8 +204,11 @@ def render_new_simulation_page():
             st.text_input("Código do Cliente", key="client_code")
             
         with col2:
-            st.date_input("Data de Início (Primeiro Vencimento)", value=st.session_state.aportes[0]['data'] if st.session_state.aportes else datetime.today().date(), key="start_date", disabled=True)
-            st.date_input("Data Final do Projeto", key="project_end_date")
+                st.date_input("Data de Início (Primeiro Vencimento)", 
+                              key="start_date", 
+                              disabled=True)
+                st.date_input("Data Final do Projeto", key="project_end_date")
+
 
         st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
 
