@@ -44,7 +44,7 @@ def render_new_simulation_page():
     if st.session_state.show_results_page:
         st.title("Resultados da Simulação")
         
-        if st.button("⬅️ Voltar para os Parâmetros"):
+        if st.button("Voltar para os Parâmetros"):
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
@@ -155,7 +155,7 @@ def render_new_simulation_page():
         if st.session_state.aportes:
             st.divider()
 
-            st.subheader("Cronograma de Vencimentos (Editável)")
+            st.subheader("Cronograma de Vencimentos")
             
             try:
                 aportes_df = pd.DataFrame(st.session_state.aportes)
@@ -192,7 +192,7 @@ def render_new_simulation_page():
                 st.session_state.aportes = []
                 st.rerun()
 
-    st.subheader("Parâmetros Gerais da Simulação")
+    st.subheader("Parâmetros Gerais")
     tab_investidor, tab_projeto = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
     
     with tab_investidor:
@@ -212,7 +212,7 @@ def render_new_simulation_page():
     with tab_projeto:
         c1, c2 = st.columns(2)
         with c1:
-            st.number_input("Tamanho do Terreno (m²)", min_value=0, step=100, key="land_size")
+            st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
             st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", help="Custo total de construção dividido pela área do terreno.")
             st.number_input(
                 "Taxa de Juros Anual (%)", 
