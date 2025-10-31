@@ -271,37 +271,42 @@ def save_simulation_callback():
 
     with st.spinner("Salvando simulação..."):
         results = st.session_state.simulation_results
+        
         if not results or 'total_contribution' not in results:
             st.error("Erro: Resultados da simulação não encontrados. Tente calcular novamente antes de salvar.")
             return
 
         sim_id = f"sim_{int(datetime.now().timestamp())}"
         
-        main_data = [
-            sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            results.get('client_name', ''),
-            results.get('client_code', ''),
-            results.get('total_contribution', 0), 
-            results.get('num_months', 0),
-            results.get('annual_interest_rate', 0),
-            results.get('spe_percentage', 0),
-            results.get('land_size', 0),
-            results.get('construction_cost_m2', 0),
-            results.get('value_m2', 0),
-            results.get('area_exchange_percentage', 0),
-            results.get('vgv', 0), 
-            results.get('total_construction_cost', 0),
-            results.get('final_operational_result', 0), 
-            results.get('valor_participacao', 0),
-            results.get('resultado_final_investidor', 0),
-            results.get('roi', 0), 
-            results.get('roi_anualizado', 0),
-            results.get('valor_corrigido', 0),
-            pd.to_datetime(results.get('start_date')).strftime('%Y-%m-%d'), 
-            pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
-        ]
-        worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
-        
+        try:
+            main_data = [
+                sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                str(results.get('client_name', '')),
+                str(results.get('client_code', '')),
+                float(results.get('total_contribution', 0)), 
+                int(results.get('num_months', 0)),
+                float(results.get('annual_interest_rate', 0)),
+                float(results.get('spe_percentage', 0)),
+                int(results.get('land_size', 0)),
+                float(results.get('construction_cost_m2', 0)),
+                float(results.get('value_m2', 0)),
+                float(results.get('area_exchange_percentage', 0)),
+                float(results.get('vgv', 0)), 
+                float(results.get('total_construction_cost', 0)),
+                float(results.get('final_operational_result', 0)), 
+                float(results.get('valor_participacao', 0)),
+                float(results.get('resultado_final_investidor', 0)),
+                float(results.get('roi', 0)), 
+                float(results.get('roi_anualizado', 0)),
+                float(results.get('valor_corrigido', 0)),
+                pd.to_datetime(results.get('start_date')).strftime('%Y-%m-%d'), 
+                pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
+            ]
+            worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
+        except Exception as e:
+            st.error(f"Erro ao salvar dados principais: {e}")
+            return
+
         aportes_data = []
         aportes_list = results.get('aportes', []) 
         
@@ -311,13 +316,17 @@ def save_simulation_callback():
                     aportes_data.append([
                         sim_id,
                         pd.to_datetime(aporte['date']).strftime('%Y-%m-%d'),
-                        aporte.get('value', 0)
+                        float(aporte.get('value', 0))
                     ])
                 except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
                     pass 
         
-        if aportes_data:
-            worksheets["aportes"].append_rows(aportes_data, value_input_option='USER_ENTERED')
+        try:
+            if aportes_data:
+                worksheets["aportes"].append_rows(aportes_data, value_input_option='USER_ENTERED')
+        except Exception as e:
+            st.error(f"Erro ao salvar aportes: {e}")
+            return
 
         st.cache_data.clear()
         st.toast("✅ Simulação salva com sucesso!", icon="🎉")
