@@ -616,7 +616,16 @@ with st.sidebar:
 
     selected_page_key = option_menu(
         menu_title="Menu Principal", options=page_options, icons=page_icons,
-        menu_icon="cast", default_index=default_index, orientation="vertical"
+        menu_icon="cast", 
+        default_index=default_index, 
+        orientation="vertical",
+        styles={ 
+                "container": {"padding": "5px !important", "background-color": "transparent"},
+                "icon": {"font-size": "18px"}, 
+                "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
+                "nav-link-selected": {"background-color": "#E37026"}, 
+            }
+        
     )
     
     page_map_to_state = {
