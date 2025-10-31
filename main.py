@@ -305,8 +305,8 @@ def save_simulation_callback():
                 float(results.get('roi', 0)), 
                 float(results.get('roi_anualizado', 0)),
                 float(results.get('valor_corrigido', 0)),
-                pd.to_datetime(results.get('start_date')).strftime('%Y-%m-%d'), 
-                pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
+                safe_date_to_string(results.get('start_date')), 
+                safe_date_to_string(results.get('project_end_date')) 
             ]
             worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
         except BaseException as e: 
