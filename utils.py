@@ -80,6 +80,14 @@ def load_data_from_sheet(_worksheet):
         
     return df
 
+def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
+    if pd.isna(date_val):
+        return ""  
+    try:
+        return pd.to_datetime(date_val).strftime(fmt)
+    except (ValueError, TypeError):
+        return "" 
+
 def calculate_financials(params):
     results = {}
     results.update(params)
