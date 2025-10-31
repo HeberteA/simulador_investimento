@@ -232,9 +232,6 @@ def render_new_simulation_page():
                               )
 
 
-
-        st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
-
     with tab_projeto:
         c1, c2 = st.columns(2)
         with c1:
