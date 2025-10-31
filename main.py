@@ -293,60 +293,80 @@ def save_simulation_callback():
 
         sim_id = f"sim_{int(datetime.now().timestamp())}"
         
-        try:
-            main_data = [
-                sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                str(results.get('client_name', '')),
-                str(results.get('client_code', '')),
-                float(results.get('total_contribution', 0)), 
-                int(results.get('num_months', 0)),
-                float(results.get('annual_interest_rate', 0)),
-                float(results.get('spe_percentage', 0)),
-                int(results.get('land_size', 0)),
-                float(results.get('construction_cost_m2', 0)),
-                float(results.get('value_m2', 0)),
-                float(results.get('area_exchange_percentage', 0)),
-                float(results.get('vgv', 0)), 
-                float(results.get('total_construction_cost', 0)),
-                float(results.get('final_operational_result', 0)), 
-                float(results.get('valor_participacao', 0)),
-                float(results.get('resultado_final_investidor', 0)),
-                float(results.get('roi', 0)), 
-                float(results.get('roi_anualizado', 0)),
-                float(results.get('valor_corrigido', 0)),
-                safe_date_to_string(results.get('start_date')), 
-                safe_date_to_string(results.get('project_end_date')) 
-            ]
-            worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
-        except BaseException as e: 
-            st.session_state.save_error = f"Erro ao salvar dados principais: {e}"
-            return
+        main_data_headers = [
+            'simulation_id', 'created_at', 'client_name', 'client_code', 
+            'total_contribution', 'num_months', 'annual_interest_rate', 'spe_percentage', 
+            'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage', 
+            'vgv', 'total_construction_cost', 'final_operational_result', 
+            'valor_participacao', 'resultado_final_investidor', 'roi', 'roi_anualizado', 
+            'valor_corrigido', 'start_date', 'project_end_date'
+        ]
+        
+        def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
+            if pd.isna(date_val): return ""
+            try: return pd.to_datetime(date_val).strftime(fmt)
+            except (ValueError, TypeError): return ""
 
-        aportes_data = []
+        main_data_values = [
+            sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            str(results.get('client_name', '')),
+            str(results.get('client_code', '')),
+            float(results.get('total_contribution', 0)), 
+            int(results.get('num_months', 0)),
+            float(results.get('annual_interest_rate', 0)),
+            float(results.get('spe_percentage', 0)),
+            int(results.get('land_size', 0)),
+            float(results.get('construction_cost_m2', 0)),
+            float(results.get('value_m2', 0)),
+            float(results.get('area_exchange_percentage', 0)),
+            float(results.get('vgv', 0)), 
+            float(results.get('total_construction_cost', 0)),
+            float(results.get('final_operational_result', 0)), 
+            float(results.get('valor_participacao', 0)),
+            float(results.get('resultado_final_investidor', 0)),
+            float(results.get('roi', 0)), 
+            float(results.get('roi_anualizado', 0)),
+            float(results.get('valor_corrigido', 0)),
+            safe_date_to_string(results.get('start_date')), 
+            safe_date_to_string(results.get('project_end_date'))
+        ]
+        
+        aportes_data_headers = ['simulation_id', 'data_aporte', 'valor_aporte']
+        aportes_data_rows = []
         aportes_list = results.get('aportes', []) 
         
         for aporte in aportes_list:
             if isinstance(aporte, dict) and aporte.get('date') is not None and aporte.get('value', 0) > 0:
                 try:
-                    aportes_data.append([
+                    aportes_data_rows.append([
                         sim_id,
-                        pd.to_datetime(aporte['date']).strftime('%Y-%m-%d'),
+                        safe_date_to_string(aporte.get('date')),
                         float(aporte.get('value', 0))
                     ])
                 except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
                     pass 
         
+        
         try:
-            if aportes_data:
+            ws_sims = worksheets["simulations"]
+            sim_values = ws_sims.get_all_values()
+            if not sim_values:
+                ws_sims.append_row(main_data_headers, value_input_option='USER_ENTERED')
+            
+            ws_sims.append_row(main_data_values, value_input_option='USER_ENTERED')
+            
+        except BaseException as e: 
+            st.session_state.save_error = f"Erro ao salvar dados principais: {e}"
+            return
+
+        try:
+            if aportes_data_rows:
                 ws_aportes = worksheets["aportes"]
-                all_values = ws_aportes.get_all_values()
-                if not all_values:
-                    ws_aportes.append_row(
-                        ['simulation_id', 'data_aporte', 'valor_aporte'], 
-                        value_input_option='USER_ENTERED'
-                    )
+                aporte_values = ws_aportes.get_all_values()
+                if not aporte_values:
+                    ws_aportes.append_row(aportes_data_headers, value_input_option='USER_ENTERED')
                 
-                ws_aportes.append_rows(aportes_data, value_input_option='USER_ENTERED')
+                ws_aportes.append_rows(aportes_data_rows, value_input_option='USER_ENTERED')
                 
         except BaseException as e:
             st.session_state.save_error = f"Erro ao salvar aportes: {e}"
