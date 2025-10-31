@@ -469,7 +469,7 @@ def render_edit_page():
             st.rerun()
 
 def render_dashboard_page():
-    st.title("📊 Dashboard de Análise de Portfólio")
+    st.title("Dashboard")
     if worksheets and worksheets.get("simulations"):
         df_sim = utils.load_data_from_sheet(worksheets["simulations"])
     else:
