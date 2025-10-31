@@ -9,7 +9,7 @@ import plotly.express as px
 import numpy as np
 
 st.set_page_config(
-    page_title="Simulador Financeiro Avançado",
+    page_title="Simulador Financeiro",
     page_icon="Lavie1.png",
     layout="wide"
 )
@@ -17,10 +17,10 @@ st.set_page_config(
 defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
-    'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 50.0,
+    'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
-    'land_size': 1000, 'construction_cost_m2': 2500.0, 'value_m2': 6000.0, 'area_exchange_percentage': 10.0,
+    'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
     'aportes': [], 'confirming_delete': None
 }
 
