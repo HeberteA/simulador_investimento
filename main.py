@@ -192,21 +192,37 @@ def render_new_simulation_page():
                 st.session_state.aportes = []
                 st.rerun()
 
-    st.subheader("Parâmetros Gerais")
-    tab_investidor, tab_projeto = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
-    
-    with tab_investidor:
-        col1, col2 = st.columns(2)
-        total_aportes = sum(a['valor'] for a in st.session_state.aportes)
+    with st.expander("Parâmetros Gerais", expanded=True):
+        
+        tab_invest, tab_proj = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
+        
+        with tab_invest:
+            st.subheader("Dados do Investidor e Prazos")
 
-        with col1:
-            st.text_input("Nome do Cliente", key="client_name")
-            st.text_input("Código do Cliente", key="client_code")
-            
-        with col2:
+            current_start_date = datetime.today().date()
+            if st.session_state.aportes:
+                try:
+                    valid_dates = [pd.to_datetime(a['data']).date() for a in st.session_state.aportes if a.get('data')]
+                    if valid_dates:
+                        current_start_date = min(valid_dates)
+                except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
+                    if 'start_date' in st.session_state:
+                        current_start_date = st.session_state.start_date
+                    else:
+                        pass 
+
+            col1, col2 = st.columns(2)
+            total_aportes = sum(a['valor'] for a in st.session_state.aportes if isinstance(a, dict) and a.get('valor'))
+
+            with col1:
+                st.text_input("Nome do Cliente", key="client_name")
+                st.text_input("Código do Cliente", key="client_code")
+                st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
+            with col2:
                 st.date_input("Data de Início (Primeiro Vencimento)", 
-                              value=current_start_date,
+                              value=current_start_date, 
                               disabled=True)
+                st.date_input("Data Final do Projeto", key="project_end_date")
                 st.date_input("Data Final do Projeto", key="project_end_date")
 
 
