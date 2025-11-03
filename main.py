@@ -439,22 +439,23 @@ def render_history_page():
             with st.expander("Ver resultado completo"):
                 with st.spinner("Carregando detalhes..."):
                     sim_data = row.to_dict()
-
+                    
                     # --- INÍCIO DO CÓDIGO DE DEBUG (HISTÓRICO) ---
-            try:
-                if worksheets.get("aportes"):
-                    headers = worksheets["aportes"].row_values(1)
-                    st.warning(f"DEBUG (Histórico) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
-                else:
-                    st.error("DEBUG (Histórico) - Aba 'aportes' NÃO encontrada no dicionário 'worksheets'.")
-            except Exception as e:
-                st.error(f"DEBUG (Histórico) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
-            # --- FIM DO CÓDIGO DE DEBUG ---
-                
+                    try:
+                        if worksheets.get("aportes"):
+                            headers = worksheets["aportes"].row_values(1)
+                            st.warning(f"DEBUG (Histórico) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
+                        else:
+                            st.error("DEBUG (Histórico) - Aba 'aportes' NÃO encontrada no dicionário 'worksheets'.")
+                    except Exception as e:
+                        st.error(f"DEBUG (Histórico) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
+                    # --- FIM DO CÓDIGO DE DEBUG ---
+                    
                     df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
+                    # Lógica de fallback para nomes de coluna
                     date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
                     value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
 
@@ -486,7 +487,6 @@ def render_edit_page():
             st.session_state.page = "Histórico de Simulações"
             st.rerun()
         return
-        
 
     sim = st.session_state.simulation_to_edit
     st.subheader(f"Editando Simulação de: **{sim.get('client_name', 'N/A')}**")
@@ -519,13 +519,17 @@ def render_edit_page():
             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
             
             aportes_list = []
-            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
-            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
-
-            if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
-                st.error("Não foi possível encontrar colunas de data/valor reconhecidas na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
-                return
-                
+            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+            
+            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                for _, r in aportes_do_cliente.iterrows():
+                    aportes_list.append({
+                        'date': pd.to_datetime(r[date_col]).date(), 
+                        'value': float(r[value_col])
+                    })
+            else:
+                st.error("Erro ao ler aportes salvos. Colunas 'data' ou 'valor' não encontradas.")
             params = sim.copy()
             params.update({
                 'client_name': st.session_state.edit_client_name,
@@ -664,26 +668,29 @@ def render_dashboard_page():
         st.plotly_chart(fig_line_time, use_container_width=True)
 
     if worksheets.get("aportes"):
-
+        
         # --- INÍCIO DO CÓDIGO DE DEBUG (DASHBOARD) ---
-                try:
-                    headers = worksheets["aportes"].row_values(1)
-                    st.info(f"DEBUG (Dashboard) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
-                except Exception as e:
-                    st.error(f"DEBUG (Dashboard) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
-                # --- FIM DO CÓDIGO DE DEBUG ---
-                
-                df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
+        try:
+            if worksheets.get("aportes"):
+                headers = worksheets["aportes"].row_values(1)
+                st.info(f"DEBUG (Dashboard) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
+            else:
+                st.error("DEBUG (Dashboard) - Aba 'aportes' NÃO encontrada.")
+        except Exception as e:
+            st.error(f"DEBUG (Dashboard) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
+        # --- FIM DO CÓDIGO DE DEBUG ---
+        
         df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
         if not df_aportes.empty:
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
 
-            date_col = 'data_aporte'
-            value_col = 'valor_aporte'
+            # Lógica de fallback para nomes de coluna
+            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
 
             if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
-                st.error("Não foi possível encontrar as colunas 'data_aporte' ou 'valor_aporte' na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
+                st.error("Não foi possível encontrar colunas de data/valor reconhecidas na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
                 return
 
             df_aportes[date_col] = pd.to_datetime(df_aportes[date_col])
@@ -760,7 +767,3 @@ elif st.session_state.page == "Editar Simulação":
     render_edit_page()
 elif st.session_state.page == "Dashboard":
     render_dashboard_page()
-
-
-
-
