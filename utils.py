@@ -45,6 +45,10 @@ def load_data_from_sheet(_worksheet):
         return pd.DataFrame()
 
     header = all_values[0]
+    if _worksheet.title == "aportes":
+        st.warning(f"DEBUG (Aba 'aportes') - Cabeçalhos encontrados na Linha 1: {header}")
+    # --- FIM DO CÓDIGO DE DEBUG ---
+        
     data = all_values[1:]
     
     df = pd.DataFrame(data, columns=header)
