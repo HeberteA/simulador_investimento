@@ -743,12 +743,7 @@ with st.sidebar:
         st.session_state.simulation_to_edit = None
         st.rerun()
 
-    st.divider()
     
-    if st.button("Limpar Cache e Recarregar", use_container_width=True):
-        st.cache_data.clear()
-        st.cache_resource.clear()
-        st.rerun()
 
 if st.session_state.page == "Nova Simulação":
     render_new_simulation_page()
