@@ -439,6 +439,18 @@ def render_history_page():
             with st.expander("Ver resultado completo"):
                 with st.spinner("Carregando detalhes..."):
                     sim_data = row.to_dict()
+
+                    # --- INÍCIO DO CÓDIGO DE DEBUG (HISTÓRICO) ---
+            try:
+                if worksheets.get("aportes"):
+                    headers = worksheets["aportes"].row_values(1)
+                    st.warning(f"DEBUG (Histórico) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
+                else:
+                    st.error("DEBUG (Histórico) - Aba 'aportes' NÃO encontrada no dicionário 'worksheets'.")
+            except Exception as e:
+                st.error(f"DEBUG (Histórico) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
+            # --- FIM DO CÓDIGO DE DEBUG ---
+                
                     df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
@@ -474,6 +486,7 @@ def render_edit_page():
             st.session_state.page = "Histórico de Simulações"
             st.rerun()
         return
+        
 
     sim = st.session_state.simulation_to_edit
     st.subheader(f"Editando Simulação de: **{sim.get('client_name', 'N/A')}**")
@@ -651,6 +664,16 @@ def render_dashboard_page():
         st.plotly_chart(fig_line_time, use_container_width=True)
 
     if worksheets.get("aportes"):
+
+        # --- INÍCIO DO CÓDIGO DE DEBUG (DASHBOARD) ---
+                try:
+                    headers = worksheets["aportes"].row_values(1)
+                    st.info(f"DEBUG (Dashboard) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
+                except Exception as e:
+                    st.error(f"DEBUG (Dashboard) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
+                # --- FIM DO CÓDIGO DE DEBUG ---
+                
+                df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
         df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
         if not df_aportes.empty:
             st.divider()
