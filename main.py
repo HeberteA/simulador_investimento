@@ -102,16 +102,20 @@ def render_new_simulation_page():
                             
                             st.session_state.aportes = []
                             
-                            try:
+                            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+                            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+                            
+                            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
                                 for _, row in aportes_do_cliente.iterrows():
-                                    st.session_state.aportes.append({
-                                        "data": pd.to_datetime(row['data_aporte']).date(),
-                                        "valor": float(row['valor_aporte'])
-                                    })
-                            except KeyError:
-                                st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame.")
-                            except Exception as e:
-                                st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha. Erro: {e}")
+                                    try:
+                                        st.session_state.aportes.append({
+                                            "data": pd.to_datetime(row[date_col]).date(),
+                                            "valor": float(row[value_col])
+                                        })
+                                    except Exception:
+                                        st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
+                            else:
+                                st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
 
                             
                             st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
@@ -255,19 +259,18 @@ def render_new_simulation_page():
         c1, c2 = st.columns(2)
         with c1:
             st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
-            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", help="Custo total de construção dividido pela área do terreno.")
+            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
             st.number_input(
                 "Taxa de Juros Anual (%)", 
                 min_value=0.0, 
                 step=0.1, 
                 format="%.2f", 
-                key="annual_interest_rate",
-                help="Taxa de juros nominal anual. O cálculo de juros compostos será feito com base na taxa diária equivalente."
+                key="annual_interest_rate"
             )
         with c2:
-            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2", help="Valor de Venda Geral (VGV) dividido pela área do terreno.")
-            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", help="Percentual do resultado do projeto destinado ao investidor.")
-            st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%", help="Percentual do VGV que será pago em permuta (ex: troca pelo terreno).")
+            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
+            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
+            st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
 
     st.divider()
     if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
@@ -378,7 +381,7 @@ def save_simulation_callback():
             st.session_state.save_error = f"Erro ao salvar aportes: {e}"
             return
 
-        st.cache_data.clear() # Limpa o cache após salvar com sucesso
+        st.cache_data.clear()
         st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
 def render_history_page():
@@ -450,16 +453,20 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
-                    try:
+                    date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
+                    value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
+
+                    if date_col not in aportes_sim.columns or value_col not in aportes_sim.columns:
+                        st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
+                    else:
                         for _, aporte_row in aportes_sim.iterrows():
-                             aportes_list.append({
-                                 'date': pd.to_datetime(aporte_row['data_aporte']).date(),
-                                 'value': float(aporte_row['valor_aporte'])
-                             })
-                    except KeyError:
-                         st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame.")
-                    except Exception as e:
-                         st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha. Erro: {e}")
+                            try:
+                                 aportes_list.append({
+                                     'date': pd.to_datetime(aporte_row[date_col]).date(),
+                                     'value': float(aporte_row[value_col])
+                                 })
+                            except Exception:
+                                 st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
                     
                     sim_data['aportes'] = aportes_list
                     
@@ -509,15 +516,17 @@ def render_edit_page():
             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
             
             aportes_list = []
-            try:
+            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+            
+            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
                 for _, r in aportes_do_cliente.iterrows():
                     aportes_list.append({
-                        'date': pd.to_datetime(r['data_aporte']).date(), 
-                        'value': float(r['valor_aporte'])
+                        'date': pd.to_datetime(r[date_col]).date(), 
+                        'value': float(r[value_col])
                     })
-            except KeyError:
-                st.error("Erro de 'KeyError' ao ler aportes salvos. Colunas 'data_aporte' ou 'valor_aporte' não encontradas.")
-            
+            else:
+                st.error("Erro ao ler aportes salvos. Colunas 'data' ou 'valor' não encontradas.")
             params = sim.copy()
             params.update({
                 'client_name': st.session_state.edit_client_name,
@@ -550,7 +559,7 @@ def render_edit_page():
             row_to_edit = st.session_state.editing_row
             worksheets["simulations"].update(f'A{row_to_edit}:V{row_to_edit}', [main_data_updated])
 
-            st.cache_data.clear() # Limpa o cache após salvar com sucesso
+            st.cache_data.clear()
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
             st.session_state.page = "Histórico de Simulações"
@@ -661,11 +670,11 @@ def render_dashboard_page():
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
 
-            date_col = 'data_aporte'
-            value_col = 'valor_aporte'
+            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
 
             if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
-                st.error("Erro de 'KeyError' no Dashboard. As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas. Verifique a Linha 1 da GSheet 'aportes'.")
+                st.error("Não foi possível encontrar colunas de data/valor reconhecidas na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
                 return
 
             df_aportes[date_col] = pd.to_datetime(df_aportes[date_col])
@@ -732,6 +741,13 @@ with st.sidebar:
     if selected_page_key != "Editar Simulação" and st.session_state.get('editing_row') is not None:
         st.session_state.editing_row = None
         st.session_state.simulation_to_edit = None
+        st.rerun()
+
+    st.divider()
+    
+    if st.button("Limpar Cache e Recarregar", use_container_width=True):
+        st.cache_data.clear()
+        st.cache_resource.clear()
         st.rerun()
 
 if st.session_state.page == "Nova Simulação":
