@@ -35,28 +35,51 @@ def init_gsheet_connection():
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
         
-@st.cache_data(ttl=60)
+# @st.cache_data(ttl=60) # <-- CACHE DESATIVADO TEMPORARIAMENTE PARA DEBUG
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
         return pd.DataFrame()
     
+    # --- INÍCIO DO DEBUG PESADO ---
+    is_aportes = _worksheet.title == "aportes"
+    if is_aportes:
+        st.error("--- DEBUG 'utils.py' (ETAPA 1) --- \nCache está DESATIVADO. Lendo dados 'ao vivo' da planilha.")
+    # --- FIM DO DEBUG ---
+
     all_values = _worksheet.get_all_values()
     if not all_values or len(all_values) < 1:
+        if is_aportes:
+            st.error("--- DEBUG 'utils.py' (FALHA) --- \n`get_all_values()` retornou vazio. A planilha está vazia?")
         return pd.DataFrame()
 
     header = all_values[0]
-    if _worksheet.title == "aportes":
-        st.warning(f"DEBUG (Aba 'aportes') - Cabeçalhos encontrados na Linha 1: {header}")
-    # --- FIM DO CÓDIGO DE DEBUG ---
-        
     data = all_values[1:]
     
+    if is_aportes:
+        st.warning(f"--- DEBUG 'utils.py' (ETAPA 2) --- \nCabeçalho LIDO da Linha 1: {header}")
+
     df = pd.DataFrame(data, columns=header)
+    
+    if is_aportes:
+        st.warning(f"--- DEBUG 'utils.py' (ETAPA 3) --- \nColunas APÓS `pd.DataFrame`: {list(df.columns)}")
+
     df = df.loc[:, df.columns.notna()]
     df = df.loc[:, [col for col in df.columns if col != '']]
+    
+    if is_aportes:
+        st.warning(f"--- DEBUG 'utils.py' (ETAPA 4) --- \nColunas APÓS `remover vazias/nulas`: {list(df.columns)}")
+
     df.columns = df.columns.str.strip()
+    
+    if is_aportes:
+        st.warning(f"--- DEBUG 'utils.py' (ETAPA 5) --- \nColunas APÓS `.str.strip()`: {list(df.columns)}")
+
     df.columns = df.columns.str.lower()
     
+    if is_aportes:
+        st.success(f"--- DEBUG 'utils.py' (ETAPA 6) --- \nColunas FINAIS (APÓS `.str.lower()`): {list(df.columns)}")
+    # --- FIM DO DEBUG PESADO ---
+
     if 'row_index' not in df.columns:
         df['row_index'] = range(2, len(df) + 2)
     
@@ -287,6 +310,3 @@ def generate_pdf(data):
     except Exception as e:
         st.error(f"Ocorreu um erro inesperado ao gerar o PDF. Detalhes do erro: {e}")
         return b""
-
-
-
