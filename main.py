@@ -443,14 +443,17 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
-                    if 'data_aporte' not in aportes_sim.columns or 'valor_aporte' not in aportes_sim.columns:
-                        st.error(f"A planilha 'aportes' não tem as colunas 'data_aporte' ou 'valor_aporte' (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
+                    date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
+                    value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
+
+                    if date_col not in aportes_sim.columns or value_col not in aportes_sim.columns:
+                        st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
                     else:
                         for _, aporte_row in aportes_sim.iterrows():
                             try:
                                  aportes_list.append({
-                                     'date': pd.to_datetime(aporte_row['data_aporte']).date(),
-                                     'value': float(aporte_row['valor_aporte'])
+                                     'date': pd.to_datetime(aporte_row[date_col]).date(),
+                                     'value': float(aporte_row[value_col])
                                  })
                             except Exception:
                                  st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
@@ -503,17 +506,13 @@ def render_edit_page():
             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
             
             aportes_list = []
-            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
-            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
-            
-            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
-                for _, r in aportes_do_cliente.iterrows():
-                    aportes_list.append({
-                        'date': pd.to_datetime(r[date_col]).date(), 
-                        'value': float(r[value_col])
-                    })
-            else:
-                st.error("Erro ao ler aportes salvos. Colunas 'data' ou 'valor' não encontradas.")
+            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
+            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
+
+            if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
+                st.error("Não foi possível encontrar colunas de data/valor reconhecidas na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
+                return
+                
             params = sim.copy()
             params.update({
                 'client_name': st.session_state.edit_client_name,
