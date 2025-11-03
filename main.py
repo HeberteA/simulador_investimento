@@ -450,6 +450,13 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
+
+                    # --- INÍCIO DEBUG 'main.py' ---
+                    st.error(f"--- DEBUG 'main.py' (Histórico) --- \nColunas encontradas em 'aportes_sim': {list(aportes_sim.columns)}")
+                    st.error(f"--- DEBUG 'main.py' (Histórico) --- \n'data_aporte' está nas colunas? {'data_aporte' in aportes_sim.columns}")
+                    st.error(f"--- DEBUG 'main.py' (Histórico) --- \n'valor_aporte' está nas colunas? {'valor_aporte' in aportes_sim.columns}")
+                    # --- FIM DEBUG 'main.py' ---
+
                     # Lógica de fallback para nomes de coluna
                     date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
                     value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
