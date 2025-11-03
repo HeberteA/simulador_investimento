@@ -138,30 +138,66 @@ def display_full_results(results, show_save_button=False, show_download_button=F
     with tab_sensibilidade:
         st.subheader("🔬 Matriz de Cenários")
         st.markdown("Análise do impacto no **ROI Anualizado do Investidor** com base nas principais variáveis do projeto.")
+        scenarios = {}
+        base_params = results.copy()
+        
+        try:
+            scenarios['Realista'] = calculate_financials(base_params)
+            
+            pessimistic_params = base_params.copy()
+            pessimistic_params['value_m2'] *= 0.85
+            pessimistic_params['construction_cost_m2'] *= 1.15
+            scenarios['Pessimista'] = calculate_financials(pessimistic_params)
+            
+            optimistic_params = base_params.copy()
+            optimistic_params['value_m2'] *= 1.15
+            optimistic_params['construction_cost_m2'] *= 0.85
+            scenarios['Otimista'] = calculate_financials(optimistic_params)
+
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                with st.container(border=True):
+                    st.markdown("<h5 style='text-align: center; color: #D32F2F;'>🔴 Pessimista</h5>", unsafe_allow_html=True)
+                    st.metric("ROI Anualizado", f"{scenarios['Pessimista']['roi_anualizado']:.2f}%")
+                    st.metric("Lucro do Investidor", format_currency(scenarios['Pessimista']['resultado_final_investidor']))
+                    st.caption(f"Venda m²: {format_currency(pessimistic_params['value_m2'])} | Custo m²: {format_currency(pessimistic_params['construction_cost_m2'])}")
+            with c2:
+                with st.container(border=True):
+                    st.markdown("<h5 style='text-align: center; color: #1976D2;'>🔵 Realista (Base)</h5>", unsafe_allow_html=True)
+                    st.metric("ROI Anualizado", f"{scenarios['Realista']['roi_anualizado']:.2f}%")
+                    st.metric("Lucro do Investidor", format_currency(scenarios['Realista']['resultado_final_investidor']))
+                    st.caption(f"Venda m²: {format_currency(base_params['value_m2'])} | Custo m²: {format_currency(base_params['construction_cost_m2'])}")
+            with c3:
+                with st.container(border=True):
+                    st.markdown("<h5 style='text-align: center; color: #388E3C;'>🟢 Otimista</h5>", unsafe_allow_html=True)
+                    st.metric("ROI Anualizado", f"{scenarios['Otimista']['roi_anualizado']:.2f}%")
+                    st.metric("Lucro do Investidor", format_currency(scenarios['Otimista']['resultado_final_investidor']))
+                    st.caption(f"Venda m²: {format_currency(optimistic_params['value_m2'])} | Custo m²: {format_currency(optimistic_params['construction_cost_m2'])}")
+        
+        except Exception as e:
+            st.error(f"Erro ao calcular cenários: {e}")
+
+        st.divider()
+        st.subheader("🎛️ Simulação Interativa (What-If)")
         
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("##### Cenário Base (Realista)")
-            st.metric("ROI Anualizado", f"{results.get('roi_anualizado', 0):.2f}%")
-            st.metric("Lucro do Investidor", format_currency(results.get('resultado_final_investidor', 0)))
-            st.caption(f"Venda m²: {format_currency(results.get('value_m2'))} | Custo m²: {format_currency(results.get('construction_cost_m2'))}")
-            
-        with c2:
-            st.markdown("##### Simulação Interativa")
             variacao_vgv = st.slider("Variação do Valor de Venda (VGV %)", -25.0, 25.0, 0.0, 0.5)
             variacao_custo = st.slider("Variação do Custo da Obra (%)", -25.0, 25.0, 0.0, 0.5)
-            
+        
+        with c2:
             sim_params = results.copy()
             sim_params['value_m2'] *= (1 + variacao_vgv / 100)
             sim_params['construction_cost_m2'] *= (1 + variacao_custo / 100)
             
             try:
                 cenario_simulado = calculate_financials(sim_params)
-                st.metric("Novo ROI Anualizado", f"{cenario_simulado.get('roi_anualizado', 0):.2f}%")
-                st.metric("Novo Lucro do Investidor", format_currency(cenario_simulado.get('resultado_final_investidor', 0)))
+                st.metric("Novo ROI Anualizado (Simulado)", f"{cenario_simulado.get('roi_anualizado', 0):.2f}%")
+                st.metric("Novo Lucro do Investidor (Simulado)", format_currency(cenario_simulado.get('resultado_final_investidor', 0)))
                 st.caption(f"Venda m²: {format_currency(sim_params['value_m2'])} | Custo m²: {format_currency(sim_params['construction_cost_m2'])}")
             except Exception as e:
                 st.error(f"Erro ao simular cenário: {e}")
+
 
         st.divider()
 
