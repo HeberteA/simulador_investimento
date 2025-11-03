@@ -443,26 +443,17 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
-                    for _, aporte_row in aportes_sim.iterrows():
-                        date_val = None
-                        if 'data_aporte' in aporte_row:
-                            date_val = aporte_row['data_aporte']
-                        elif 'data' in aporte_row: 
-                            date_val = aporte_row['data']
-                        
-                        value_val = None
-                        if 'valor_aporte' in aporte_row:
-                            value_val = aporte_row['valor_aporte']
-                        elif 'valor' in aporte_row:
-                            value_val = aporte_row['valor']
-
-                        if date_val is not None and value_val is not None:
-                            aportes_list.append({
-                                'date': pd.to_datetime(date_val).date(),
-                                'value': float(value_val)
-                            })
-                        else:
-                            st.warning(f"Aporte inválido encontrado no histórico (sim_id: {sim_id}). Pulando.")
+                    if 'data_aporte' not in aportes_sim.columns or 'valor_aporte' not in aportes_sim.columns:
+                        st.error(f"A planilha 'aportes' não tem as colunas 'data_aporte' ou 'valor_aporte' (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
+                    else:
+                        for _, aporte_row in aportes_sim.iterrows():
+                            try:
+                                 aportes_list.append({
+                                     'date': pd.to_datetime(aporte_row['data_aporte']).date(),
+                                     'value': float(aporte_row['valor_aporte'])
+                                 })
+                            except Exception:
+                                 st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
                     
                     sim_data['aportes'] = aportes_list
                     
@@ -666,11 +657,11 @@ def render_dashboard_page():
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
 
-            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
-            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
+            date_col = 'data_aporte'
+            value_col = 'valor_aporte'
 
             if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
-                st.error("Não foi possível encontrar as colunas 'data_aporte'/'data' ou 'valor_aporte'/'valor' na planilha de aportes.")
+                st.error("Não foi possível encontrar as colunas 'data_aporte' ou 'valor_aporte' na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
                 return
 
             df_aportes[date_col] = pd.to_datetime(df_aportes[date_col])
