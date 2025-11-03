@@ -28,14 +28,14 @@ def init_gsheet_connection():
         
         worksheets = {
             "simulations": spreadsheet.worksheet("simulations"),
-            "aportes": spreadsheet.worksheet("aportes")
+            "aportes": spreadsheet.worksheet("aportes_v2") # <-- MUDANÇA CRÍTICA AQUI
         }
         return worksheets
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
         
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60) # <-- CACHE REATIVADO
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
         return pd.DataFrame()
