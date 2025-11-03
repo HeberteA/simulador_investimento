@@ -68,8 +68,19 @@ def load_data_from_sheet(_worksheet):
         if col in df.columns:
             series = df[col].astype(str).copy()
             is_pt_br_format = series.str.contains(',', na=False)
-            series.loc[is_pt_br_format] = series.loc[is_pt_br_format].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
-            df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
+            series = df[col].astype(str).copy()
+            
+            series_cleaned = series.str.replace('R$', '', regex=False) \
+                                   .str.replace('$', '', regex=False) \
+                                   .str.strip()
+            is_pt_br_format = series_cleaned.str.contains(',', na=False)
+            series_cleaned.loc[is_pt_br_format] = series_cleaned.loc[is_pt_br_format] \
+                                                    .str.replace('.', '', regex=False) \
+                                                    .str.replace(',', '.', regex=False)
+            
+            series_cleaned.loc[~is_pt_br_format] = series_cleaned.loc[~is_pt_br_format] \
+                                                    .str.replace(',', '', regex=False)
+            df[col] = pd.to_numeric(series_cleaned, errors='coerce').fillna(0)
             
     for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date']:
         if date_col in df.columns:
