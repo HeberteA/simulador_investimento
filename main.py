@@ -102,21 +102,16 @@ def render_new_simulation_page():
                             
                             st.session_state.aportes = []
                             
-                            # Lógica de fallback para nomes de coluna
-                            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
-                            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
-                            
-                            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                            try:
                                 for _, row in aportes_do_cliente.iterrows():
-                                    try:
-                                        st.session_state.aportes.append({
-                                            "data": pd.to_datetime(row[date_col]).date(),
-                                            "valor": float(row[value_col])
-                                        })
-                                    except Exception:
-                                        st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
-                            else:
-                                st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
+                                    st.session_state.aportes.append({
+                                        "data": pd.to_datetime(row['data_aporte']).date(),
+                                        "valor": float(row['valor_aporte'])
+                                    })
+                            except KeyError:
+                                st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame, apesar de tudo.")
+                            except Exception as e:
+                                st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha. Erro: {e}")
 
                             
                             st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
@@ -455,21 +450,16 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
-                    # Lógica de fallback para nomes de coluna
-                    date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
-                    value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
-
-                    if date_col not in aportes_sim.columns or value_col not in aportes_sim.columns:
-                        st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
-                    else:
+                    try:
                         for _, aporte_row in aportes_sim.iterrows():
-                            try:
-                                 aportes_list.append({
-                                     'date': pd.to_datetime(aporte_row[date_col]).date(),
-                                     'value': float(aporte_row[value_col])
-                                 })
-                            except Exception:
-                                 st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
+                             aportes_list.append({
+                                 'date': pd.to_datetime(aporte_row['data_aporte']).date(),
+                                 'value': float(aporte_row['valor_aporte'])
+                             })
+                    except KeyError:
+                         st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame, apesar de tudo.")
+                    except Exception as e:
+                         st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha. Erro: {e}")
                     
                     sim_data['aportes'] = aportes_list
                     
@@ -519,17 +509,15 @@ def render_edit_page():
             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
             
             aportes_list = []
-            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
-            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
-            
-            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+            try:
                 for _, r in aportes_do_cliente.iterrows():
                     aportes_list.append({
-                        'date': pd.to_datetime(r[date_col]).date(), 
-                        'value': float(r[value_col])
+                        'date': pd.to_datetime(r['data_aporte']).date(), 
+                        'value': float(r['valor_aporte'])
                     })
-            else:
-                st.error("Erro ao ler aportes salvos. Colunas 'data' ou 'valor' não encontradas.")
+            except KeyError:
+                st.error("Erro de 'KeyError' ao ler aportes salvos. Colunas 'data_aporte' ou 'valor_aporte' não encontradas.")
+            
             params = sim.copy()
             params.update({
                 'client_name': st.session_state.edit_client_name,
@@ -673,12 +661,11 @@ def render_dashboard_page():
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
 
-            # Lógica de fallback para nomes de coluna
-            date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
-            value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
+            date_col = 'data_aporte'
+            value_col = 'valor_aporte'
 
             if date_col not in df_aportes.columns or value_col not in df_aportes.columns:
-                st.error("Não foi possível encontrar colunas de data/valor reconhecidas na planilha de aportes. Verifique os cabeçalhos na Linha 1 da GSheet.")
+                st.error("Erro de 'KeyError' no Dashboard. As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas. Verifique a Linha 1 da GSheet 'aportes'.")
                 return
 
             df_aportes[date_col] = pd.to_datetime(df_aportes[date_col])
