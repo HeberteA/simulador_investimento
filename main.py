@@ -102,6 +102,7 @@ def render_new_simulation_page():
                             
                             st.session_state.aportes = []
                             
+                            # Lógica de fallback para nomes de coluna
                             date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
                             value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
                             
@@ -425,7 +426,7 @@ def render_history_page():
                 st.rerun()
 
             if st.session_state.get('confirming_delete') == row_index:
-                st.warning(f"**Tem certeza que deseja excluir a simulação de '{row.get('client_name')}'?** Essa ação não pode desfeita.")
+                st.warning(f"**Tem certeza que deseja excluir a simulação de '{row.get('client_name')}'?** Essa ação não pode ser desfeita.")
                 btn_c1, btn_c2 = st.columns(2)
                 if btn_c1.button("Sim, excluir permanentemente", key=f"confirm_del_{row_index}", type="primary"):
                     with st.spinner("Excluindo simulação e aportes..."):
@@ -454,6 +455,7 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
+                    # Lógica de fallback para nomes de coluna
                     date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
                     value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
 
@@ -671,6 +673,7 @@ def render_dashboard_page():
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
 
+            # Lógica de fallback para nomes de coluna
             date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
             value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
 
