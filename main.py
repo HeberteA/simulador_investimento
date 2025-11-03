@@ -101,11 +101,18 @@ def render_new_simulation_page():
                             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                             
                             st.session_state.aportes = []
-                            for _, row in aportes_do_cliente.iterrows():
-                                st.session_state.aportes.append({
-                                    "data": pd.to_datetime(row['data_aporte']).date(),
-                                    "valor": float(row['valor_aporte'])
-                                })
+                            # Lógica de fallback para nomes de coluna ao carregar
+                            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+                            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+                            
+                            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                                for _, row in aportes_do_cliente.iterrows():
+                                    st.session_state.aportes.append({
+                                        "data": pd.to_datetime(row[date_col]).date(),
+                                        "valor": float(row[value_col])
+                                    })
+                            else:
+                                st.error("Não foi possível carregar os aportes salvos. Colunas não encontradas.")
                             
                             st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
                             st.rerun()
@@ -439,18 +446,6 @@ def render_history_page():
             with st.expander("Ver resultado completo"):
                 with st.spinner("Carregando detalhes..."):
                     sim_data = row.to_dict()
-                    
-                    # --- INÍCIO DO CÓDIGO DE DEBUG (HISTÓRICO) ---
-                    try:
-                        if worksheets.get("aportes"):
-                            headers = worksheets["aportes"].row_values(1)
-                            st.warning(f"DEBUG (Histórico) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
-                        else:
-                            st.error("DEBUG (Histórico) - Aba 'aportes' NÃO encontrada no dicionário 'worksheets'.")
-                    except Exception as e:
-                        st.error(f"DEBUG (Histórico) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
-                    # --- FIM DO CÓDIGO DE DEBUG ---
-                    
                     df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
@@ -668,18 +663,6 @@ def render_dashboard_page():
         st.plotly_chart(fig_line_time, use_container_width=True)
 
     if worksheets.get("aportes"):
-        
-        # --- INÍCIO DO CÓDIGO DE DEBUG (DASHBOARD) ---
-        try:
-            if worksheets.get("aportes"):
-                headers = worksheets["aportes"].row_values(1)
-                st.info(f"DEBUG (Dashboard) - Cabeçalhos Lidos da Aba 'aportes' (Linha 1): {headers}")
-            else:
-                st.error("DEBUG (Dashboard) - Aba 'aportes' NÃO encontrada.")
-        except Exception as e:
-            st.error(f"DEBUG (Dashboard) - Erro ao ler Linha 1 de 'aportes' via gspread: {e}")
-        # --- FIM DO CÓDIGO DE DEBUG ---
-        
         df_aportes = utils.load_data_from_sheet(worksheets["aportes"])
         if not df_aportes.empty:
             st.divider()
