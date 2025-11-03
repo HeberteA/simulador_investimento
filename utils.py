@@ -35,7 +35,6 @@ def init_gsheet_connection():
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
         
-@st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
         return pd.DataFrame()
