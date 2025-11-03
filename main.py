@@ -580,7 +580,6 @@ def render_dashboard_page():
 
     THEME_COLOR = "#E37026"
 
-    st.subheader("Indicadores Chave de Performance (KPIs)")
     k1, k2, k3, k4 = st.columns(4)
     
     total_vgv = df_sim['vgv'].sum()
