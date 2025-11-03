@@ -6,6 +6,7 @@ import utils
 from dateutil.relativedelta import relativedelta
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
+import plotly.express as px
 from utils import format_currency, calculate_financials
 
 THEME_PRIMARY_COLOR = "#E37026"
@@ -90,48 +91,77 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             fig_gauge_periodo.update_layout(height=180, margin=dict(l=20, r=20, t=50, b=10))
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
 
+        st.divider()
+        st.markdown("##### 📥 📤 Fluxo de Caixa do Investidor")
+        
+        try:
+            aportes_df = pd.DataFrame(results.get('aportes', []))
+            if not aportes_df.empty:
+                aportes_df.rename(columns={'date': 'Data', 'value': 'Valor'}, inplace=True)
+                aportes_df['Valor'] = -aportes_df['Valor']
+                aportes_df['Tipo'] = 'Aporte'
+                
+                retorno_capital = results.get('valor_corrigido', 0)
+                lucro_spe = results.get('valor_participacao', 0)
+                data_final = pd.to_datetime(results.get('project_end_date'))
+
+                df_retornos = pd.DataFrame([
+                    {'Data': data_final, 'Valor': retorno_capital, 'Tipo': 'Retorno (Capital + Juros)'},
+                    {'Data': data_final, 'Valor': lucro_spe, 'Tipo': 'Lucro (Participação SPE)'}
+                ])
+                
+                df_fluxo = pd.concat([aportes_df, df_retornos], ignore_index=True)
+                df_fluxo['Data'] = pd.to_datetime(df_fluxo['Data'])
+                df_fluxo_agregado = df_fluxo.groupby(['Data', 'Tipo'])['Valor'].sum().reset_index()
+
+                fig_fluxo = px.bar(
+                    df_fluxo_agregado, 
+                    x='Data', 
+                    y='Valor', 
+                    color='Tipo',
+                    title="Fluxo de Caixa (Aportes vs. Retornos)",
+                    labels={'Valor': 'Valor (R$)', 'Data': 'Data'},
+                    color_discrete_map={
+                        'Aporte': '#D32F2F',
+                        'Retorno (Capital + Juros)': '#1976D2',
+                        'Lucro (Participação SPE)': '#388E3C'
+                    }
+                )
+                fig_fluxo.update_layout(barmode='relative')
+                st.plotly_chart(fig_fluxo, use_container_width=True)
+            else:
+                st.warning("Não há aportes para exibir o fluxo de caixa.")
+        except Exception as e:
+            st.error(f"Erro ao gerar gráfico de fluxo de caixa: {e}")
+
 
     with tab_sensibilidade:
         st.subheader("🔬 Matriz de Cenários")
         st.markdown("Análise do impacto no **ROI Anualizado do Investidor** com base nas principais variáveis do projeto.")
-        scenarios = {}
-        base_params = results.copy()
         
-        try:
-            scenarios['Realista'] = calculate_financials(base_params)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("##### Cenário Base (Realista)")
+            st.metric("ROI Anualizado", f"{results.get('roi_anualizado', 0):.2f}%")
+            st.metric("Lucro do Investidor", format_currency(results.get('resultado_final_investidor', 0)))
+            st.caption(f"Venda m²: {format_currency(results.get('value_m2'))} | Custo m²: {format_currency(results.get('construction_cost_m2'))}")
             
-            pessimistic_params = base_params.copy()
-            pessimistic_params['value_m2'] *= 0.85
-            pessimistic_params['construction_cost_m2'] *= 1.15
-            scenarios['Pessimista'] = calculate_financials(pessimistic_params)
+        with c2:
+            st.markdown("##### Simulação Interativa")
+            variacao_vgv = st.slider("Variação do Valor de Venda (VGV %)", -25.0, 25.0, 0.0, 0.5)
+            variacao_custo = st.slider("Variação do Custo da Obra (%)", -25.0, 25.0, 0.0, 0.5)
             
-            optimistic_params = base_params.copy()
-            optimistic_params['value_m2'] *= 1.15
-            optimistic_params['construction_cost_m2'] *= 0.85
-            scenarios['Otimista'] = calculate_financials(optimistic_params)
-
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                with st.container(border=True):
-                    st.markdown("<h5 style='text-align: center; color: #D32F2F;'>🔴 Pessimista</h5>", unsafe_allow_html=True)
-                    st.metric("ROI Anualizado", f"{scenarios['Pessimista']['roi_anualizado']:.2f}%")
-                    st.metric("Lucro do Investidor", format_currency(scenarios['Pessimista']['resultado_final_investidor']))
-                    st.caption(f"Venda m²: {format_currency(pessimistic_params['value_m2'])} | Custo m²: {format_currency(pessimistic_params['construction_cost_m2'])}")
-            with c2:
-                with st.container(border=True):
-                    st.markdown("<h5 style='text-align: center; color: #1976D2;'>🔵 Realista (Base)</h5>", unsafe_allow_html=True)
-                    st.metric("ROI Anualizado", f"{scenarios['Realista']['roi_anualizado']:.2f}%")
-                    st.metric("Lucro do Investidor", format_currency(scenarios['Realista']['resultado_final_investidor']))
-                    st.caption(f"Venda m²: {format_currency(base_params['value_m2'])} | Custo m²: {format_currency(base_params['construction_cost_m2'])}")
-            with c3:
-                with st.container(border=True):
-                    st.markdown("<h5 style='text-align: center; color: #388E3C;'>🟢 Otimista</h5>", unsafe_allow_html=True)
-                    st.metric("ROI Anualizado", f"{scenarios['Otimista']['roi_anualizado']:.2f}%")
-                    st.metric("Lucro do Investidor", format_currency(scenarios['Otimista']['resultado_final_investidor']))
-                    st.caption(f"Venda m²: {format_currency(optimistic_params['value_m2'])} | Custo m²: {format_currency(optimistic_params['construction_cost_m2'])}")
-        
-        except Exception as e:
-            st.error(f"Erro ao calcular cenários: {e}")
+            sim_params = results.copy()
+            sim_params['value_m2'] *= (1 + variacao_vgv / 100)
+            sim_params['construction_cost_m2'] *= (1 + variacao_custo / 100)
+            
+            try:
+                cenario_simulado = calculate_financials(sim_params)
+                st.metric("Novo ROI Anualizado", f"{cenario_simulado.get('roi_anualizado', 0):.2f}%")
+                st.metric("Novo Lucro do Investidor", format_currency(cenario_simulado.get('resultado_final_investidor', 0)))
+                st.caption(f"Venda m²: {format_currency(sim_params['value_m2'])} | Custo m²: {format_currency(sim_params['construction_cost_m2'])}")
+            except Exception as e:
+                st.error(f"Erro ao simular cenário: {e}")
 
         st.divider()
 
@@ -218,4 +248,3 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     on_click=save_callback  
                 )
             col_index += 1
-
