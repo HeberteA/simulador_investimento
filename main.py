@@ -693,6 +693,7 @@ def render_dashboard_page():
 
 with st.sidebar:
     st.image("Lavie1.png")
+    st.image("Lavie.png")
     st.markdown("<br>", unsafe_allow_html=True)
     
     page_options = ["Nova Simulação", "Histórico", "Dashboard"]
