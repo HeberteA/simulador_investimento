@@ -380,6 +380,25 @@ def render_history_page():
         st.error("Conexão com a planilha de simulações não disponível.")
         return
 
+
+    # --- INÍCIO DO CÓDIGO DE DIAGNÓSTICO ---
+    with st.expander("🔬 Ferramenta de Diagnóstico: Ver Colunas da Planilha 'aportes'"):
+        st.info("Isso mostra exatamente o que o app está lendo da sua GSheet 'aportes'.")
+        try:
+            ws_aportes_debug = worksheets.get("aportes")
+            if not ws_aportes_debug:
+                st.error("A planilha 'aportes' não foi encontrada.")
+            else:
+                df_aportes_debug = utils.load_data_from_sheet(ws_aportes_debug)
+                st.write("**Colunas lidas da planilha (após processamento):**")
+                st.write(df_aportes_debug.columns.to_list())
+                
+                st.write("**Primeiras 5 linhas da planilha 'aportes':**")
+                st.dataframe(df_aportes_debug.head())
+        except Exception as e:
+            st.error(f"Erro ao tentar ler a planilha 'aportes' para debug: {e}")
+    # --- FIM DO CÓDIGO DE DIAGNÓSTICO ---
+    
     df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
 
     if df_simulations.empty:
