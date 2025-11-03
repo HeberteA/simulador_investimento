@@ -346,7 +346,6 @@ def save_simulation_callback():
                 except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
                     pass 
         
-        
         try:
             ws_sims = worksheets["simulations"]
             sim_values = ws_sims.get_all_values()
