@@ -109,7 +109,7 @@ def render_new_simulation_page():
                                         "valor": float(row['valor_aporte'])
                                     })
                             except KeyError:
-                                st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame, apesar de tudo.")
+                                st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame.")
                             except Exception as e:
                                 st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha. Erro: {e}")
 
@@ -378,7 +378,7 @@ def save_simulation_callback():
             st.session_state.save_error = f"Erro ao salvar aportes: {e}"
             return
 
-        st.cache_data.clear()
+        st.cache_data.clear() # Limpa o cache após salvar com sucesso
         st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
 def render_history_page():
@@ -457,7 +457,7 @@ def render_history_page():
                                  'value': float(aporte_row['valor_aporte'])
                              })
                     except KeyError:
-                         st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame, apesar de tudo.")
+                         st.error(f"Erro de 'KeyError' ao carregar aportes (Sim_ID: {sim_id}). As colunas 'data_aporte' ou 'valor_aporte' não foram encontradas no DataFrame.")
                     except Exception as e:
                          st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha. Erro: {e}")
                     
@@ -550,7 +550,7 @@ def render_edit_page():
             row_to_edit = st.session_state.editing_row
             worksheets["simulations"].update(f'A{row_to_edit}:V{row_to_edit}', [main_data_updated])
 
-            st.cache_data.clear()
+            st.cache_data.clear() # Limpa o cache após salvar com sucesso
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
             st.session_state.page = "Histórico de Simulações"
