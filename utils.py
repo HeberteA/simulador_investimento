@@ -28,14 +28,14 @@ def init_gsheet_connection():
         
         worksheets = {
             "simulations": spreadsheet.worksheet("simulations"),
-            "aportes": spreadsheet.worksheet("aportes") 
+            "aportes": spreadsheet.worksheet("aportes")
         }
         return worksheets
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
         
-# <-- O @st.cache_data FOI REMOVIDO DAQUI. ISSO É A SOLUÇÃO.
+@st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
         return pd.DataFrame()
