@@ -101,18 +101,22 @@ def render_new_simulation_page():
                             aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                             
                             st.session_state.aportes = []
-                            # Lógica de fallback para nomes de coluna ao carregar
+                            
                             date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
                             value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
                             
                             if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
                                 for _, row in aportes_do_cliente.iterrows():
-                                    st.session_state.aportes.append({
-                                        "data": pd.to_datetime(row[date_col]).date(),
-                                        "valor": float(row[value_col])
-                                    })
+                                    try:
+                                        st.session_state.aportes.append({
+                                            "data": pd.to_datetime(row[date_col]).date(),
+                                            "valor": float(row[value_col])
+                                        })
+                                    except Exception:
+                                        st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
                             else:
-                                st.error("Não foi possível carregar os aportes salvos. Colunas não encontradas.")
+                                st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
+
                             
                             st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
                             st.rerun()
@@ -421,7 +425,7 @@ def render_history_page():
                 st.rerun()
 
             if st.session_state.get('confirming_delete') == row_index:
-                st.warning(f"**Tem certeza que deseja excluir a simulação de '{row.get('client_name')}'?** Essa ação não pode ser desfeita.")
+                st.warning(f"**Tem certeza que deseja excluir a simulação de '{row.get('client_name')}'?** Essa ação não pode desfeita.")
                 btn_c1, btn_c2 = st.columns(2)
                 if btn_c1.button("Sim, excluir permanentemente", key=f"confirm_del_{row_index}", type="primary"):
                     with st.spinner("Excluindo simulação e aportes..."):
@@ -450,14 +454,6 @@ def render_history_page():
                     aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
                     
                     aportes_list = []
-
-                    # --- INÍCIO DEBUG 'main.py' ---
-                    st.error(f"--- DEBUG 'main.py' (Histórico) --- \nColunas encontradas em 'aportes_sim': {list(aportes_sim.columns)}")
-                    st.error(f"--- DEBUG 'main.py' (Histórico) --- \n'data_aporte' está nas colunas? {'data_aporte' in aportes_sim.columns}")
-                    st.error(f"--- DEBUG 'main.py' (Histórico) --- \n'valor_aporte' está nas colunas? {'valor_aporte' in aportes_sim.columns}")
-                    # --- FIM DEBUG 'main.py' ---
-
-                    # Lógica de fallback para nomes de coluna
                     date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
                     value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
 
@@ -675,7 +671,6 @@ def render_dashboard_page():
             st.divider()
             st.subheader("Análise de Captação (Aportes)")
 
-            # Lógica de fallback para nomes de coluna
             date_col = 'data_aporte' if 'data_aporte' in df_aportes.columns else 'data'
             value_col = 'valor_aporte' if 'valor_aporte' in df_aportes.columns else 'valor'
 
