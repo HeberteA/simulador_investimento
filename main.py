@@ -67,7 +67,9 @@ def render_new_simulation_page():
             )
         return
 
-    st.image("Lavie.png")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("Lavie.png", width=500)
 
     st.title("Nova Simulação Financeira")
     
