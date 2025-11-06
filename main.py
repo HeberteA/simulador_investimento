@@ -67,6 +67,8 @@ def render_new_simulation_page():
             )
         return
 
+    st.image("Lavie.png")
+
     st.title("Nova Simulação Financeira")
     
     with st.expander("Carregar Simulação Salva", expanded=False):
