@@ -56,14 +56,14 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
             st.markdown(f"""
             <div style="
-                background-color: #F0F2F6; 
+                background-color: #0E1117; 
                 border-radius: 10px; 
                 padding: 16px; 
                 border: 1px solid {THEME_PRIMARY_COLOR};
             ">
                 <p style="
                     font-size: 16px; 
-                    color: #5A5A5A; 
+                    color: #262730; 
                     margin: 0; 
                     font-weight: bold;
                 ">
@@ -76,7 +76,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     margin: 0;
                     line-height: 1.1;
                 ">
-                    f"={resultado_final_str}"
+                    ={resultado_final_str}
                 </p>
             </div>
             """, unsafe_allow_html=True)
