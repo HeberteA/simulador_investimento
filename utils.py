@@ -106,51 +106,41 @@ def calculate_financials(params):
     total_contribution = 0
     aportes = params.get('aportes', [])
     
-    project_end_date = params.get('project_end_date')
-    if isinstance(project_end_date, str):
-        project_end_date = pd.to_datetime(project_end_date).date()
-    elif isinstance(project_end_date, pd.Timestamp):
-        project_end_date = project_end_date.date()
+    start_date_dt = pd.to_datetime(params.get('start_date', datetime.today()))
+    project_end_date_dt = pd.to_datetime(params.get('project_end_date', datetime.today()))
 
-    if 'annual_interest_rate' in params and params.get('annual_interest_rate', 0) > 0:
-        annual_rate_decimal = params.get('annual_interest_rate', 0) / 100
-    else:
-        monthly_rate_decimal = params.get('monthly_interest_rate', 0) / 100
-        annual_rate_decimal = ((1 + monthly_rate_decimal) ** 12) - 1
-        results['annual_interest_rate'] = annual_rate_decimal * 100 
-        
-    if annual_rate_decimal <= -1:
-        daily_rate = -1.0
-    else:
-        daily_rate = (1 + annual_rate_decimal) ** (1/365) - 1
-
-    total_days_for_roi = 1
+    annual_rate_decimal = params.get('annual_interest_rate', 0) / 100
     
+    if 'monthly_interest_rate' in params and 'annual_interest_rate' not in params:
+        monthly_rate_decimal = params.get('monthly_interest_rate', 0) / 100
+        annual_rate_decimal = (1 + monthly_rate_decimal) ** 12 - 1
+        results['annual_interest_rate'] = annual_rate_decimal * 100
+
+    daily_rate = (1 + annual_rate_decimal) ** (1/365) - 1
+    
+    total_days_for_roi = 1
+    num_months_for_roi_display = 0
+
     if not aportes:
+        num_days_for_roi = 1
         num_months_for_roi_display = 1
     else:
-        for aporte in aportes:
-            if isinstance(aporte['date'], str):
-                aporte['date'] = pd.to_datetime(aporte['date']).date()
-            elif isinstance(aporte['date'], pd.Timestamp):
-                aporte['date'] = aporte['date'].date()
-                
         aportes.sort(key=lambda x: x['date'])
-        first_contribution_date = aportes[0]['date']
+        first_contribution_date = pd.to_datetime(aportes[0]['date'])
         
-        total_days_for_roi = (project_end_date - first_contribution_date).days
+        delta_total_dias = (project_end_date_dt - first_contribution_date).days
+        total_days_for_roi = max(1, delta_total_dias)
         
-        if total_days_for_roi <= 0:
-            total_days_for_roi = 1
-            
-        num_months_for_roi_display = max(1, round(total_days_for_roi / 30.4375)) 
+        delta_total_meses = relativedelta(project_end_date_dt, first_contribution_date)
+        num_months_for_roi_display = delta_total_meses.years * 12 + delta_total_meses.months
+        if num_months_for_roi_display <= 0: num_months_for_roi_display = 1
             
         for aporte in aportes:
-            contribution_date = aporte['date']
+            contribution_date = pd.to_datetime(aporte['date'])
             contribution_value = aporte['value']
             total_contribution += contribution_value
 
-            num_days_aporte = (project_end_date - contribution_date).days
+            num_days_aporte = (project_end_date_dt - contribution_date).days
             
             if num_days_aporte > 0:
                 montante_aporte = contribution_value * ((1 + daily_rate) ** num_days_aporte)
@@ -159,11 +149,14 @@ def calculate_financials(params):
                 total_montante += contribution_value
 
     juros_investidor = max(0, total_montante - total_contribution)
-    results['juros_investidor'] = juros_investidor
 
     results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
+    results['total_days_for_roi'] = total_days_for_roi
     results['num_months'] = num_months_for_roi_display 
+    results['start_date'] = start_date_dt.date()
+    results['project_end_date'] = project_end_date_dt.date()
+    results['juros_investidor'] = juros_investidor
     
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     
@@ -172,29 +165,32 @@ def calculate_financials(params):
     results['total_construction_cost'] = cost_obra_fisica + juros_investidor
 
     operational_result = results['vgv'] - results['total_construction_cost']
+
     area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
-    results['final_operational_result'] = operational_result - area_exchange_value
+    results['area_exchange_value'] = area_exchange_value 
+    
+    results['final_operational_result'] = operational_result
     
     valor_investido = total_contribution
     
     results['valor_participacao'] = results['final_operational_result'] * (params.get('spe_percentage', 0) / 100)
     lucro_bruto_investidor = results['valor_corrigido'] + results['valor_participacao']
-    results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido
+    
+    results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido - area_exchange_value
     
     if valor_investido > 0:
-        roi_raw = (results['resultado_final_investidor'] / valor_investido) * 100
-        base_anualizacao = 1 + (roi_raw / 100)
+        roi_raw = (results['resultado_final_investidor'] / valor_investido)
         
-        if base_anualizacao < 0:
-            roi_anualizado_raw = -100.0
+        if (1 + roi_raw) < 0:
+            roi_anualizado_raw = -1.0
         else:
-            roi_anualizado_raw = ((base_anualizacao ** (365 / total_days_for_roi)) - 1) * 100
+            roi_anualizado_raw = ((1 + roi_raw) ** (365 / total_days_for_roi)) - 1
     else:
         roi_raw = 0
         roi_anualizado_raw = 0
 
-    results['roi'] = round(roi_raw, 2)
-    results['roi_anualizado'] = round(roi_anualizado_raw, 2)
+    results['roi'] = round(roi_raw * 100, 2)
+    results['roi_anualizado'] = round(roi_anualizado_raw * 100, 2)
     
     return results
     
