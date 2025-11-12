@@ -46,7 +46,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.markdown("##### Demonstrativo de Retorno do Investidor")
             st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
             spe_percentage_label = f"2. Participação da SPE no Projeto"
-            st.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{spe_percentage}%")
+            st.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{results.get('spe_percentage', 0):.2f}%")
             total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
             st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
             c_aporte, c_troca = st.columns(2)
