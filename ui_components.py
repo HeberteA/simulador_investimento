@@ -90,7 +90,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
             st.metric("Custo Total da Obra", format_currency(results.get('total_construction_cost', 0)))
             st.metric("Resultado Operacional do Projeto", format_currency(results.get('final_operational_result', 0)))
-            st.markdown("")
             st.divider()
             st.markdown("##### Rentabilidade do Investimento")
             
