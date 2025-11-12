@@ -155,7 +155,7 @@ def render_new_simulation_page():
 
     with st.expander("Lançamento de Aportes", expanded=True):
         
-        tab_unico, tab_parcelado = st.tabs(["📈 Aporte Único", "🗓️ Aporte Parcelado"])
+        tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Aporte Parcelado"])
 
         with tab_unico:
             st.subheader("Adicionar Aporte Único")
@@ -273,7 +273,7 @@ def render_new_simulation_page():
             st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
 
     st.divider()
-    if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
+    if st.button("Calcular Resultado Completo", use_container_width=True, type="primary"):
         if not st.session_state.aportes:
             st.warning("Adicione pelo menos um aporte para calcular.")
         else:
