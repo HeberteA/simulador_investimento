@@ -53,7 +53,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             c_aporte.metric("(-) Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
             c_troca.metric("(-) Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
             st.markdown("---")
-            co1, co2, co3 = st.columns([1, 2, 1])
+            co1, co2, co3 = st.columns([1, 4, 1])
 
             with co2: 
                 st.metric("**Resultado Final (Lucro Líquido)**", f"= {format_currency(results.get('resultado_final_investidor', 0))}")
