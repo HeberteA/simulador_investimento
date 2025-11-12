@@ -19,7 +19,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
     tab_vencimentos, tab_resumo, tab_sensibilidade = st.tabs(["**Cronograma de Vencimentos**", "**Resumo Financeiro**", "**Análise de Cenários**"])
 
     with tab_vencimentos:
-        st.subheader("📅 Cronograma de Vencimentos Detalhado")
+        st.subheader("Cronograma de Vencimentos Detalhado")
         c1, c2, c3 = st.columns(3)
         with c1:
             st.metric("Nome do Cliente", results.get('client_name', "N/A"))
@@ -40,7 +40,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.warning("Nenhum aporte foi encontrado para esta simulação.")
 
     with tab_resumo:
-        st.subheader("📈 Resumo Financeiro")
+        st.subheader("Resumo Financeiro")
         col1, col2 = st.columns([1, 1])
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
@@ -50,6 +50,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
             st.metric("(=) Total Bruto Recebido", format_currency(total_bruto))
             st.metric("(-) Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
+            st.metric("(-) Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
             st.markdown("---")
             st.metric("**(=) Resultado Final (Lucro Líquido)**", f"{format_currency(results.get('resultado_final_investidor', 0))}")
         
@@ -92,7 +93,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
 
         st.divider()
-        st.markdown("##### 📥 📤 Fluxo de Caixa do Investidor")
+        st.markdown("##### Fluxo de Caixa do Investidor")
         
         try:
             aportes_df = pd.DataFrame(results.get('aportes', []))
@@ -136,7 +137,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
 
     with tab_sensibilidade:
-        st.subheader("🔬 Matriz de Cenários")
+        st.subheader("Matriz de Cenários")
         st.markdown("Análise do impacto no **ROI Anualizado do Investidor** com base nas principais variáveis do projeto.")
         scenarios = {}
         base_params = results.copy()
@@ -178,7 +179,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.error(f"Erro ao calcular cenários: {e}")
 
         st.divider()
-        st.subheader("🎛️ Simulação Interativa (What-If)")
+        st.subheader("Simulação Interativa (What-If)")
         
         c1, c2 = st.columns(2)
         with c1:
