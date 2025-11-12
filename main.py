@@ -270,7 +270,7 @@ def render_new_simulation_page():
         with c2:
             st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
             st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-            st.slider("% de Troca de Área", 0.0, 100.0, key="area_exchange_percentage", format="%.1f%%")
+            st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
 
     st.divider()
     if st.button("📈 Calcular Resultado Completo", use_container_width=True, type="primary"):
