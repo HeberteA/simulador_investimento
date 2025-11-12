@@ -49,10 +49,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)))
             total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
             st.metric("(=) Total Bruto Recebido", format_currency(total_bruto))
-            st.metric("(-) Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
-            st.metric("(-) Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
+            c_aporte, c_troca = st.columns(2)
+            c_aporte.metric("(-) Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
+            c_troca.metric("(-) Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
             st.markdown("---")
-            st.metric("**(=) Resultado Final (Lucro Líquido)**", f"{format_currency(results.get('resultado_final_investidor', 10))}")
+            c_res = st.columns(2.5)
+            c_res.metric("**(=) Resultado Final (Lucro Líquido)**", f"{format_currency(results.get('resultado_final_investidor', 0))}")
         
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
