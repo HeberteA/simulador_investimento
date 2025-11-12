@@ -61,7 +61,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             
             c_obra, c_juros = st.columns(2)
             c_obra.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
-            c_juros.metric("(+)Custo do Capital (Juros)", f"+ format_currency(results.get('juros_investidor', 0))")
+            c_juros.metric("(+)Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
 
             st.metric("Custo Total da Obra", format_currency(results.get('total_construction_cost', 0)))
             st.metric("Resultado Operacional do Projeto", format_currency(results.get('final_operational_result', 0)))
