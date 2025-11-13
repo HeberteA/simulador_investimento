@@ -52,33 +52,36 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             c_aporte, c_troca = st.columns(2)
             c_aporte.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
             c_troca.metric("Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
+            st.markdown("")
             st.divider()
-            resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
-            st.markdown(f"""
-            <div style="
-                background-color: #0E1117; 
-                border-radius: 10px; 
-                padding: 16px; 
-            ">
-                <p style="
-                    font-size: 16px; 
-                    color: #FFFFFF; 
-                    margin: 0; 
-                    font-weight: bold;
+            col_larga = st.columns([1])[0] 
+            with col_larga:
+                resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
+                st.markdown(f"""
+                <div style="
+                    background-color: #0E1117; 
+                    border-radius: 10px; 
+                    padding: 16px; 
                 ">
-                    Resultado Final (Lucro Líquido)
-                </p>
-                <p style="
-                    font-size: 2.5rem; 
-                    color: {THEME_PRIMARY_COLOR}; 
-                    font-weight: 600; 
-                    margin: 0;
-                    line-height: 1.1;
-                ">
-                    ={resultado_final_str}
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+                    <p style="
+                        font-size: 16px; 
+                        color: #FFFFFF; 
+                        margin: 0; 
+                        font-weight: bold;
+                    ">
+                        Resultado Final (Lucro Líquido)
+                    </p>
+                    <p style="
+                        font-size: 2.5rem; 
+                        color: {THEME_PRIMARY_COLOR}; 
+                        font-weight: 600; 
+                        margin: 0;
+                        line-height: 1.1;
+                    ">
+                        ={resultado_final_str}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
         
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
