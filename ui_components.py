@@ -58,8 +58,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
 
 
-                        
-                "
+            "            
             )
             co1, co2, co3 = st.columns([1, 3, 1])
             with co2:
@@ -101,7 +100,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
             st.markdown("
             
-                "
+            "
             )
             st.divider()
             st.markdown("##### Rentabilidade do Investimento")
