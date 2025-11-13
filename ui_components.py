@@ -52,7 +52,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             c_aporte, c_troca = st.columns(2)
             c_aporte.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
             c_troca.metric("Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
-            st.divider()
+            st.markdown("---")
             st.markdown("")
             st.markdown("")
             st.markdown("")
@@ -103,7 +103,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
             st.markdown("")
             st.markdown("")
-            st.divider()
             st.markdown("##### Rentabilidade do Investimento")
             
             roi_anualizado = results.get('roi_anualizado', 0)
