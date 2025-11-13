@@ -22,6 +22,17 @@ st.set_page_config(
     layout="wide"
 )
 
+background_texture_css = """
+<style>
+[data-testid="stAppViewContainer"] {
+    /* Opção: Papel Artesanal (Sutil e Elegante) */
+    background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
+    background-repeat: repeat;
+}
+</style>
+"""
+st.markdown(background_texture_css, unsafe_allow_html=True)
+
 defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
