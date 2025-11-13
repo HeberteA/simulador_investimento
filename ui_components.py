@@ -53,6 +53,14 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             c_aporte.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
             c_troca.metric("Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
             st.divider()
+            st.markdown("
+
+
+
+
+                        
+                "
+            )
             co1, co2, co3 = st.columns([1, 3, 1])
             with co2:
                 resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
@@ -85,14 +93,16 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
             st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
-            st.markdown("")
             c_obra, c_juros = st.columns(2)
             c_obra.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
             c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
 
             st.metric("Custo Total da Obra", format_currency(results.get('total_construction_cost', 0)))
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
-            st.markdown("")
+            st.markdown("
+            
+                "
+            )
             st.divider()
             st.markdown("##### Rentabilidade do Investimento")
             
