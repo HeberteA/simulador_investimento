@@ -61,14 +61,13 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.markdown("")
             st.markdown("")
             st.markdown("")
-            st.markdown("")
             co1, co2, co3 = st.columns([1, 2, 1])
             with co2:
                 resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
                 st.markdown(f"""
                 <div style="
                     background-color: rgba(0,0,0,0)
-                    border-radius: 10px; 
+                    border-radius: 15px; 
                     padding: 20px; 
                     border: 1px solid {THEME_PRIMARY_COLOR} ;
                 ">
