@@ -53,13 +53,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             c_aporte.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
             c_troca.metric("Troca de Área", f"- {format_currency(results.get('area_exchange_value', 0))}")
             st.divider()
-            st.markdown("
-
-
-
-
-            "            
-            )
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
             co1, co2, co3 = st.columns([1, 3, 1])
             with co2:
                 resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
@@ -98,10 +97,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
             st.metric("Custo Total da Obra", format_currency(results.get('total_construction_cost', 0)))
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
-            st.markdown("
-            
-            "
-            )
+            st.markdown("")
+            st.markdown("")
             st.divider()
             st.markdown("##### Rentabilidade do Investimento")
             
