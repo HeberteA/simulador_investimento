@@ -61,7 +61,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     background-color: #0E1117; 
                     border-radius: 10px; 
                     padding: 20px; 
-                    border: 1px solid ;
+                    border: 1px solid {THEME_PRIMARY_COLOR} ;
                 ">
                     <p style="
                         font-size: 20px; 
