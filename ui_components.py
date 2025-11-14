@@ -11,7 +11,7 @@ from utils import format_currency, calculate_financials
 
 THEME_PRIMARY_COLOR = "#E37026"
 
-def display_full_results(results, show_save_button=False, show_download_button=False, save_callback=None):
+def display_full_results(results, show_save_button=False, show_download_button=False, save_callback=None, is_simulation_saved=False):
     unique_id = results.get('simulation_id', str(datetime.now().timestamp()))
 
 
