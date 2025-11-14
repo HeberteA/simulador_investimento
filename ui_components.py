@@ -88,8 +88,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             ))
             fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=180, margin=dict(l=20, r=20, t=50, b=10))
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
-        
-        co1, co2, co3 = st.columns([1, 5, 1])
+        st.markdown("")
+        co1, co2, co3 = st.columns([1, 2, 1])
         with co2:
             resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
             st.markdown(f"""
@@ -118,6 +118,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 </p>
             </div>
             """, unsafe_allow_html=True)
+        st.divider()
                 
 
         st.markdown("##### Fluxo de Caixa do Investidor")
