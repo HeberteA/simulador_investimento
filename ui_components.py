@@ -309,7 +309,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     mime="application/pdf",
                     use_container_width=True,
                     key=f"pdf_dl_{unique_id}",
-                    disabled=not is_simulation_saved
+                    disabled=not is_simulation_saved 
                 )
                 
                 if not is_simulation_saved:
@@ -319,11 +319,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
         if "save" in buttons_to_show:
             with cols[col_index]:
-                st.button(
+                if st.button(
                     "💾 Salvar Simulação na Planilha", 
                     use_container_width=True, 
                     type="primary", 
-                    key=f"save_btn_{unique_id}",
-                    on_click=save_callback  
-                )
+                    key=f"save_btn_{unique_id}" 
+                ):
+                    if save_callback:
+                        save_callback()
             col_index += 1
