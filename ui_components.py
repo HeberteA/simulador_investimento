@@ -60,8 +60,36 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
                 st.metric("Custo Total da Obra", f"={format_currency(results.get('total_construction_cost', 0))}")
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
+
+        with col3:
+            st.markdown("##### Rentabilidade do Investimento")
             
-        colu2, colu1 =  st.columns(2)
+            roi_anualizado = results.get('roi_anualizado', 0)
+            gauge_max_range_anual = max(30, roi_anualizado * 1.5)
+            fig_gauge_anual = go.Figure(go.Indicator(
+                mode="gauge+number", value=roi_anualizado,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': "ROI Anualizado", 'font': {'size': 20}},
+                number={'suffix': "%", 'font': {'size': 24}},
+                gauge={'axis': {'range': [0, gauge_max_range_anual]}, 'bar': {'color': THEME_PRIMARY_COLOR}}
+            ))
+            fig_gauge_anual.update_layout(height=180, paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=20, r=20, t=50, b=10))
+            st.plotly_chart(fig_gauge_anual, use_container_width=True, key=f"gauge_anual_{unique_id}")
+
+            roi_periodo = results.get('roi', 0)
+            duracao_meses = results.get('num_months', 0)
+            gauge_max_range_periodo = max(30, roi_periodo * 1.5)
+            fig_gauge_periodo = go.Figure(go.Indicator(
+                mode="gauge+number", value=roi_periodo,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': f"ROI no Período ({duracao_meses} meses aprox.)", 'font': {'size': 20}},
+                number={'suffix': "%", 'font': {'size': 24}},
+                gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
+            ))
+            fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=180, margin=dict(l=20, r=20, t=50, b=10))
+            st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
+            
+        colu1 =  st.columns(1)
         with colu1:
             st.markdown("")
             st.markdown("")
@@ -102,33 +130,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 </div>
                 """, unsafe_allow_html=True)
                 
-        with col3:
-            st.markdown("##### Rentabilidade do Investimento")
-            
-            roi_anualizado = results.get('roi_anualizado', 0)
-            gauge_max_range_anual = max(30, roi_anualizado * 1.5)
-            fig_gauge_anual = go.Figure(go.Indicator(
-                mode="gauge+number", value=roi_anualizado,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "ROI Anualizado", 'font': {'size': 20}},
-                number={'suffix': "%", 'font': {'size': 24}},
-                gauge={'axis': {'range': [0, gauge_max_range_anual]}, 'bar': {'color': THEME_PRIMARY_COLOR}}
-            ))
-            fig_gauge_anual.update_layout(height=180, paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=20, r=20, t=50, b=10))
-            st.plotly_chart(fig_gauge_anual, use_container_width=True, key=f"gauge_anual_{unique_id}")
-
-            roi_periodo = results.get('roi', 0)
-            duracao_meses = results.get('num_months', 0)
-            gauge_max_range_periodo = max(30, roi_periodo * 1.5)
-            fig_gauge_periodo = go.Figure(go.Indicator(
-                mode="gauge+number", value=roi_periodo,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': f"ROI no Período ({duracao_meses} meses aprox.)", 'font': {'size': 20}},
-                number={'suffix': "%", 'font': {'size': 24}},
-                gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
-            ))
-            fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=180, margin=dict(l=20, r=20, t=50, b=10))
-            st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
 
         st.markdown("##### Fluxo de Caixa do Investidor")
         
