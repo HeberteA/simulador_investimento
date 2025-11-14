@@ -61,7 +61,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
                     c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
                     st.metric("Custo Total da Obra", f"= -{format_currency(results.get('total_construction_cost', 0))}")
-            st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
+            st.metric("Resultado Operacional do Projeto(VGV - Custo Total)", f"={format_currency(results.get('final_operational_result', 0))}")
 
         colu1, colu2 = st.columns([1, 2])
 
