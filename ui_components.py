@@ -97,20 +97,9 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
 
         with colu2: 
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
             
             co1, co2, co3 = st.columns([1, 2, 1])
             with co2:
-                st.markdown("")
-                st.markdown("")
                 st.markdown("")
                 st.markdown("")
                 st.markdown("")
