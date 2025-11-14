@@ -64,7 +64,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         colu1, colu2 = st.columns([1, 4])
 
         with colu1:
-            st.markdown("##### Rentabilidade do Investimento")
+            st.markdown("")
+            st.markdown("##### Retorno sobre o Investimento")
             
             roi_anualizado = results.get('roi_anualizado', 0)
             gauge_max_range_anual = max(30, roi_anualizado * 1.5)
