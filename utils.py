@@ -35,6 +35,7 @@ def init_gsheet_connection():
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
         
+@st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
         return pd.DataFrame()
@@ -56,32 +57,21 @@ def load_data_from_sheet(_worksheet):
         df['row_index'] = range(2, len(df) + 2)
     
     numeric_cols = [
-        'total_contribution', 'num_months', 'annual_interest_rate', 'monthly_interest_rate', 
-        'spe_percentage', 'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage', 
+        'total_contribution', 'num_months', 'monthly_interest_rate', 'annual_interest_rate', 'spe_percentage', 
+        'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage', 
         'vgv', 'total_construction_cost', 'final_operational_result', 'valor_participacao', 
         'resultado_final_investidor', 'roi', 'roi_anualizado', 'valor_corrigido',
-        'valor_aporte'
+        'valor_aporte', 'cost_obra_fisica', 'juros_investidor'
     ]
     
     for col in numeric_cols:
         if col in df.columns:
             series = df[col].astype(str).copy()
             is_pt_br_format = series.str.contains(',', na=False)
-            series = df[col].astype(str).copy()
+            series.loc[is_pt_br_format] = series.loc[is_pt_br_format].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+            df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
             
-            series_cleaned = series.str.replace('R$', '', regex=False) \
-                                   .str.replace('$', '', regex=False) \
-                                   .str.strip()
-            is_pt_br_format = series_cleaned.str.contains(',', na=False)
-            series_cleaned.loc[is_pt_br_format] = series_cleaned.loc[is_pt_br_format] \
-                                                    .str.replace('.', '', regex=False) \
-                                                    .str.replace(',', '.', regex=False)
-            
-            series_cleaned.loc[~is_pt_br_format] = series_cleaned.loc[~is_pt_br_format] \
-                                                    .str.replace(',', '', regex=False)
-            df[col] = pd.to_numeric(series_cleaned, errors='coerce').fillna(0)
-            
-    for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date']:
+    for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date', 'data']:
         if date_col in df.columns:
             df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
 
@@ -89,14 +79,6 @@ def load_data_from_sheet(_worksheet):
         df.dropna(subset=['created_at'], inplace=True)
         
     return df
-
-def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
-    if pd.isna(date_val):
-        return ""  
-    try:
-        return pd.to_datetime(date_val).strftime(fmt)
-    except (ValueError, TypeError):
-        return "" 
 
 def calculate_financials(params):
     results = {}
@@ -161,14 +143,13 @@ def calculate_financials(params):
     results['vgv'] = params.get('land_size', 0) * params.get('value_m2', 0)
     
     cost_obra_fisica = params.get('land_size', 0) * params.get('construction_cost_m2', 0)
+    area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
+
     results['cost_obra_fisica'] = cost_obra_fisica
-    results['total_construction_cost'] = cost_obra_fisica + juros_investidor
+    results['area_exchange_value'] = area_exchange_value 
+    results['total_construction_cost'] = cost_obra_fisica + juros_investidor + area_exchange_value
 
     operational_result = results['vgv'] - results['total_construction_cost']
-
-    area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
-    results['area_exchange_value'] = area_exchange_value 
-    
     results['final_operational_result'] = operational_result
     
     valor_investido = total_contribution
@@ -176,7 +157,7 @@ def calculate_financials(params):
     results['valor_participacao'] = results['final_operational_result'] * (params.get('spe_percentage', 0) / 100)
     lucro_bruto_investidor = results['valor_corrigido'] + results['valor_participacao']
     
-    results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido - area_exchange_value
+    results['resultado_final_investidor'] = lucro_bruto_investidor - valor_investido
     
     if valor_investido > 0:
         roi_raw = (results['resultado_final_investidor'] / valor_investido)
@@ -209,36 +190,38 @@ def generate_pdf(data):
             pdf.cell(0, 5, to_latin1("Logo 'Lavie.png' nao encontrado."), 0, 1, "L")
         
         pdf.set_font("Arial", "B", 16)
-        pdf.set_x(60) 
+        pdf.set_x(60)
         pdf.cell(0, 10, to_latin1("Relatório de Simulação Financeira"), 0, 1, "C")
-        pdf.ln(20) 
-        
+        pdf.ln(20)
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Dados do Cliente e Investimento"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
         client_info = f"Cliente: {data.get('client_name', '')} (Código: {data.get('client_code', '')})"
         pdf.cell(0, 5, to_latin1(client_info), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Valor do Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
-        pdf.cell(0, 5, to_latin1(f"Duração (meses aprox.): {data.get('num_months')} meses"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Duração (aprox.): {data.get('num_months')} meses"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Taxa de Juros Anual: {data.get('annual_interest_rate', 0):.2f}%"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Participação na SPE: {data.get('spe_percentage', 0):.2f}%"), 0, 1)
         pdf.ln(5)
-        
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Análise do Projeto Imobiliário"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
         pdf.cell(0, 5, to_latin1(f"VGV (Valor Geral de Venda): {format_currency(data.get('vgv'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Custo Físico da Obra: {format_currency(data.get('cost_obra_fisica'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Custo do Capital (Juros): {format_currency(data.get('juros_investidor'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Custo da Troca de Área: {format_currency(data.get('area_exchange_value'))}"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Custo Total da Obra: {format_currency(data.get('total_construction_cost'))}"), 0, 1)
-        pdf.cell(0, 5, to_latin1(f"Resultado Operacional Final: {format_currency(data.get('final_operational_result'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Resultado Operacional: {format_currency(data.get('final_operational_result'))}"), 0, 1)
         pdf.ln(5)
-        
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Resultados do Investidor"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
         pdf.cell(0, 5, to_latin1(f"Montante Final (Aporte + Juros): {format_currency(data.get('valor_corrigido'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"(+) Participação na SPE: {format_currency(data.get('valor_participacao'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"(-) Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Resultado Final (Lucro): {format_currency(data.get('resultado_final_investidor'))}"), 0, 1)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8, to_latin1(f"ROI (Período): {data.get('roi', 0):.2f}%"), 0, 1)
+        pdf.cell(0, 8, to_latin1(f"ROI: {data.get('roi', 0):.2f}%"), 0, 1)
         pdf.cell(0, 8, to_latin1(f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%"), 0, 1)
         pdf.ln(10)
 
@@ -251,7 +234,7 @@ def generate_pdf(data):
             col_widths = [60, 80]
             header = [to_latin1("Data de Vencimento"), to_latin1("Valor do Aporte")]
             for i, item in enumerate(header):
-                pdf.cell(col_widths[i], 8, item, 1, 0, 'C') 
+                pdf.cell(col_widths[i], 8, item, 1, 0, 'C')
             pdf.ln()
 
             pdf.set_font("Arial", "", 9)
