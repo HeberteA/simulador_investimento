@@ -4,3 +4,5 @@ backgroundColor = "rgba(0, 0, 0, 1)"
 secondaryBackgroundColor = "rgba(14, 17, 23, 0.9)"
 textColor = "#FFFFFF"
 font = "sans serif"
+borderColor="#E37026"
+showWidgetBorder=true
