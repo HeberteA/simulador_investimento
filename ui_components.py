@@ -49,7 +49,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 spe_percentage_label = f"2. Participação da SPE no Projeto"
                 c_spe, c_mon = st.columns(2)
                 c_spe.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{results.get('spe_percentage', 0):.2f}%")
-                c_mon.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
+                c_mon.metric("1. Montante Corrigido (Aporte + Juros)", f"+ {format_currency(results.get('valor_corrigido', 0))}")
             total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
             st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
             st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
