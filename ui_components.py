@@ -42,7 +42,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         st.subheader("Resumo Financeiro")
         col1, col2 = st.columns([1, 1])
         with col1:
-            with st.container(weight=300)
+            with st.container(weight=300):
                 st.markdown("##### Demonstrativo de Retorno do Investidor")
                 st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
                 spe_percentage_label = f"2. Participação da SPE no Projeto"
@@ -90,7 +90,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 """, unsafe_allow_html=True)
         
         with col2:
-            with st.container(weight=300)
+            with st.container(weight=300):
                 st.markdown("##### Resumo do Projeto Imobiliário")
                 st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
                 with st.container(height=300):
