@@ -57,6 +57,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.markdown("")
             st.markdown("")
             st.markdown("")
+            st.markdown("")
+            st.markdown("")
             co1, co2, co3 = st.columns([1, 6, 1])
             with co2:
                 resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
@@ -71,7 +73,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         font-size: 30px; 
                         color: #FFFFFF; 
                         margin: 0; 
-                        font-weight: sans serif;
+                        font-weight: bold;
                     ">
                         Resultado Final (Lucro Líquido)
                     </p>
