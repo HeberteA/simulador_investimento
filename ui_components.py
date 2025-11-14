@@ -77,7 +77,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 mode="gauge+number", value=roi_anualizado,
                 domain={'x': [0, 1], 'y': [0, 1]},
                 title={'text': "ROI Anualizado", 'font': {'size': 20}},
-                number={'suffix': "%", 'font': {'size': 30}, 'color': THEME_PRIMARY_COLOR},
+                number={'suffix': "%", 'font': {'size': 30}, 'color': THEME_PRIMARY_COLOR,
                 gauge={'axis': {'range': [0, gauge_max_range_anual]}, 'bar': {'color': THEME_PRIMARY_COLOR}}
             ))
             fig_gauge_anual.update_layout(height=225, paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=50, r=50, t=50, b=10))
