@@ -49,7 +49,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
             st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
             st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
-            st.metric("")
+            st.markdown("")
             st.markdown("---")
             st.markdown("")
             st.markdown("")
