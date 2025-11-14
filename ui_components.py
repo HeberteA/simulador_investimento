@@ -40,7 +40,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_resumo:
         st.subheader("Resumo Financeiro")
-        col2, col1= st.columns([1.5, 1])
+        col2, col1= st.columns([1.25, 1])
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
             st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
@@ -53,7 +53,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
             st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
-            col5, col6 = st.columns([2.5, 1])
+            col5, col6 = st.columns([3, 1])
             with col5:
                 with st.container(height=300):
                     st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
