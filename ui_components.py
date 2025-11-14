@@ -64,14 +64,14 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 <div style="
                     background-color: rgba(0,0,0,0);
                     border-radius: 15px; 
-                    padding: 35px; 
+                    padding: 30px; 
                     border: 1px solid ;
                 ">
                     <p style="
-                        font-size: 35px; 
+                        font-size: 30px; 
                         color: #FFFFFF; 
                         margin: 0; 
-                        font-weight: bold;
+                        font-weight: sans serif;
                     ">
                         Resultado Final (Lucro Líquido)
                     </p>
