@@ -308,8 +308,13 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     file_name=file_name,
                     mime="application/pdf",
                     use_container_width=True,
-                    key=f"pdf_dl_{unique_id}"
+                    key=f"pdf_dl_{unique_id}",
+                    disabled=not is_simulation_saved
                 )
+                
+                if not is_simulation_saved:
+                    st.caption("ℹ️ Você deve salvar a simulação na planilha antes de baixar o PDF.")
+                
             col_index += 1
 
         if "save" in buttons_to_show:
