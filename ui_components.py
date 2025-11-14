@@ -14,7 +14,6 @@ THEME_PRIMARY_COLOR = "#E37026"
 def display_full_results(results, show_save_button=False, show_download_button=False, save_callback=None):
     unique_id = results.get('simulation_id', str(datetime.now().timestamp()))
 
-    st.header("Resultados da Simulação")
 
     tab_vencimentos, tab_resumo, tab_sensibilidade = st.tabs(["**Cronograma de Vencimentos**", "**Resumo Financeiro**", "**Análise de Cenários**"])
 
