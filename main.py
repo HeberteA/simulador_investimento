@@ -40,7 +40,7 @@ defaults = {
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
-    'aportes': [], 'confirming_delete': None
+    'aportes': [], 'confirming_delete': None,
     'simulation_saved': False
 }
 
