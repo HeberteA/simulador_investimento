@@ -64,6 +64,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         st.divider()
         colu1, colu2 =  st.columns(2)
         with colu1:
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
             co1, co2, co3 = st.columns([1, 5, 1])
             with co2:
                 resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
