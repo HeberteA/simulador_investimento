@@ -71,13 +71,15 @@ def render_new_simulation_page():
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
+        
             saved_flag = st.session_state.get('simulation_saved', False)
+            
             display_full_results(
                 st.session_state.simulation_results,
                 show_save_button=True,
                 show_download_button=True,
                 save_callback=save_simulation_callback,
-                is_simulation_saved=saved_flag
+                is_simulation_saved=saved_flag 
             )
         return
 
