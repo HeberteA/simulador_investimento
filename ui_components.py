@@ -90,7 +90,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
             st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
-            with st.container()
+            with st.container():
                 st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
                 c_troca, c_juros = st.columns(2)
                 c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
