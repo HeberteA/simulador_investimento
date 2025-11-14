@@ -43,13 +43,13 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         col1, col2 = st.columns([1, 1])
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
-            with st.container(height=425):
-                st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
-                spe_percentage_label = f"2. Participação da SPE no Projeto"
-                st.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{results.get('spe_percentage', 0):.2f}%")
-                total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
-                st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
-                st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
+            st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
+            spe_percentage_label = f"2. Participação da SPE no Projeto"
+            st.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{results.get('spe_percentage', 0):.2f}%")
+            total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
+            st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
+            st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
+            st.divider()
             st.markdown("")
             st.markdown("")
             st.markdown("")
@@ -90,15 +90,15 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
-            with st.container(height=525):
-                st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
-                with st.container(height=300):
-                    st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
-                    c_troca, c_juros = st.columns(2)
-                    c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
-                    c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
-                    st.metric("Custo Total da Obra", f"={format_currency(results.get('total_construction_cost', 0))}")
-                st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
+            st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
+            with st.container(height=300):
+                st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
+                c_troca, c_juros = st.columns(2)
+                c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
+                c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
+                st.metric("Custo Total da Obra", f"={format_currency(results.get('total_construction_cost', 0))}")
+            st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
+    st.divider()
             st.markdown("##### Rentabilidade do Investimento")
             
             roi_anualizado = results.get('roi_anualizado', 0)
