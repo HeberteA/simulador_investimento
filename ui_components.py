@@ -40,7 +40,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_resumo:
         st.subheader("Resumo Financeiro")
-        col2, col1, col3 = st.columns([1, 1, 1])
+        col2, col1, col3 = st.columns([2, 1, 1])
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
             st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
@@ -88,47 +88,36 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             ))
             fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=180, margin=dict(l=20, r=20, t=50, b=10))
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
-            
-        colu1 =  st.columns(1)
-        with colu1:
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            co1, co2, co3 = st.columns([1, 5, 1])
-            with co2:
-                resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
-                st.markdown(f"""
-                <div style="
-                    background-color: rgba(0,0,0,0);
-                    border-radius: 10px; 
-                    padding: 30px; 
-                    border: 1px solid ;
+        
+        co1, co2, co3 = st.columns([1, 5, 1])
+        with co2:
+            resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
+            st.markdown(f"""
+            <div style="
+                background-color: rgba(0,0,0,0);
+                border-radius: 10px; 
+                padding: 30px; 
+                border: 1px solid ;
+            ">
+                <p style="
+                    font-size: 30px; 
+                    color: #FFFFFF; 
+                    margin: 0; 
+                    font-weight: bold;
                 ">
-                    <p style="
-                        font-size: 30px; 
-                        color: #FFFFFF; 
-                        margin: 0; 
-                        font-weight: bold;
-                    ">
-                        Resultado Final (Lucro Líquido)
-                    </p>
-                    <p style="
-                        font-size: 2.5rem; 
-                        color: {THEME_PRIMARY_COLOR}; 
-                        font-weight: 600; 
-                        margin: 0;
-                        line-height: 1;
-                    ">
-                        ={resultado_final_str}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                    Resultado Final (Lucro Líquido)
+                </p>
+                <p style="
+                    font-size: 2.5rem; 
+                    color: {THEME_PRIMARY_COLOR}; 
+                    font-weight: 600; 
+                    margin: 0;
+                    line-height: 1;
+                ">
+                    ={resultado_final_str}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
                 
 
         st.markdown("##### Fluxo de Caixa do Investidor")
