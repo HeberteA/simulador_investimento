@@ -53,7 +53,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         with col2:
             st.markdown("##### Resumo do Projeto Imobiliário")
             st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
-            col5, col6 = st.columns([3])
+            col5, col6, col7 = st.columns([2, 1])
             with col5:
                 with st.container(height=300):
                     st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
