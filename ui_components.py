@@ -48,7 +48,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{results.get('spe_percentage', 0):.2f}%")
             total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
             st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
-            st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}"
+            st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
             st.markdown("")
             st.markdown("---")
             st.markdown("")
