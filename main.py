@@ -76,7 +76,7 @@ def render_new_simulation_page():
                 st.session_state.simulation_results,
                 show_save_button=True,
                 show_download_button=True,
-                save_callback=save_simulation_callback
+                save_callback=save_simulation_callback,
                 is_simulation_saved=saved_flag
             )
         return
