@@ -65,8 +65,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
                     c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
                     st.metric("Custo Total da Obra", f"= -{format_currency(results.get('total_construction_cost', 0))}")
-        colu1, colu2 = st.columns([1, 2])
-
+                    
+        colu1, colu2 = st.columns([1, 1])
         with colu1:
             st.markdown("")
             st.markdown("##### Retorno sobre o Investimento")
@@ -100,6 +100,12 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             
             co1, co2, co3 = st.columns([1, 2, 1])
             with co2:
+                st.markdown("")
+                st.markdown("")
+                st.markdown("")
+                st.markdown("")
+                st.markdown("")
+                st.markdown("")
                 st.markdown("")
                 st.markdown("")
                 st.markdown("")
