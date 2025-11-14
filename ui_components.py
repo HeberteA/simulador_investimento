@@ -93,6 +93,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
+                
         with colu2:
             st.markdown("##### Rentabilidade do Investimento")
             
