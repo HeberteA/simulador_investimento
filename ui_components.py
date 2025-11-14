@@ -62,8 +62,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
             
         st.divider()
-        colu1, colu2 =  st.columns(2)
+        colu2, colu1 =  st.columns(2)
         with colu1:
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
             st.markdown("")
             st.markdown("")
             st.markdown("")
