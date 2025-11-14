@@ -164,7 +164,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         'Lucro (Participação SPE)': '#388E3C'
                     }
                 )
-                fig_fluxo.update_layout(barmode='relative')
+                fig_fluxo.update_layout(paper_bgcolor='rgba(0,0,0,0)', barmode='relative')
                 st.plotly_chart(fig_fluxo, use_container_width=True)
             else:
                 st.warning("Não há aportes para exibir o fluxo de caixa.")
