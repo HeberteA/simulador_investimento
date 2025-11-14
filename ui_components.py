@@ -80,7 +80,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 number={'suffix': "%", 'font': {'size': 24}},
                 gauge={'axis': {'range': [0, gauge_max_range_anual]}, 'bar': {'color': THEME_PRIMARY_COLOR}}
             ))
-            fig_gauge_anual.update_layout(height=225, paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=50, r=50, t=40, b=10))
+            fig_gauge_anual.update_layout(height=225, paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=50, r=50, t=50, b=10))
             st.plotly_chart(fig_gauge_anual, use_container_width=True, key=f"gauge_anual_{unique_id}")
 
             roi_periodo = results.get('roi', 0)
@@ -93,7 +93,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 number={'suffix': "%", 'font': {'size': 24}},
                 gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
             ))
-            fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=225, margin=dict(l=50, r=50, t=40, b=10))
+            fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=225, margin=dict(l=50, r=50, t=50, b=10))
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
 
         with colu2: 
