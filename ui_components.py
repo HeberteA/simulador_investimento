@@ -40,7 +40,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_resumo:
         st.subheader("Resumo Financeiro")
-        col2, col1 = st.columns([1, 1])
+        col2, col1, col3 = st.columns(3)
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
             st.metric("1. Montante Corrigido (Aporte + Juros)", format_currency(results.get('valor_corrigido', 0)))
@@ -102,7 +102,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 </div>
                 """, unsafe_allow_html=True)
                 
-        with colu2:
+        with col3:
             st.markdown("##### Rentabilidade do Investimento")
             
             roi_anualizado = results.get('roi_anualizado', 0)
