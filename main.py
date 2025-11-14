@@ -41,6 +41,7 @@ defaults = {
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
     'aportes': [], 'confirming_delete': None
+    'simulation_saved': False
 }
 
 for key, value in defaults.items():
@@ -70,11 +71,13 @@ def render_new_simulation_page():
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
+            saved_flag = st.session_state.get('simulation_saved', False)
             display_full_results(
                 st.session_state.simulation_results,
                 show_save_button=True,
                 show_download_button=True,
                 save_callback=save_simulation_callback
+                is_simulation_saved=saved_flag
             )
         return
 
@@ -294,12 +297,15 @@ def render_new_simulation_page():
                 
                 st.session_state.simulation_results = utils.calculate_financials(params)
                 st.session_state.results_ready = True
+                st.session_state.simulation_saved = False 
                 go_to_results()
                 st.rerun()
     
 def save_simulation_callback():
     if 'save_error' in st.session_state:
         del st.session_state.save_error
+    
+    st.session_state.simulation_saved = False
 
     if not worksheets or not worksheets.get("simulations") or not worksheets.get("aportes"):
         st.session_state.save_error = "Conexão com as planilhas não disponível."
@@ -314,84 +320,58 @@ def save_simulation_callback():
 
         sim_id = f"sim_{int(datetime.now().timestamp())}"
         
-        main_data_headers = [
-            'simulation_id', 'created_at', 'client_name', 'client_code', 
-            'total_contribution', 'num_months', 'annual_interest_rate', 'spe_percentage', 
-            'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage', 
-            'vgv', 'total_construction_cost', 'final_operational_result', 
-            'valor_participacao', 'resultado_final_investidor', 'roi', 'roi_anualizado', 
-            'valor_corrigido', 'start_date', 'project_end_date'
-        ]
-        
-        def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
-            if pd.isna(date_val): return ""
-            try: return pd.to_datetime(date_val).strftime(fmt)
-            except (ValueError, TypeError): return ""
+        try:
+            main_data = [
+                sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                str(results.get('client_name', '')),
+                str(results.get('client_code', '')),
+                float(results.get('total_contribution', 0)), 
+                int(results.get('num_months', 0)),
+                float(results.get('annual_interest_rate', 0)),
+                float(results.get('spe_percentage', 0)),
+                int(results.get('land_size', 0)),
+                float(results.get('construction_cost_m2', 0)),
+                float(results.get('value_m2', 0)),
+                float(results.get('area_exchange_percentage', 0)),
+                float(results.get('vgv', 0)), 
+                float(results.get('total_construction_cost', 0)),
+                float(results.get('final_operational_result', 0)), 
+                float(results.get('valor_participacao', 0)),
+                float(results.get('resultado_final_investidor', 0)),
+                float(results.get('roi', 0)), 
+                float(results.get('roi_anualizado', 0)),
+                float(results.get('valor_corrigido', 0)),
+                pd.to_datetime(results.get('start_date')).strftime('%Y-%m-%d'), 
+                pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
+            ]
+            worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
+        except BaseException as e: 
+            st.session_state.save_error = f"Erro ao salvar dados principais: {e}"
+            return
 
-        main_data_values = [
-            sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            str(results.get('client_name', '')),
-            str(results.get('client_code', '')),
-            float(results.get('total_contribution', 0)), 
-            int(results.get('num_months', 0)),
-            float(results.get('annual_interest_rate', 0)),
-            float(results.get('spe_percentage', 0)),
-            int(results.get('land_size', 0)),
-            float(results.get('construction_cost_m2', 0)),
-            float(results.get('value_m2', 0)),
-            float(results.get('area_exchange_percentage', 0)),
-            float(results.get('vgv', 0)), 
-            float(results.get('total_construction_cost', 0)),
-            float(results.get('final_operational_result', 0)), 
-            float(results.get('valor_participacao', 0)),
-            float(results.get('resultado_final_investidor', 0)),
-            float(results.get('roi', 0)), 
-            float(results.get('roi_anualizado', 0)),
-            float(results.get('valor_corrigido', 0)),
-            safe_date_to_string(results.get('start_date')), 
-            safe_date_to_string(results.get('project_end_date'))
-        ]
-        
-        aportes_data_headers = ['simulation_id', 'data_aporte', 'valor_aporte']
-        aportes_data_rows = []
+        aportes_data = []
         aportes_list = results.get('aportes', []) 
         
         for aporte in aportes_list:
             if isinstance(aporte, dict) and aporte.get('date') is not None and aporte.get('value', 0) > 0:
                 try:
-                    aportes_data_rows.append([
+                    aportes_data.append([
                         sim_id,
-                        safe_date_to_string(aporte.get('date')),
+                        pd.to_datetime(aporte['date']).strftime('%Y-%m-%d'),
                         float(aporte.get('value', 0))
                     ])
                 except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
                     pass 
         
         try:
-            ws_sims = worksheets["simulations"]
-            sim_values = ws_sims.get_all_values()
-            if not sim_values:
-                ws_sims.append_row(main_data_headers, value_input_option='USER_ENTERED')
-            
-            ws_sims.append_row(main_data_values, value_input_option='USER_ENTERED')
-            
-        except BaseException as e: 
-            st.session_state.save_error = f"Erro ao salvar dados principais: {e}"
-            return
-
-        try:
-            if aportes_data_rows:
-                ws_aportes = worksheets["aportes"]
-                aporte_values = ws_aportes.get_all_values()
-                if not aporte_values:
-                    ws_aportes.append_row(aportes_data_headers, value_input_option='USER_ENTERED')
-                
-                ws_aportes.append_rows(aportes_data_rows, value_input_option='USER_ENTERED')
-                
+            if aportes_data:
+                worksheets["aportes"].append_rows(aportes_data, value_input_option='USER_ENTERED')
         except BaseException as e:
             st.session_state.save_error = f"Erro ao salvar aportes: {e}"
             return
 
+        st.session_state.simulation_saved = True
+        
         st.cache_data.clear()
         st.toast("✅ Simulação salva com sucesso!", icon="🎉")
 
@@ -485,7 +465,7 @@ def render_history_page():
                          sim_data['annual_interest_rate'] = sim_data.get('monthly_interest_rate', 12.0) 
                          
                     full_results = utils.calculate_financials(sim_data)
-                    display_full_results(full_results, show_download_button=True)
+                    display_full_results(full_results, show_download_button=True, is_simulation_saved=True)
 
 def render_edit_page():
     st.title("Editando Simulação")
