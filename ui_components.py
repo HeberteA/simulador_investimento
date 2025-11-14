@@ -61,7 +61,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 st.metric("Custo Total da Obra", f"={format_currency(results.get('total_construction_cost', 0))}")
             st.metric("Resultado Operacional do Projeto", f"={format_currency(results.get('final_operational_result', 0))}")
             
-        st.divider()
         colu2, colu1 =  st.columns(2)
         with colu1:
             st.markdown("")
@@ -131,7 +130,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=180, margin=dict(l=20, r=20, t=50, b=10))
             st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
 
-        st.divider()
         st.markdown("##### Fluxo de Caixa do Investidor")
         
         try:
