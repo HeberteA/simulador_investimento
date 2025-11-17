@@ -21,24 +21,35 @@ def format_currency(value):
 @st.cache_resource
 def init_gsheet_connection():
     try:
-        creds = st.secrets["gcp_service_account"]
+        creds_str = st.secrets["gcp_creds"]
+        creds_dict = json.loads(creds_str)
         sheet_name = st.secrets["g_sheet_name"]
         gc = gspread.service_account_from_dict(creds)
-        spreadsheet = gc.open(sheet_name)
+        spreadsheet_key = st.secrets["spreadsheet_key"]
+        spreadsheet = gc.open_by_key(spreadsheet_key)
         
         worksheets = {
-            "simulations": spreadsheet.worksheet("simulations"),
-            "aportes": spreadsheet.worksheet("aportes")
+            "simulations": spreadsheet.worksheet("simulations"), 
+            "aportes": spreadsheet.worksheet("aportes")         
         }
         return worksheets
+    except json.JSONDecodeError:
+        st.error("Erro fatal: O formato do segredo 'gcp_creds' não é um JSON válido. Verifique o Streamlit Secrets.")
+        return None
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error("Erro fatal: Planilha não encontrada. Verifique a 'spreadsheet_key' no Streamlit Secrets.")
+        return None
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
         
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
-    if not _worksheet:
+    if worksheet is None:
         return pd.DataFrame()
+    try:
+        data = worksheet.get_all_records()
+        df = pd.DataFrame(data)
     
     all_values = _worksheet.get_all_values()
     if not all_values or len(all_values) < 1:
@@ -54,7 +65,7 @@ def load_data_from_sheet(_worksheet):
     df.columns = df.columns.str.lower()
     
     if 'row_index' not in df.columns:
-        df['row_index'] = range(2, len(df) + 2)
+        df['row_index'] = [i + 2 for i in range(len(df))]
     
     numeric_cols = [
         'total_contribution', 'num_months', 'monthly_interest_rate', 'annual_interest_rate', 'spe_percentage', 
@@ -79,6 +90,9 @@ def load_data_from_sheet(_worksheet):
         df.dropna(subset=['created_at'], inplace=True)
         
     return df
+except Exception as e:
+        st.error(f"Erro ao carregar dados da aba '{worksheet.title}': {e}")
+        return pd.DataFrame()
 
 def calculate_financials(params):
     results = {}
