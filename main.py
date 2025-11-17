@@ -28,12 +28,6 @@ background_texture_css = """
     background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
     background-repeat: repeat;
 }
-/* Estiliza os novos containers */
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    padding: 15px;
-}
 </style>
 """
 st.markdown(background_texture_css, unsafe_allow_html=True)
@@ -46,7 +40,8 @@ defaults = {
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
     'aportes': [], 'confirming_delete': None,
-    'simulation_saved': False
+    'simulation_saved': False,
+    'current_step': 1  
 }
 
 for key, value in defaults.items():
@@ -87,7 +82,136 @@ def render_login_page():
                 else:
                     st.error("Código de acesso incorreto. Tente novamente.")
 
+
 def render_new_simulation_page():
+
+    SENIOR_FRONTEND_CSS = """
+    <style>
+        /* --- 1. ESTILO DA SIDEBAR FIXA --- */
+        /* Alvo: O container da coluna da direita */
+        div[data-testid="stVerticalBlock"]:nth-child(2) > [data-testid="stVerticalBlockBorderWrapper"] {
+            position: sticky;
+            top: 60px; /* Ajuste a distância do topo */
+            background-color: rgba(14, 17, 23, 0.9); /* Cor de fundo escura */
+            border-radius: 10px;
+            border: 1px solid #E37026;
+            z-index: 1000;
+        }
+
+        /* --- 2. ESTILO DO "STEPPER" (WIZARD) --- */
+        .step-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0;
+            margin-bottom: 30px;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            color: #888; /* Cor inativa */
+            font-weight: 500;
+            width: 33%;
+        }
+        .step-item .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        .step-item .step-label {
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        /* Estado Ativo do Stepper */
+        .step-item.active {
+            color: #E37026; /* Cor primária */
+            font-weight: bold;
+        }
+        .step-item.active .step-number {
+            border-color: #E37026;
+            background-color: #E37026;
+            color: #FFFFFF;
+        }
+        /* Linha de conexão (opcional, mas elegante) */
+        .step-item:not(:last-child)::after {
+            content: '';
+            position: relative;
+            top: -24px;
+            left: 50%;
+            height: 2px;
+            width: 100%;
+            background-color: #555;
+            z-index: -1;
+            transform: translateX(15px); /* Ajuste para centralizar */
+        }
+        .step-item.active:not(:last-child)::after {
+             background-color: #E37026;
+        }
+
+        /* --- 3. ESTILO DO "CARTÃO" DE CONTEÚDO --- */
+        /* Substitui o st.container(border=True) padrão */
+        .step-content-card {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .step-content-card h3 { /* Título de cada etapa */
+            color: #E37026;
+            margin-top: 0;
+            border-bottom: 2px solid #E37026;
+            padding-bottom: 10px;
+        }
+        
+        /* --- 4. BOTÕES DE NAVEGAÇÃO --- */
+        /* Esconde o label do "st.columns" */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"] > div.stButton {
+             display: flex;
+        }
+        /* Botão "Próximo" */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"]:last-child > div.stButton > button {
+            background-color: #E37026;
+            color: white;
+            width: 100%;
+            border: none;
+        }
+        /* Botão "Voltar" */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"]:first-child > div.stButton > button {
+            background-color: transparent;
+            color: #AAA;
+            border: 1px solid #AAA;
+            width: 100%;
+        }
+        
+        /* --- 5. ESCONDE O EXPANDER DE "Carregar" --- */
+        /* Vamos manter o expander, mas deixá-lo mais sutil */
+        .st-expander {
+             border: 1px solid #555 !important;
+             background-color: rgba(255, 255, 255, 0.03) !important;
+             border-radius: 10px;
+             margin-bottom: 20px;
+        }
+        .st-expander summary {
+            font-size: 1.05rem;
+            color: #AAA;
+        }
+        .st-expander:hover summary {
+            color: #E37026;
+        }
+        
+    </style>
+    """
+    st.markdown(SENIOR_FRONTEND_CSS, unsafe_allow_html=True)
+    
     if 'show_results_page' not in st.session_state:
         st.session_state.show_results_page = False
 
@@ -97,44 +221,13 @@ def render_new_simulation_page():
     def go_to_inputs():
         st.session_state.show_results_page = False
         
-    def add_aporte_callback():
-        if st.session_state.new_aporte_value > 0:
-            st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
-            st.session_state.new_aporte_value = 0.0
-        else:
-            st.warning("O valor do aporte deve ser maior que zero.")
-            
-    def add_aportes_parcelados_callback():
-        total_valor = st.session_state.get('parcelado_total_valor', 0.0)
-        num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
-        data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
-        
-        if total_valor <= 0:
-            st.warning("O valor total do aporte deve ser maior que zero.")
-            return
-        if num_parcelas <= 0:
-            st.warning("O número de parcelas deve ser pelo menos 1.")
-            return
-            
-        valor_parcela = round(total_valor / num_parcelas, 2)
-        
-        novos_aportes = []
-        for i in range(num_parcelas):
-            data_vencimento = data_inicio + relativedelta(months=i)
-            novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
-            
-        st.session_state.aportes.extend(novos_aportes)
-        st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
-        st.session_state.parcelado_total_valor = 0.0
-        st.session_state.parcelado_num_parcelas = 1
-
     if st.session_state.show_results_page:
         st.title("Resultados da Simulação")
         if 'save_error' in st.session_state and st.session_state.save_error:
             st.error(st.session_state.save_error)
             del st.session_state.save_error
         
-        if st.button("Voltar para os Parâmetros"):
+        if st.button("⬅️ Voltar para os Parâmetros"):
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
@@ -150,190 +243,178 @@ def render_new_simulation_page():
 
     st.title("Nova Simulação Financeira")
     
-    col_inputs, col_visuals = st.columns([2, 1.2])
+    
+    def render_stepper_ui():
+        step = st.session_state.current_step
+        st.markdown(f"""
+        <div class="step-container">
+            <div class="step-item {'active' if step >= 1 else ''}">
+                <div class="step-number">1</div>
+                <div class="step-label">Projeto</div>
+            </div>
+            <div class="step-item {'active' if step >= 2 else ''}">
+                <div class="step-number">2</div>
+                <div class="step-label">Investidor</div>
+            </div>
+            <div class="step-item {'active' if step >= 3 else ''}">
+                <div class="step-number">3</div>
+                <div class="step-label">Aportes</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with col_inputs:
-        
-        with st.container(border=True):
-            st.subheader("Carregar Simulação Salva")
-            if worksheets and worksheets.get("simulations"):
-                df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
-                
-                if not df_simulations.empty:
-                    client_list = df_simulations["client_name"].unique().tolist()
-                    selected_client_to_load = st.selectbox(
-                        "Selecione o cliente para carregar os dados da sua última simulação",
-                        options=client_list, index=None, placeholder="Escolha um cliente..."
-                    )
-                    
-                    if st.button("Carregar Dados do Cliente"):
-                        if selected_client_to_load:
-                            with st.spinner("Carregando dados..."):
-                                client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
-                                latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
-                                
-                                for key, value in latest_sim.items():
-                                    if key in st.session_state:
-                                        if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
-                                            st.session_state['annual_interest_rate'] = float(value)
-                                        elif key in st.session_state:
-                                            if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
-                                            elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
-                                            elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
-                                            else: st.session_state[key] = value
-                                
-                                df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
-                                sim_id = latest_sim['simulation_id']
-                                aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
-                                
-                                st.session_state.aportes = []
-                                
-                                date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
-                                value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
-                                
-                                if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
-                                    for _, row in aportes_do_cliente.iterrows():
-                                        try:
-                                            st.session_state.aportes.append({
-                                                "data": pd.to_datetime(row[date_col]).date(),
-                                                "valor": float(row[value_col])
-                                            })
-                                        except Exception:
-                                            st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
-                                else:
-                                    st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
-
-                                
-                                st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
-                                st.rerun()
-
-        with st.container(border=True):
-            st.subheader("Parâmetros Gerais")
-            tab_invest, tab_proj = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
-            
-            with tab_invest:
-                current_start_date = datetime.today().date()
-                if st.session_state.aportes:
-                    try:
-                        valid_dates = [pd.to_datetime(a['data']).date() for a in st.session_state.aportes if a.get('data')]
-                        if valid_dates:
-                            current_start_date = min(valid_dates)
-                    except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
-                        if 'start_date' in st.session_state:
-                            current_start_date = st.session_state.start_date
-                        else:
-                            pass 
-
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.text_input("Nome do Cliente", key="client_name")
-                    st.text_input("Código do Cliente", key="client_code")
-                with col2:
-                    st.date_input("Data de Início (Primeiro Vencimento)", 
-                                  value=current_start_date, 
-                                  disabled=True)
-                    def update_project_end_date():
-                        st.session_state.project_end_date = st.session_state.project_end_date_widget
-
-                    st.date_input("Data Final do Projeto", 
-                                  value=st.session_state.project_end_date,
-                                  key="project_end_date_widget", 
-                                  on_change=update_project_end_date 
-                                  )
-
-            with tab_proj:
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
-                    st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
-                    st.number_input(
-                        "Taxa de Juros Anual (%)", 
-                        min_value=0.0, 
-                        step=0.1, 
-                        format="%.2f", 
-                        key="annual_interest_rate"
-                    )
-                with c2:
-                    st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
-                    st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-                    st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
-
-        with st.container(border=True):
-            st.subheader("Lançamento de Aportes")
-            tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Aporte Parcelado"])
-
-            with tab_unico:
-                c1, c2, c3 = st.columns([2, 2, 1])
-                c1.date_input("Data de Vencimento", key="new_aporte_date")
-                c2.number_input("Valor do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
-                with c3:
-                    st.write("‎") 
-                    st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
-
-            with tab_parcelado:
-                p1, p2, p3 = st.columns(3)
-                p1.number_input("Valor Total do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="parcelado_total_valor")
-                p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
-                p3.date_input("Data do Primeiro Vencimento", key="parcelado_data_inicio")
-                
-                st.button("Adicionar Aportes Parcelados", on_click=add_aportes_parcelados_callback, use_container_width=True, key="btn_aporte_parcelado")
-
-            if st.session_state.aportes:
-                st.divider()
-                st.subheader("Cronograma de Vencimentos")
-                
-                try:
-                    aportes_df = pd.DataFrame(st.session_state.aportes)
-                    
-                    if not aportes_df.empty:
-                        aportes_df['data'] = pd.to_datetime(aportes_df['data'])
-                        aportes_df = aportes_df.sort_values(by="data").reset_index(drop=True)
-                    
-                    edited_df = st.data_editor(
-                        aportes_df,
-                        column_config={
-                            "data": st.column_config.DateColumn(
-                                "Data de Vencimento",
-                                format="DD/MM/YYYY",
-                                step=1,
-                            ),
-                            "valor": st.column_config.NumberColumn(
-                                "Valor (R$)",
-                                format="R$ %.2f",
-                            ),
-                        },
-                        use_container_width=True,
-                        num_rows="dynamic",
-                        key="aportes_editor"
-                    )
-                    
-                    st.session_state.aportes = edited_df.to_dict('records')
-                
-                except Exception as e:
-                    st.error(f"Erro ao processar aportes: {e}")
-                    st.warning("Se o erro persistir, tente 'Limpar Todos os Aportes'.")
-                
-                if st.button("Limpar Todos os Aportes", type="secondary"):
-                    st.session_state.aportes = []
-                    st.rerun()
-        
+    def render_step_1_projeto():
+        st.markdown("<div class='step-content-card'>", unsafe_allow_html=True)
+        st.subheader("Etapa 1: Parâmetros do Projeto")
+        st.markdown("Defina os dados fundamentais do empreendimento.")
         st.divider()
-        if st.button("Calcular Resultado", use_container_width=True, type="primary"):
-            if not st.session_state.aportes:
-                st.warning("Adicione pelo menos um aporte para calcular.")
-            else:
-                with st.spinner("Realizando cálculos..."):
-                    params = {k: st.session_state[k] for k in defaults.keys()}
-                    params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
-                    
-                    st.session_state.simulation_results = utils.calculate_financials(params)
-                    st.session_state.results_ready = True
-                    st.session_state.simulation_saved = False 
-                    go_to_results()
-                    st.rerun()
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
+            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
+        with c2:
+            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
+            st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    with col_visuals:
+    def render_step_2_investidor():
+        st.markdown("<div class='step-content-card'>", unsafe_allow_html=True)
+        st.subheader("Etapa 2: Dados do Investidor e Prazos")
+        st.markdown("Insira as informações do cliente e as condições do investimento.")
+        st.divider()
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.text_input("Nome do Cliente", key="client_name")
+            st.text_input("Código do Cliente", key="client_code")
+            st.number_input(
+                "Taxa de Juros Anual (%)", 
+                min_value=0.0, 
+                step=0.1, 
+                format="%.2f", 
+                key="annual_interest_rate"
+            )
+        with c2:
+            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
+            st.date_input("Data Final do Projeto", 
+                          value=st.session_state.project_end_date,
+                          key="project_end_date" 
+                          )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    def render_step_3_aportes():
+        
+        def add_aporte_callback():
+            if st.session_state.new_aporte_value > 0:
+                st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
+                st.session_state.new_aporte_value = 0.0
+            else:
+                st.warning("O valor do aporte deve ser maior que zero.")
+                
+        def add_aportes_parcelados_callback():
+            total_valor = st.session_state.get('parcelado_total_valor', 0.0)
+            num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
+            data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
+            
+            if total_valor <= 0:
+                st.warning("O valor total do aporte deve ser maior que zero.")
+                return
+            if num_parcelas <= 0:
+                st.warning("O número de parcelas deve ser pelo menos 1.")
+                return
+                
+            valor_parcela = round(total_valor / num_parcelas, 2)
+            novos_aportes = []
+            for i in range(num_parcelas):
+                data_vencimento = data_inicio + relativedelta(months=i)
+                novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
+                
+            st.session_state.aportes.extend(novos_aportes)
+            st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
+            st.session_state.parcelado_total_valor = 0.0
+            st.session_state.parcelado_num_parcelas = 1
+
+        st.markdown("<div class='step-content-card'>", unsafe_allow_html=True)
+        st.subheader("Etapa 3: Lançamento de Aportes")
+        st.markdown("Adicione os aportes únicos ou parcelados.")
+        st.divider()
+
+        tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Aporte Parcelado"])
+
+        with tab_unico:
+            c1, c2, c3 = st.columns([2, 2, 1])
+            c1.date_input("Data de Vencimento", key="new_aporte_date")
+            c2.number_input("Valor do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
+            with c3:
+                st.write("‎") 
+                st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
+
+        with tab_parcelado:
+            p1, p2, p3 = st.columns(3)
+            p1.number_input("Valor Total do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="parcelado_total_valor")
+            p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
+            p3.date_input("Data do Primeiro Vencimento", key="parcelado_data_inicio")
+            
+            st.button("Adicionar Aportes Parcelados", on_click=add_aportes_parcelados_callback, use_container_width=True, key="btn_aporte_parcelado")
+
+        if st.session_state.aportes:
+            st.divider()
+            st.subheader("Cronograma de Vencimentos")
+            
+            try:
+                aportes_df = pd.DataFrame(st.session_state.aportes)
+                if not aportes_df.empty:
+                    aportes_df['data'] = pd.to_datetime(aportes_df['data'])
+                    aportes_df = aportes_df.sort_values(by="data").reset_index(drop=True)
+                
+                edited_df = st.data_editor(
+                    aportes_df,
+                    column_config={
+                        "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
+                        "valor": st.column_config.NumberColumn("Valor (R$)", format="R$ %.2f"),
+                    },
+                    use_container_width=True, num_rows="dynamic", key="aportes_editor"
+                )
+                st.session_state.aportes = edited_df.to_dict('records')
+            
+            except Exception as e:
+                st.error(f"Erro ao processar aportes: {e}")
+            
+            if st.button("Limpar Todos os Aportes", type="secondary"):
+                st.session_state.aportes = []
+                st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    def render_stepper_navigation():
+        nav_cols = st.columns([1, 1, 1, 1]) 
+        
+        with nav_cols[0]:
+            if st.session_state.current_step > 1:
+                if st.button("⬅️ Voltar", use_container_width=True):
+                    st.session_state.current_step -= 1
+                    st.rerun()
+                    
+        with nav_cols[3]:
+            if st.session_state.current_step < 3:
+                if st.button("Próximo ➡️", use_container_width=True):
+                    st.session_state.current_step += 1
+                    st.rerun()
+            elif st.session_state.current_step == 3:
+                if st.button("Calcular Resultado", use_container_width=True, type="primary"):
+                    if not st.session_state.aportes:
+                        st.warning("Adicione pelo menos um aporte para calcular.")
+                    else:
+                        with st.spinner("Realizando cálculos..."):
+                            params = {k: st.session_state[k] for k in defaults.keys()}
+                            params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
+                            st.session_state.simulation_results = utils.calculate_financials(params)
+                            st.session_state.results_ready = True
+                            st.session_state.simulation_saved = False 
+                            go_to_results()
+                            st.rerun()
+
+    def render_visuals_sidebar():
         st.subheader("Resumo do Projeto")
         st.markdown("---")
 
@@ -346,7 +427,6 @@ def render_new_simulation_page():
         st.markdown("---")
         
         st.subheader("Métricas em Tempo Real")
-
         total_aportes = sum(a['valor'] for a in st.session_state.aportes if isinstance(a, dict) and a.get('valor'))
         st.metric("Total Aportado (Capital)", utils.format_currency(total_aportes))
 
@@ -375,8 +455,79 @@ def render_new_simulation_page():
                 st.plotly_chart(fig, use_container_width=True)
 
         except Exception:
-            st.caption("Preencha os campos de área, custo m² e valor m² para ver o resumo.")
+            st.caption("Preencha os campos da Etapa 1 para ver o resumo.")
+
     
+    with st.expander("Carregar Simulação Salva"):
+        if worksheets and worksheets.get("simulations"):
+            df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+            
+            if not df_simulations.empty:
+                client_list = df_simulations["client_name"].unique().tolist()
+                selected_client_to_load = st.selectbox(
+                    "Selecione o cliente para carregar os dados da sua última simulação",
+                    options=client_list, index=None, placeholder="Escolha um cliente..."
+                )
+                
+                if st.button("Carregar Dados do Cliente"):
+                    if selected_client_to_load:
+                        with st.spinner("Carregando dados..."):
+                            client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
+                            latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
+                            
+                            for key, value in latest_sim.items():
+                                if key in st.session_state:
+                                    if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
+                                        st.session_state['annual_interest_rate'] = float(value)
+                                    elif key in st.session_state:
+                                        if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
+                                        elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
+                                        elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
+                                        else: st.session_state[key] = value
+                            
+                            df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
+                            sim_id = latest_sim['simulation_id']
+                            aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
+                            
+                            st.session_state.aportes = []
+                            
+                            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+                            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+                            
+                            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                                for _, row in aportes_do_cliente.iterrows():
+                                    try:
+                                        st.session_state.aportes.append({
+                                            "data": pd.to_datetime(row[date_col]).date(),
+                                            "valor": float(row[value_col])
+                                        })
+                                    except Exception:
+                                        st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
+                            else:
+                                st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
+                            
+                            st.session_state.current_step = 3 
+                            st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
+                            st.rerun()
+
+    col_inputs, col_visuals = st.columns([2, 1.2])
+
+    with col_inputs:
+        render_stepper_ui()
+        
+        if st.session_state.current_step == 1:
+            render_step_1_projeto()
+        elif st.session_state.current_step == 2:
+            render_step_2_investidor()
+        elif st.session_state.current_step == 3:
+            render_step_3_aportes()
+            
+        render_stepper_navigation()
+
+    with col_visuals:
+        with st.container(border=True):
+             render_visuals_sidebar()
+
 def save_simulation_callback():
     if 'save_error' in st.session_state:
         del st.session_state.save_error
@@ -422,9 +573,10 @@ def save_simulation_callback():
                 pd.to_datetime(results.get('start_date')).strftime('%Y-%m-%d'), 
                 pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
             ]
+
             worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
         except BaseException as e: 
-            st.session_state.save_error = f"Erro ao salvar dados principais: {e}"
+            st.session_state.save_error = f"Erro ao salvar dados principais: {e}. Verifique se a planilha 'simulations' tem 23 colunas."
             return
 
         aportes_data = []
@@ -775,9 +927,11 @@ def render_dashboard_page():
             )
             st.plotly_chart(fig_bar_aportes, use_container_width=True)
 
-
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
+    
+if 'page' in st.session_state and st.session_state.page != "Nova Simulação":
+    st.session_state.current_step = 1
 
 if st.session_state.authenticated:
     with st.sidebar:
@@ -825,6 +979,7 @@ if st.session_state.authenticated:
                 st.session_state.simulation_to_edit = None
             
             st.session_state.page = new_page_state
+            st.session_state.current_step = 1 
             st.rerun()
 
         if selected_page_key != "Editar Simulação" and st.session_state.get('editing_row') is not None:
