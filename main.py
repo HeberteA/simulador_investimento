@@ -51,16 +51,16 @@ worksheets = utils.init_gsheet_connection()
 
 
 def render_login_page():
-    c1, c2, c3 = st.columns([1, 1.5, 1])
+    c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        st.image("Lavie.png", width=300)
+        st.image("Lavie.png", width=1000)
         st.title("Simulador Financeiro Lavie")
         st.markdown("---")
         
         try:
-            user_list = list(st.secrets["credentials.users"].keys())
+            user_list = list(st.secrets["credentials"].keys())
         except Exception as e:
-            st.error("Arquivo de credenciais não configurado corretamente. Verifique o .streamlit/secrets.toml.")
+            st.error("Arquivo de credenciais não configurado. Verifique os Segredos do app no Streamlit Cloud.")
             st.stop()
 
         selected_user = st.selectbox("Selecione o Usuário:", options=user_list, index=None, placeholder="Escolha seu usuário...")
@@ -72,7 +72,7 @@ def render_login_page():
             elif not access_code:
                 st.warning("Por favor, digite o código de acesso.")
             else:
-                correct_code = st.secrets["credentials.users"].get(selected_user)
+                correct_code = st.secrets["credentials"].get(selected_user)
                 if access_code == correct_code:
                     st.session_state.authenticated = True
                     st.session_state.user_name = selected_user
