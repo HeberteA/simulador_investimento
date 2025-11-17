@@ -7,8 +7,7 @@ import io
 import streamlit as st
 from fpdf import FPDF
 import gspread
-from gspread.exceptions import WorksheetNotFound
-import json
+import json 
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -32,6 +31,7 @@ def init_gsheet_connection():
         if "private_key" in creds_dict:
             creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
 
+
         gc = gspread.service_account_from_dict(creds_dict)
         
         sheet_name = st.secrets["g_sheet_name"]
@@ -43,16 +43,16 @@ def init_gsheet_connection():
         
         worksheets = {
             "simulations": spreadsheet.worksheet("simulations"),
-            "aportes": spreadsheet.worksch("aportes")
+            "aportes": spreadsheet.worksheet("aportes")
         }
         return worksheets
         
-    except SpreadsheetNotFound:
+    except gspread.exceptions.SpreadsheetNotFound:
         st.error(f"Erro Crítico: Planilha não encontrada. Verifique se o nome '{st.secrets.get('g_sheet_name', 'N/A')}' está correto em 'g_sheet_name' nos seus Segredos.", icon="🚨")
         st.info("Lembre-se também de 'compartilhar' sua Planilha Google com o email de serviço: "
                 f"`{creds_dict.get('client_email', 'Email não encontrado nas credenciais.')}`")
         return None
-    except WorksheetNotFound as e:
+    except gspread.exceptions.WorksheetNotFound as e:
         st.error(f"Erro Crítico: Uma aba da planilha não foi encontrada. O app procurou por 'simulations' e 'aportes'.", icon="🚨")
         st.exception(e)
         return None
