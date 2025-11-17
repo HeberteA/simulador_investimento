@@ -51,49 +51,35 @@ worksheets = utils.init_gsheet_connection()
 
 
 def render_login_page():
-    st.image("Lavie.png", width=300)
-    st.title("Simulador Financeiro Lavie")
-    st.markdown("---")
-
-    try:
-        st.subheader("Diagnóstico de Segredos (Temporário)")
-        all_secrets = st.secrets.to_dict()
+    c1, c2, c3 = st.columns([1, 1.5, 1])
+    with c2:
+        st.image("Lavie.png", width=300)
+        st.title("Simulador Financeiro Lavie")
+        st.markdown("---")
         
-        if not all_secrets:
-            st.error("ERRO: `st.secrets` está completamente vazio.")
-        else:
-            st.warning("`st.secrets` contém o seguinte:")
-            st.json(all_secrets)
-            
-        credentials_secrets = st.secrets["credentials"]
-        st.success("Sucesso ao acessar `st.secrets['credentials']`!")
-        st.json(credentials_secrets)
-        
-        user_list = list(credentials_secrets.keys())
-        st.info(f"Usuários encontrados: {user_list}")
+        try:
+            user_list = list(st.secrets["credentials"].keys())
+        except Exception as e:
+            st.error("Arquivo de credenciais não configurado. Verifique os Segredos do app no Streamlit Cloud.")
+            st.stop()
 
-    except Exception as e:
-        st.error(f"FALHA NO DIAGNÓSTICO: {e}")
-        st.error("Isso confirma que `st.secrets['credentials']` não existe ou está mal formatado.")
-        st.stop()
+        selected_user = st.selectbox("Selecione o Usuário:", options=user_list, index=None, placeholder="Escolha seu usuário...")
+        access_code = st.text_input("Código de Acesso:", type="password")
 
-    selected_user = st.selectbox("Selecione o Usuário:", options=user_list, index=None, placeholder="Escolha seu usuário...")
-    access_code = st.text_input("Código de Acesso:", type="password")
-
-    if st.button("Entrar", use_container_width=True, type="primary"):
-        if not selected_user:
-            st.warning("Por favor, selecione um usuário.")
-        elif not access_code:
-            st.warning("Por favor, digite o código de acesso.")
-        else:
-            correct_code = st.secrets["credentials"].get(selected_user)
-            if access_code == correct_code:
-                st.session_state.authenticated = True
-                st.session_state.user_name = selected_user
-                st.toast(f"Bem-vindo(a), {selected_user}!", icon="🎉")
-                st.rerun()
+        if st.button("Entrar", use_container_width=True, type="primary"):
+            if not selected_user:
+                st.warning("Por favor, selecione um usuário.")
+            elif not access_code:
+                st.warning("Por favor, digite o código de acesso.")
             else:
-                st.error("Código de acesso incorreto. Tente novamente.")
+                correct_code = st.secrets["credentials"].get(selected_user)
+                if access_code == correct_code:
+                    st.session_state.authenticated = True
+                    st.session_state.user_name = selected_user
+                    st.toast(f"Bem-vindo(a), {selected_user}!", icon="🎉")
+                    st.rerun()
+                else:
+                    st.error("Código de acesso incorreto. Tente novamente.")
 
 
 def render_new_simulation_page():
