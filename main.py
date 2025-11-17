@@ -53,7 +53,7 @@ worksheets = utils.init_gsheet_connection()
 def render_login_page():
     c1, c2, c3 = st.columns([1, 3, 1])
     with c2:
-        st.image("Lavie.png", width=800)
+        st.image("Lavie.png", width=1000)
         st.title("Simulador Financeiro Lavie")
         st.markdown("---")
         
