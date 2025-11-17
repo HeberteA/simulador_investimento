@@ -7,7 +7,7 @@ import io
 import streamlit as st
 from fpdf import FPDF
 import gspread
-import json 
+from gspread.exceptions import WorksheetNotFound
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -20,26 +20,10 @@ def format_currency(value):
 
 @st.cache_resource
 def init_gsheet_connection():
-    creds_dict = {}
     try:
-      
-        creds_input = st.secrets["gcp_service_account"]
-        creds_dict = dict(creds_input) 
-
-        key_str = creds_dict.get("private_key", "")
-        
-        key_str_corrigida = key_str.replace('\\n', '\n')
-        creds_dict["private_key"] = key_str_corrigida.encode('utf-8')
-        
-
-
-        gc = gspread.service_account_from_dict(creds_dict)
-        
+        creds = st.secrets["gcp_service_account"]
         sheet_name = st.secrets["g_sheet_name"]
-        if not sheet_name:
-            st.error("Erro Crítico: 'g_sheet_name' faltando nos Segredos.")
-            return None
-            
+        gc = gspread.service_account_from_dict(creds)
         spreadsheet = gc.open(sheet_name)
         
         worksheets = {
@@ -47,19 +31,10 @@ def init_gsheet_connection():
             "aportes": spreadsheet.worksheet("aportes")
         }
         return worksheets
-        
-    except gspread.exceptions.SpreadsheetNotFound:
-        st.error(f"Erro Crítico: Planilha não encontrada. Verifique o nome: '{st.secrets.get('g_sheet_name', 'N/A')}'", icon="🚨")
-        st.info(f"Verifique também se a planilha foi compartilhada com o email: {creds_dict.get('client_email')}")
-        return None
-    except gspread.exceptions.WorksheetNotFound as e:
-        st.error(f"Erro Crítico: Aba 'simulations' ou 'aportes' não encontrada.", icon="🚨")
-        st.exception(e)
-        return None
     except Exception as e:
-        st.error(f"Erro fatal na conexão com Google Sheets:", icon="🚨")
-        st.exception(e) 
+        st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
+        
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     if not _worksheet:
