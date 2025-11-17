@@ -25,7 +25,6 @@ st.set_page_config(
 background_texture_css = """
 <style>
 [data-testid="stAppViewContainer"] {
-    /* Opção: Papel Artesanal (Sutil e Elegante) */
     background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
     background-repeat: repeat;
 }
@@ -51,6 +50,38 @@ for key, value in defaults.items():
 worksheets = utils.init_gsheet_connection()
 
 
+def render_login_page():
+    c1, c2, c3 = st.columns([1, 1.5, 1])
+    with c2:
+        st.image("Lavie.png", width=300)
+        st.title("Simulador Financeiro Lavie")
+        st.markdown("---")
+        
+        try:
+            user_list = list(st.secrets["credentials"]["users"].keys())
+        except Exception as e:
+            st.error("Arquivo de credenciais não configurado corretamente. Verifique o .streamlit/secrets.toml.")
+            st.stop()
+
+        selected_user = st.selectbox("Selecione o Usuário:", options=user_list, index=None, placeholder="Escolha seu usuário...")
+        access_code = st.text_input("Código de Acesso:", type="password")
+
+        if st.button("Entrar", use_container_width=True, type="primary"):
+            if not selected_user:
+                st.warning("Por favor, selecione um usuário.")
+            elif not access_code:
+                st.warning("Por favor, digite o código de acesso.")
+            else:
+                correct_code = st.secrets["credentials"]["users"].get(selected_user)
+                if access_code == correct_code:
+                    st.session_state.authenticated = True
+                    st.session_state.user_name = selected_user
+                    st.toast(f"Bem-vindo(a), {selected_user}!", icon="🎉")
+                    st.rerun()
+                else:
+                    st.error("Código de acesso incorreto. Tente novamente.")
+
+
 def render_new_simulation_page():
     if 'show_results_page' not in st.session_state:
         st.session_state.show_results_page = False
@@ -71,9 +102,7 @@ def render_new_simulation_page():
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
-        
             saved_flag = st.session_state.get('simulation_saved', False)
-            
             display_full_results(
                 st.session_state.simulation_results,
                 show_save_button=True,
@@ -85,223 +114,263 @@ def render_new_simulation_page():
 
     st.title("Nova Simulação Financeira")
     
-    with st.expander("Carregar Simulação Salva", expanded=False):
-        if worksheets and worksheets.get("simulations"):
-            df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
-            
-            if not df_simulations.empty:
-                client_list = df_simulations["client_name"].unique().tolist()
-                selected_client_to_load = st.selectbox(
-                    "Selecione o cliente para carregar os dados da sua última simulação",
-                    options=client_list, index=None, placeholder="Escolha um cliente..."
-                )
+    col_inputs, col_visuals = st.columns([2, 1.2])
+
+    with col_inputs:
+        with st.expander("Carregar Simulação Salva", expanded=False):
+            if worksheets and worksheets.get("simulations"):
+                df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
                 
-                if st.button("Carregar Dados do Cliente"):
-                    if selected_client_to_load:
-                        with st.spinner("Carregando dados..."):
-                            client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
-                            latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
-                            
-                            for key, value in latest_sim.items():
-                                if key in st.session_state:
-                                    if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
-                                        st.session_state['annual_interest_rate'] = float(value)
-                                    elif key in st.session_state:
-                                        if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
-                                        elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
-                                        elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
-                                        else: st.session_state[key] = value
-                            
-                            df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
-                            sim_id = latest_sim['simulation_id']
-                            aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
-                            
-                            st.session_state.aportes = []
-                            
-                            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
-                            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
-                            
-                            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
-                                for _, row in aportes_do_cliente.iterrows():
-                                    try:
-                                        st.session_state.aportes.append({
-                                            "data": pd.to_datetime(row[date_col]).date(),
-                                            "valor": float(row[value_col])
-                                        })
-                                    except Exception:
-                                        st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
-                            else:
-                                st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
+                if not df_simulations.empty:
+                    client_list = df_simulations["client_name"].unique().tolist()
+                    selected_client_to_load = st.selectbox(
+                        "Selecione o cliente para carregar os dados da sua última simulação",
+                        options=client_list, index=None, placeholder="Escolha um cliente..."
+                    )
+                    
+                    if st.button("Carregar Dados do Cliente"):
+                        if selected_client_to_load:
+                            with st.spinner("Carregando dados..."):
+                                client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
+                                latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
+                                
+                                for key, value in latest_sim.items():
+                                    if key in st.session_state:
+                                        if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
+                                            st.session_state['annual_interest_rate'] = float(value)
+                                        elif key in st.session_state:
+                                            if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
+                                            elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
+                                            elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
+                                            else: st.session_state[key] = value
+                                
+                                df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
+                                sim_id = latest_sim['simulation_id']
+                                aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
+                                
+                                st.session_state.aportes = []
+                                
+                                date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+                                value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+                                
+                                if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                                    for _, row in aportes_do_cliente.iterrows():
+                                        try:
+                                            st.session_state.aportes.append({
+                                                "data": pd.to_datetime(row[date_col]).date(),
+                                                "valor": float(row[value_col])
+                                            })
+                                        except Exception:
+                                            st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
+                                else:
+                                    st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
 
-                            
-                            st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
-                            st.rerun()
+                                
+                                st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
+                                st.rerun()
 
-    def add_aporte_callback():
-        if st.session_state.new_aporte_value > 0:
-            st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
-            st.session_state.new_aporte_value = 0.0
-        else:
-            st.warning("O valor do aporte deve ser maior que zero.")
+        with st.expander("Parâmetros Gerais", expanded=True):
+            tab_invest, tab_proj = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
             
-            
-    def add_aportes_parcelados_callback():
-        total_valor = st.session_state.get('parcelado_total_valor', 0.0)
-        num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
-        data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
-        
-        if total_valor <= 0:
-            st.warning("O valor total do aporte deve ser maior que zero.")
-            return
-        if num_parcelas <= 0:
-            st.warning("O número de parcelas deve ser pelo menos 1.")
-            return
-            
-        valor_parcela = round(total_valor / num_parcelas, 2)
-        
-        novos_aportes = []
-        for i in range(num_parcelas):
-            data_vencimento = data_inicio + relativedelta(months=i)
-            novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
-            
-        st.session_state.aportes.extend(novos_aportes)
-        st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
-        st.session_state.parcelado_total_valor = 0.0
-        st.session_state.parcelado_num_parcelas = 1
+            with tab_invest:
+                st.subheader("Dados do Investidor e Prazos")
 
-    with st.expander("Lançamento de Aportes", expanded=True):
-        
-        tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Aporte Parcelado"])
+                current_start_date = datetime.today().date()
+                if st.session_state.aportes:
+                    try:
+                        valid_dates = [pd.to_datetime(a['data']).date() for a in st.session_state.aportes if a.get('data')]
+                        if valid_dates:
+                            current_start_date = min(valid_dates)
+                    except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
+                        if 'start_date' in st.session_state:
+                            current_start_date = st.session_state.start_date
+                        else:
+                            pass 
 
-        with tab_unico:
-            st.subheader("Adicionar Aporte Único")
-            c1, c2, c3 = st.columns([2, 2, 1])
-            c1.date_input("Data de Vencimento", key="new_aporte_date")
-            c2.number_input("Valor do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
-            with c3:
-                st.write("‎") 
-                st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
+                col1, col2 = st.columns(2)
 
-        with tab_parcelado:
-            st.subheader("Adicionar Aportes Parcelados")
-            p1, p2, p3 = st.columns(3)
-            p1.number_input("Valor Total do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="parcelado_total_valor")
-            p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
-            p3.date_input("Data do Primeiro Vencimento", key="parcelado_data_inicio")
-            
-            st.button("Adicionar Aportes Parcelados", on_click=add_aportes_parcelados_callback, use_container_width=True, key="btn_aporte_parcelado")
+                with col1:
+                    st.text_input("Nome do Cliente", key="client_name")
+                    st.text_input("Código do Cliente", key="client_code")
+                with col2:
+                    st.date_input("Data de Início (Primeiro Vencimento)", 
+                                  value=current_start_date, 
+                                  disabled=True)
+                    def update_project_end_date():
+                        st.session_state.project_end_date = st.session_state.project_end_date_widget
 
-        if st.session_state.aportes:
-            st.divider()
+                    st.date_input("Data Final do Projeto", 
+                                  value=st.session_state.project_end_date,
+                                  key="project_end_date_widget", 
+                                  on_change=update_project_end_date 
+                                  )
 
-            st.subheader("Cronograma de Vencimentos")
-            
-            try:
-                aportes_df = pd.DataFrame(st.session_state.aportes)
+            with tab_proj:
+                st.subheader("Parâmetros do Projeto")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
+                    st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
+                    st.number_input(
+                        "Taxa de Juros Anual (%)", 
+                        min_value=0.0, 
+                        step=0.1, 
+                        format="%.2f", 
+                        key="annual_interest_rate"
+                    )
+                with c2:
+                    st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
+                    st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
+                    st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
+
+        def add_aporte_callback():
+            if st.session_state.new_aporte_value > 0:
+                st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
+                st.session_state.new_aporte_value = 0.0
+            else:
+                st.warning("O valor do aporte deve ser maior que zero.")
                 
-                if not aportes_df.empty:
-                    aportes_df['data'] = pd.to_datetime(aportes_df['data'])
-                    aportes_df = aportes_df.sort_values(by="data").reset_index(drop=True)
-                
-                edited_df = st.data_editor(
-                    aportes_df,
-                    column_config={
-                        "data": st.column_config.DateColumn(
-                            "Data de Vencimento",
-                            format="DD/MM/YYYY",
-                            step=1,
-                        ),
-                        "valor": st.column_config.NumberColumn(
-                            "Valor (R$)",
-                            format="R$ %.2f",
-                        ),
-                    },
-                    use_container_width=True,
-                    num_rows="dynamic",
-                    key="aportes_editor"
-                )
-                
-                st.session_state.aportes = edited_df.to_dict('records')
+        def add_aportes_parcelados_callback():
+            total_valor = st.session_state.get('parcelado_total_valor', 0.0)
+            num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
+            data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
             
-            except Exception as e:
-                st.error(f"Erro ao processar aportes: {e}")
-                st.warning("Se o erro persistir, tente 'Limpar Todos os Aportes'.")
+            if total_valor <= 0:
+                st.warning("O valor total do aporte deve ser maior que zero.")
+                return
+            if num_parcelas <= 0:
+                st.warning("O número de parcelas deve ser pelo menos 1.")
+                return
+                
+            valor_parcela = round(total_valor / num_parcelas, 2)
             
-            if st.button("Limpar Todos os Aportes", type="secondary"):
-                st.session_state.aportes = []
-                st.rerun()
+            novos_aportes = []
+            for i in range(num_parcelas):
+                data_vencimento = data_inicio + relativedelta(months=i)
+                novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
+                
+            st.session_state.aportes.extend(novos_aportes)
+            st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
+            st.session_state.parcelado_total_valor = 0.0
+            st.session_state.parcelado_num_parcelas = 1
 
-    with st.expander("Parâmetros Gerais", expanded=True):
-        
-        tab_invest, tab_proj = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
-        
-        with tab_invest:
-            st.subheader("Dados do Investidor e Prazos")
+        with st.expander("Lançamento de Aportes", expanded=True):
+            tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Aporte Parcelado"])
 
-            current_start_date = datetime.today().date()
+            with tab_unico:
+                st.subheader("Adicionar Aporte Único")
+                c1, c2, c3 = st.columns([2, 2, 1])
+                c1.date_input("Data de Vencimento", key="new_aporte_date")
+                c2.number_input("Valor do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
+                with c3:
+                    st.write("‎") 
+                    st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
+
+            with tab_parcelado:
+                st.subheader("Adicionar Aportes Parcelados")
+                p1, p2, p3 = st.columns(3)
+                p1.number_input("Valor Total do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="parcelado_total_valor")
+                p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
+                p3.date_input("Data do Primeiro Vencimento", key="parcelado_data_inicio")
+                
+                st.button("Adicionar Aportes Parcelados", on_click=add_aportes_parcelados_callback, use_container_width=True, key="btn_aporte_parcelado")
+
             if st.session_state.aportes:
-                try:
-                    valid_dates = [pd.to_datetime(a['data']).date() for a in st.session_state.aportes if a.get('data')]
-                    if valid_dates:
-                        current_start_date = min(valid_dates)
-                except (ValueError, TypeError, pd.errors.OutOfBoundsDatetime):
-                    if 'start_date' in st.session_state:
-                        current_start_date = st.session_state.start_date
-                    else:
-                        pass 
-
-            col1, col2 = st.columns(2)
-            total_aportes = sum(a['valor'] for a in st.session_state.aportes if isinstance(a, dict) and a.get('valor'))
-
-            with col1:
-                st.text_input("Nome do Cliente", key="client_name")
-                st.text_input("Código do Cliente", key="client_code")
-                st.metric("Valor Total dos Aportes", utils.format_currency(total_aportes))
-            with col2:
-                st.date_input("Data de Início (Primeiro Vencimento)", 
-                              value=current_start_date, 
-                              disabled=True)
-                def update_project_end_date():
-                    st.session_state.project_end_date = st.session_state.project_end_date_widget
-
-                st.date_input("Data Final do Projeto", 
-                              value=st.session_state.project_end_date,
-                              key="project_end_date_widget", 
-                              on_change=update_project_end_date 
-                              )
-
-
-    with tab_proj:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
-            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
-            st.number_input(
-                "Taxa de Juros Anual (%)", 
-                min_value=0.0, 
-                step=0.1, 
-                format="%.2f", 
-                key="annual_interest_rate"
-            )
-        with c2:
-            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
-            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-            st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
-
-    st.divider()
-    if st.button("Calcular Resultado", use_container_width=True, type="primary"):
-        if not st.session_state.aportes:
-            st.warning("Adicione pelo menos um aporte para calcular.")
-        else:
-            with st.spinner("Realizando cálculos..."):
-                params = {k: st.session_state[k] for k in defaults.keys()}
-                params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
+                st.divider()
+                st.subheader("Cronograma de Vencimentos")
                 
-                st.session_state.simulation_results = utils.calculate_financials(params)
-                st.session_state.results_ready = True
-                st.session_state.simulation_saved = False 
-                go_to_results()
-                st.rerun()
+                try:
+                    aportes_df = pd.DataFrame(st.session_state.aportes)
+                    
+                    if not aportes_df.empty:
+                        aportes_df['data'] = pd.to_datetime(aportes_df['data'])
+                        aportes_df = aportes_df.sort_values(by="data").reset_index(drop=True)
+                    
+                    edited_df = st.data_editor(
+                        aportes_df,
+                        column_config={
+                            "data": st.column_config.DateColumn(
+                                "Data de Vencimento",
+                                format="DD/MM/YYYY",
+                                step=1,
+                            ),
+                            "valor": st.column_config.NumberColumn(
+                                "Valor (R$)",
+                                format="R$ %.2f",
+                            ),
+                        },
+                        use_container_width=True,
+                        num_rows="dynamic",
+                        key="aportes_editor"
+                    )
+                    
+                    st.session_state.aportes = edited_df.to_dict('records')
+                
+                except Exception as e:
+                    st.error(f"Erro ao processar aportes: {e}")
+                    st.warning("Se o erro persistir, tente 'Limpar Todos os Aportes'.")
+                
+                if st.button("Limpar Todos os Aportes", type="secondary"):
+                    st.session_state.aportes = []
+                    st.rerun()
+        
+        st.divider()
+        if st.button("Calcular Resultado", use_container_width=True, type="primary"):
+            if not st.session_state.aportes:
+                st.warning("Adicione pelo menos um aporte para calcular.")
+            else:
+                with st.spinner("Realizando cálculos..."):
+                    params = {k: st.session_state[k] for k in defaults.keys()}
+                    params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
+                    
+                    st.session_state.simulation_results = utils.calculate_financials(params)
+                    st.session_state.results_ready = True
+                    st.session_state.simulation_saved = False 
+                    go_to_results()
+                    st.rerun()
+
+    with col_visuals:
+        st.subheader("Resumo do Projeto")
+        st.markdown("---")
+
+        try:
+            st.image("img/blueprint.png", caption="Definindo os parâmetros do empreendimento.")
+        except FileNotFoundError:
+            st.info("ℹ️ Dica: Adicione um arquivo 'img/blueprint.png' para um visual aprimorado.")
+
+        st.markdown("---")
+        
+        st.subheader("Métricas em Tempo Real")
+
+        total_aportes = sum(a['valor'] for a in st.session_state.aportes if isinstance(a, dict) and a.get('valor'))
+        st.metric("Total Aportado (Capital)", utils.format_currency(total_aportes))
+
+        try:
+            area = float(st.session_state.land_size)
+            custo_m2 = float(st.session_state.construction_cost_m2)
+            valor_m2 = float(st.session_state.value_m2)
+            
+            vgv_preliminar = area * valor_m2
+            custo_obra_preliminar = area * custo_m2
+
+            st.metric("VGV Preliminar", utils.format_currency(vgv_preliminar))
+            st.metric("Custo Físico Preliminar", utils.format_currency(custo_obra_preliminar))
+
+            if vgv_preliminar > 0 or custo_obra_preliminar > 0:
+                df_pie = pd.DataFrame([
+                    {"Categoria": "VGV", "Valor": vgv_preliminar},
+                    {"Categoria": "Custo Físico", "Valor": -custo_obra_preliminar},
+                ])
+                
+                fig = px.bar(df_pie, x="Categoria", y="Valor", 
+                             color="Categoria", 
+                             title="Visão Preliminar (VGV vs. Custo)",
+                             color_discrete_map={"VGV": "#388E3C", "Custo Físico": "#D32F2F"})
+                fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
+
+        except Exception:
+            st.caption("Preencha os campos de área, custo m² e valor m² para ver o resumo.")
     
 def save_simulation_callback():
     if 'save_error' in st.session_state:
@@ -321,12 +390,14 @@ def save_simulation_callback():
             return
 
         sim_id = f"sim_{int(datetime.now().timestamp())}"
+        user_name = st.session_state.get('user_name', 'N/A')
         
         try:
             main_data = [
                 sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 str(results.get('client_name', '')),
                 str(results.get('client_code', '')),
+                str(user_name),
                 float(results.get('total_contribution', 0)), 
                 int(results.get('num_months', 0)),
                 float(results.get('annual_interest_rate', 0)),
@@ -389,10 +460,23 @@ def render_history_page():
         st.info("Nenhuma simulação salva encontrada.")
         return
 
+    col1_filter, col2_filter = st.columns(2)
+    
     client_list = ["Todos"] + df_simulations["client_name"].unique().tolist()
-    selected_client = st.selectbox("Filtre por cliente:", client_list)
+    selected_client = col1_filter.selectbox("Filtre por cliente:", client_list)
+    
+    if 'user_name' in df_simulations.columns:
+        user_list = ["Todos"] + df_simulations["user_name"].unique().tolist()
+        selected_user = col2_filter.selectbox("Filtre por usuário:", user_list)
+    else:
+        selected_user = "Todos"
 
-    filtered_df = df_simulations if selected_client == "Todos" else df_simulations[df_simulations["client_name"] == selected_client]
+    filtered_df = df_simulations
+    if selected_client != "Todos":
+        filtered_df = filtered_df[filtered_df["client_name"] == selected_client]
+    if selected_user != "Todos" and 'user_name' in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["user_name"] == selected_user]
+
 
     for index, row in filtered_df.sort_values(by="created_at", ascending=False).iterrows():
         with st.container(border=True):
@@ -533,10 +617,13 @@ def render_edit_page():
                 'aportes': aportes_list
             })
             new_results = utils.calculate_financials(params)
+            
+            current_user = st.session_state.get('user_name', sim.get('user_name', 'N/A'))
 
             main_data_updated = [
                 sim_id, pd.to_datetime(sim.get('created_at')).strftime("%Y-%m-%d %H:%M:%S"),
                 new_results['client_name'], new_results['client_code'],
+                current_user,
                 new_results.get('total_contribution', 0), new_results.get('num_months', 0), 
                 new_results['annual_interest_rate'], 
                 new_results['spe_percentage'],
@@ -550,7 +637,7 @@ def render_edit_page():
             ]
             
             row_to_edit = st.session_state.editing_row
-            worksheets["simulations"].update(f'A{row_to_edit}:V{row_to_edit}', [main_data_updated])
+            worksheets["simulations"].update(f'A{row_to_edit}:W{row_to_edit}', [main_data_updated])
 
             st.cache_data.clear()
             st.session_state.editing_row = None
@@ -684,64 +771,78 @@ def render_dashboard_page():
             st.plotly_chart(fig_bar_aportes, use_container_width=True)
 
 
-with st.sidebar:
-    st.image("Lavie.png")
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    page_options = ["Nova Simulação", "Histórico", "Dashboard"]
-    page_icons = ["plus-circle", "list-task", "bar-chart-fill"]
-    
-    if st.session_state.get('editing_row') is not None:
-        if "Editar Simulação" not in page_options:
-            page_options.append("Editar Simulação")
-            page_icons.append("pencil-square")
-        default_index = page_options.index("Editar Simulação")
-    else:
-        page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
-        current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
-        default_index = page_options.index(current_page_title)
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
 
-    selected_page_key = option_menu(
-        menu_title="Menu Principal", options=page_options, icons=page_icons,
-        menu_icon="cast", 
-        default_index=default_index, 
-        orientation="vertical",
-        styles={ 
-                "container": {"padding": "5px !important", "background-color": "transparent"},
-                "icon": {"font-size": "18px"}, 
-                "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
-                "nav-link-selected": {"background-color": "#E37026"}, 
-            }
+if st.session_state.authenticated:
+    with st.sidebar:
+        st.image("Lavie.png")
+        st.markdown(f"**Usuário:** {st.session_state.get('user_name', 'N/A')}")
+        st.markdown("<br>", unsafe_allow_html=True)
         
-    )
-    
-    page_map_to_state = {
-        "Nova Simulação": "Nova Simulação", "Histórico": "Histórico de Simulações",
-        "Dashboard": "Dashboard", "Editar Simulação": "Editar Simulação"
-    }
-    
-    new_page_state = page_map_to_state.get(selected_page_key)
+        page_options = ["Nova Simulação", "Histórico", "Dashboard"]
+        page_icons = ["plus-circle", "list-task", "bar-chart-fill"]
+        
+        if st.session_state.get('editing_row') is not None:
+            if "Editar Simulação" not in page_options:
+                page_options.append("Editar Simulação")
+                page_icons.append("pencil-square")
+            default_index = page_options.index("Editar Simulação")
+        else:
+            page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
+            current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
+            default_index = page_options.index(current_page_title)
 
-    if st.session_state.page != new_page_state:
-        if st.session_state.page == "📝 Editar Simulação":
+        selected_page_key = option_menu(
+            menu_title="Menu Principal", options=page_options, icons=page_icons,
+            menu_icon="cast", 
+            default_index=default_index, 
+            orientation="vertical",
+            styles={ 
+                    "container": {"padding": "5px !important", "background-color": "transparent"},
+                    "icon": {"font-size": "18px"}, 
+                    "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
+                    "nav-link-selected": {"background-color": "#E37026"}, 
+                }
+            
+        )
+        
+        page_map_to_state = {
+            "Nova Simulação": "Nova Simulação", "Histórico": "Histórico de Simulações",
+            "Dashboard": "Dashboard", "Editar Simulação": "Editar Simulação"
+        }
+        
+        new_page_state = page_map_to_state.get(selected_page_key)
+
+        if st.session_state.page != new_page_state:
+            if st.session_state.page == "📝 Editar Simulação":
+                st.session_state.editing_row = None
+                st.session_state.simulation_to_edit = None
+            
+            st.session_state.page = new_page_state
+            st.rerun()
+
+        if selected_page_key != "Editar Simulação" and st.session_state.get('editing_row') is not None:
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
-        
-        st.session_state.page = new_page_state
-        st.rerun()
+            st.rerun()
 
-    if selected_page_key != "Editar Simulação" and st.session_state.get('editing_row') is not None:
-        st.session_state.editing_row = None
-        st.session_state.simulation_to_edit = None
-        st.rerun()
+        st.markdown("---")
+        if st.button("Sair (Logout)", use_container_width=True):
+            st.session_state.authenticated = False
+            st.session_state.user_name = ""
+            for key in defaults.keys():
+                st.session_state[key] = defaults[key]
+            st.rerun()
 
-    
+    if st.session_state.page == "Nova Simulação":
+        render_new_simulation_page()
+    elif st.session_state.page == "Histórico de Simulações":
+        render_history_page()
+    elif st.session_state.page == "Editar Simulação":
+        render_edit_page()
+    elif st.session_state.page == "Dashboard":
+        render_dashboard_page()
 
-if st.session_state.page == "Nova Simulação":
-    render_new_simulation_page()
-elif st.session_state.page == "Histórico de Simulações":
-    render_history_page()
-elif st.session_state.page == "Editar Simulação":
-    render_edit_page()
-elif st.session_state.page == "Dashboard":
-    render_dashboard_page()
+else:
+    render_login_page()
