@@ -8,6 +8,7 @@ import streamlit as st
 from fpdf import FPDF
 import gspread
 from gspread.exceptions import WorksheetNotFound
+import json 
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -23,14 +24,15 @@ def init_gsheet_connection():
     try:
         creds_str = st.secrets["gcp_creds"]
         creds_dict = json.loads(creds_str)
-        sheet_name = st.secrets["g_sheet_name"]
-        gc = gspread.service_account_from_dict(creds)
+        
+        gc = gspread.service_account_from_dict(creds_dict) 
+        
         spreadsheet_key = st.secrets["spreadsheet_key"]
         spreadsheet = gc.open_by_key(spreadsheet_key)
         
         worksheets = {
-            "simulations": spreadsheet.worksheet("simulations"), 
-            "aportes": spreadsheet.worksheet("aportes")         
+            "simulations": spreadsheet.worksheet("simulations"),
+            "aportes": spreadsheet.worksheet("aportes")
         }
         return worksheets
     except json.JSONDecodeError:
@@ -42,63 +44,63 @@ def init_gsheet_connection():
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
-        
+
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
-    if worksheet is None:
-        return pd.DataFrame()
     try:
-        data = worksheet.get_all_records()
-        df = pd.DataFrame(data)
-    
-    all_values = _worksheet.get_all_values()
-    if not all_values or len(all_values) < 1:
-        return pd.DataFrame()
-
-    header = all_values[0]
-    data = all_values[1:]
-    
-    df = pd.DataFrame(data, columns=header)
-    df = df.loc[:, df.columns.notna()]
-    df = df.loc[:, [col for col in df.columns if col != '']]
-    df.columns = df.columns.str.strip()
-    df.columns = df.columns.str.lower()
-    
-    if 'row_index' not in df.columns:
-        df['row_index'] = [i + 2 for i in range(len(df))]
-    
-    numeric_cols = [
-        'total_contribution', 'num_months', 'monthly_interest_rate', 'annual_interest_rate', 'spe_percentage', 
-        'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage', 
-        'vgv', 'total_construction_cost', 'final_operational_result', 'valor_participacao', 
-        'resultado_final_investidor', 'roi', 'roi_anualizado', 'valor_corrigido',
-        'valor_aporte', 'cost_obra_fisica', 'juros_investidor'
-    ]
-    
-    for col in numeric_cols:
-        if col in df.columns:
-            series = df[col].astype(str).copy()
-            is_pt_br_format = series.str.contains(',', na=False)
-            series.loc[is_pt_br_format] = series.loc[is_pt_br_format].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
-            df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
-            
-    for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date', 'data']:
-        if date_col in df.columns:
-            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-
-    if 'created_at' in df.columns:
-        df.dropna(subset=['created_at'], inplace=True)
+        if _worksheet is None: 
+            return pd.DataFrame()
         
-    return df
-except Exception as e:
-        st.error(f"Erro ao carregar dados da aba '{worksheet.title}': {e}")
+        
+        all_values = _worksheet.get_all_values()
+        if not all_values or len(all_values) < 1:
+            return pd.DataFrame()
+
+        header = all_values[0]
+        data = all_values[1:]
+        
+        df = pd.DataFrame(data, columns=header)
+        df = df.loc[:, df.columns.notna()]
+        df = df.loc[:, [col for col in df.columns if col != '']]
+        df.columns = df.columns.str.strip()
+        df.columns = df.columns.str.lower()
+        
+        if 'row_index' not in df.columns:
+            df['row_index'] = [i + 2 for i in range(len(df))]
+        
+        numeric_cols = [
+            'total_contribution', 'num_months', 'monthly_interest_rate', 'annual_interest_rate', 'spe_percentage',
+            'land_size', 'construction_cost_m2', 'value_m2', 'area_exchange_percentage',
+            'vgv', 'total_construction_cost', 'final_operational_result', 'valor_participacao',
+            'resultado_final_investidor', 'roi', 'roi_anualizado', 'valor_corrigido',
+            'valor_aporte', 'cost_obra_fisica', 'juros_investidor'
+        ]
+        
+        for col in numeric_cols:
+            if col in df.columns:
+                series = df[col].astype(str).copy()
+                is_pt_br_format = series.str.contains(',', na=False)
+                series.loc[is_pt_br_format] = series.loc[is_pt_br_format].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+                df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
+                
+        for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date', 'data']:
+            if date_col in df.columns:
+                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+
+        if 'created_at' in df.columns:
+            df.dropna(subset=['created_at'], inplace=True)
+            
+        return df
+    
+    except Exception as e:
+        st.error(f"Erro ao carregar dados da aba '{_worksheet.title}': {e}") 
         return pd.DataFrame()
 
 def calculate_financials(params):
     results = {}
     results.update(params)
     
-    total_montante = 0  
+    total_montante = 0
     total_contribution = 0
     aportes = params.get('aportes', [])
     
@@ -121,8 +123,9 @@ def calculate_financials(params):
         num_days_for_roi = 1
         num_months_for_roi_display = 1
     else:
-        aportes.sort(key=lambda x: x['date'])
-        first_contribution_date = pd.to_datetime(aportes[0]['date'])
+        sorted_aportes = sorted(aportes, key=lambda x: x['date'])
+        
+        first_contribution_date = pd.to_datetime(sorted_aportes[0]['date'])
         
         delta_total_dias = (project_end_date_dt - first_contribution_date).days
         total_days_for_roi = max(1, delta_total_dias)
@@ -131,7 +134,7 @@ def calculate_financials(params):
         num_months_for_roi_display = delta_total_meses.years * 12 + delta_total_meses.months
         if num_months_for_roi_display <= 0: num_months_for_roi_display = 1
             
-        for aporte in aportes:
+        for aporte in sorted_aportes:
             contribution_date = pd.to_datetime(aporte['date'])
             contribution_value = aporte['value']
             total_contribution += contribution_value
@@ -149,7 +152,7 @@ def calculate_financials(params):
     results['valor_corrigido'] = total_montante
     results['total_contribution'] = total_contribution
     results['total_days_for_roi'] = total_days_for_roi
-    results['num_months'] = num_months_for_roi_display 
+    results['num_months'] = num_months_for_roi_display
     results['start_date'] = start_date_dt.date()
     results['project_end_date'] = project_end_date_dt.date()
     results['juros_investidor'] = juros_investidor
@@ -160,7 +163,7 @@ def calculate_financials(params):
     area_exchange_value = results['vgv'] * (params.get('area_exchange_percentage', 0) / 100)
 
     results['cost_obra_fisica'] = cost_obra_fisica
-    results['area_exchange_value'] = area_exchange_value 
+    results['area_exchange_value'] = area_exchange_value
     results['total_construction_cost'] = cost_obra_fisica + juros_investidor + area_exchange_value
 
     operational_result = results['vgv'] - results['total_construction_cost']
