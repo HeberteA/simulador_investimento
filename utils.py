@@ -8,6 +8,7 @@ import streamlit as st
 from fpdf import FPDF
 import gspread
 from gspread.exceptions import WorksheetNotFound
+import json
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -20,10 +21,19 @@ def format_currency(value):
 
 @st.cache_resource
 def init_gsheet_connection():
-    try:
-        creds = st.secrets["gcp_service_account"]
+        creds_input = st.secrets["gcp_service_account"]
+        
+        if isinstance(creds_input, str):
+            creds_dict = json.loads(creds_input)
+        else:
+            creds_dict = dict(creds_input) 
+
+        if "private_key" in creds_dict:
+            creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
+
         sheet_name = st.secrets["g_sheet_name"]
-        gc = gspread.service_account_from_dict(creds)
+        
+        gc = gspread.service_account_from_dict(creds_dict)
         spreadsheet = gc.open(sheet_name)
         
         worksheets = {
