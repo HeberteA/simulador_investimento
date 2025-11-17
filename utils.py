@@ -29,7 +29,8 @@ def init_gsheet_connection():
             creds_dict = dict(creds_input) 
 
         if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
+            key_str_corrigida = creds_dict["private_key"].replace('\\n', '\n')
+            creds_dict["private_key"] = key_str_corrigida.encode('utf-8')
 
 
         gc = gspread.service_account_from_dict(creds_dict)
