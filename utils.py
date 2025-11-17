@@ -23,17 +23,16 @@ def format_currency(value):
 def init_gsheet_connection():
     try:
         creds_dict = st.secrets["gcp_service_account"]
-        
         gc = gspread.service_account_from_dict(creds_dict)
         
         if "spreadsheet_key" not in st.secrets:
-            st.error("Erro fatal: A chave 'spreadsheet_key' não foi encontrada nos segredos.")
-            st.info("Adicione 'spreadsheet_key = \"SEU_ID_LONGO_DA_PLANILHA\"' aos seus segredos no Streamlit Cloud.")
+            st.error("Erro: 'spreadsheet_key' não encontrada nos segredos do Streamlit.")
+            st.info("Adicione 'spreadsheet_key = \"ID_DA_SUA_PLANILHA\"' aos seus segredos.")
             return None
             
         spreadsheet_key = st.secrets["spreadsheet_key"]
         spreadsheet = gc.open_by_key(spreadsheet_key)
-        
+
         worksheets = {
             "simulations": spreadsheet.worksheet("simulations"),
             "aportes": spreadsheet.worksheet("aportes")
@@ -41,15 +40,15 @@ def init_gsheet_connection():
         return worksheets
 
     except SpreadsheetNotFound:
-        st.error("Erro fatal: Planilha não encontrada. Verifique se a 'spreadsheet_key' está correta.")
+        st.error("Erro: Planilha não encontrada. Verifique se a 'spreadsheet_key' está correta.")
         return None
     except KeyError as e:
-        st.error(f"Erro fatal: Segredo '{e.key}' não encontrado. Verifique seu painel de Segredos no Streamlit Cloud.")
+        st.error(f"Erro: Segredo não encontrado. O seu 'secrets.toml' tem a seção [gcp_service_account]?")
         return None
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
         return None
-
+        
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     try:
