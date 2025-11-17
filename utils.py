@@ -21,6 +21,7 @@ def format_currency(value):
 
 @st.cache_resource
 def init_gsheet_connection():
+    try:
         creds_input = st.secrets["gcp_service_account"]
         
         if isinstance(creds_input, str):
@@ -31,18 +32,33 @@ def init_gsheet_connection():
         if "private_key" in creds_dict:
             creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
 
-        sheet_name = st.secrets["g_sheet_name"]
-        
         gc = gspread.service_account_from_dict(creds_dict)
+        
+        sheet_name = st.secrets["g_sheet_name"]
+        if not sheet_name:
+            st.error("Erro Crítico: A variável 'g_sheet_name' está faltando nos seus Segredos (Secrets).")
+            return None
+            
         spreadsheet = gc.open(sheet_name)
         
         worksheets = {
             "simulations": spreadsheet.worksheet("simulations"),
-            "aportes": spreadsheet.worksheet("aportes")
+            "aportes": spreadsheet.worksch("aportes")
         }
         return worksheets
+        
+    except SpreadsheetNotFound:
+        st.error(f"Erro Crítico: Planilha não encontrada. Verifique se o nome '{st.secrets.get('g_sheet_name', 'N/A')}' está correto em 'g_sheet_name' nos seus Segredos.", icon="🚨")
+        st.info("Lembre-se também de 'compartilhar' sua Planilha Google com o email de serviço: "
+                f"`{creds_dict.get('client_email', 'Email não encontrado nas credenciais.')}`")
+        return None
+    except WorksheetNotFound as e:
+        st.error(f"Erro Crítico: Uma aba da planilha não foi encontrada. O app procurou por 'simulations' e 'aportes'.", icon="🚨")
+        st.exception(e)
+        return None
     except Exception as e:
-        st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
+        st.error(f"Erro fatal e inesperado ao conectar com o Google Sheets:", icon="🚨")
+        st.exception(e) 
         return None
         
 @st.cache_data(ttl=60)
