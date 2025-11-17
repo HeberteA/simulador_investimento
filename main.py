@@ -58,7 +58,7 @@ def render_login_page():
         st.markdown("---")
         
         try:
-            user_list = list(st.secrets["credentials"]["users"].keys())
+            user_list = list(st.secrets["credentials.users"].keys())
         except Exception as e:
             st.error("Arquivo de credenciais não configurado corretamente. Verifique o .streamlit/secrets.toml.")
             st.stop()
@@ -72,7 +72,7 @@ def render_login_page():
             elif not access_code:
                 st.warning("Por favor, digite o código de acesso.")
             else:
-                correct_code = st.secrets["credentials"]["users"].get(selected_user)
+                correct_code = st.secrets["credentials.users"].get(selected_user)
                 if access_code == correct_code:
                     st.session_state.authenticated = True
                     st.session_state.user_name = selected_user
