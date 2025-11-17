@@ -25,6 +25,7 @@ st.set_page_config(
 background_texture_css = """
 <style>
 [data-testid="stAppViewContainer"] {
+    /* Opção: Papel Artesanal (Sutil e Elegante) */
     background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
     background-repeat: repeat;
 }
@@ -34,26 +35,14 @@ st.markdown(background_texture_css, unsafe_allow_html=True)
 
 defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
-    'editing_row': None, 'simulation_to_edit': None, 
-    'simulation_to_view': None, 
-    'show_results_page': False,
+    'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
     'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
     'aportes': [], 'confirming_delete': None,
-    'simulation_saved': False,
-    'current_step': 1 
+    'simulation_saved': False
 }
-
-def reset_form_to_defaults():
-    """Reseta o session_state para os valores padrão do formulário."""
-    for key, value in defaults.items():
-        st.session_state[key] = value
-    st.session_state.current_step = 1
-    st.session_state.show_results_page = False
-    st.session_state.results_ready = False
-
 
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -61,9 +50,8 @@ for key, value in defaults.items():
         
 worksheets = utils.init_gsheet_connection()
 
-
 def render_login_page():
-    c1, c2, c3 = st.columns([1, 2, 1])
+    c1, c2, c3 = st.columns([1, 1, 1])
     with c2:
         st.image("Lavie.png", width=800)
         st.title("Simulador Financeiro Lavie")
