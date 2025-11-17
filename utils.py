@@ -23,13 +23,11 @@ def init_gsheet_connection():
     try:
         creds_input = st.secrets["gcp_service_account"]
         
-        if isinstance(creds_input, str):
-            creds_dict = json.loads(creds_input)
-        else:
-            creds_dict = dict(creds_input) 
+        creds_dict = dict(creds_input) 
 
         if "private_key" in creds_dict:
             key_str_corrigida = creds_dict["private_key"].replace('\\n', '\n')
+            
             creds_dict["private_key"] = key_str_corrigida.encode('utf-8')
 
 
@@ -49,12 +47,11 @@ def init_gsheet_connection():
         return worksheets
         
     except gspread.exceptions.SpreadsheetNotFound:
-        st.error(f"Erro Crítico: Planilha não encontrada. Verifique se o nome '{st.secrets.get('g_sheet_name', 'N/A')}' está correto em 'g_sheet_name' nos seus Segredos.", icon="🚨")
-        st.info("Lembre-se também de 'compartilhar' sua Planilha Google com o email de serviço: "
-                f"`{creds_dict.get('client_email', 'Email não encontrado nas credenciais.')}`")
+        st.error(f"Erro Crítico: Planilha não encontrada. Verifique o nome em 'g_sheet_name' nos Segredos.", icon="🚨")
+        st.info(f"Lembre-se de 'compartilhar' sua Planilha com o email: {creds_dict.get('client_email')}")
         return None
     except gspread.exceptions.WorksheetNotFound as e:
-        st.error(f"Erro Crítico: Uma aba da planilha não foi encontrada. O app procurou por 'simulations' e 'aportes'.", icon="🚨")
+        st.error(f"Erro Crítico: Aba 'simulations' ou 'aportes' não encontrada.", icon="🚨")
         st.exception(e)
         return None
     except Exception as e:
