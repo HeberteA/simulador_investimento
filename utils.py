@@ -52,10 +52,9 @@ def init_gsheet_connection():
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet):
     try:
-        if _worksheet is None: 
+        if _worksheet is None:
             return pd.DataFrame()
-        
-        
+
         all_values = _worksheet.get_all_values()
         if not all_values or len(all_values) < 1:
             return pd.DataFrame()
@@ -97,7 +96,7 @@ def load_data_from_sheet(_worksheet):
         return df
     
     except Exception as e:
-        st.error(f"Erro ao carregar dados da aba '{_worksheet.title}': {e}") 
+        st.error(f"Erro ao carregar dados da aba '{_worksheet.title}': {e}")
         return pd.DataFrame()
 
 def calculate_financials(params):
