@@ -28,6 +28,12 @@ background_texture_css = """
     background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
     background-repeat: repeat;
 }
+/* Estiliza os novos containers */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 15px;
+}
 </style>
 """
 st.markdown(background_texture_css, unsafe_allow_html=True)
@@ -51,9 +57,9 @@ worksheets = utils.init_gsheet_connection()
 
 
 def render_login_page():
-    c1, c2, c3 = st.columns([1, 1.5, 1])
+    c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        st.image("Lavie.png", width=300)
+        st.image("Lavie.png", width=1000)
         st.title("Simulador Financeiro Lavie")
         st.markdown("---")
         
@@ -81,7 +87,6 @@ def render_login_page():
                 else:
                     st.error("Código de acesso incorreto. Tente novamente.")
 
-
 def render_new_simulation_page():
     if 'show_results_page' not in st.session_state:
         st.session_state.show_results_page = False
@@ -91,6 +96,37 @@ def render_new_simulation_page():
 
     def go_to_inputs():
         st.session_state.show_results_page = False
+        
+    def add_aporte_callback():
+        if st.session_state.new_aporte_value > 0:
+            st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
+            st.session_state.new_aporte_value = 0.0
+        else:
+            st.warning("O valor do aporte deve ser maior que zero.")
+            
+    def add_aportes_parcelados_callback():
+        total_valor = st.session_state.get('parcelado_total_valor', 0.0)
+        num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
+        data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
+        
+        if total_valor <= 0:
+            st.warning("O valor total do aporte deve ser maior que zero.")
+            return
+        if num_parcelas <= 0:
+            st.warning("O número de parcelas deve ser pelo menos 1.")
+            return
+            
+        valor_parcela = round(total_valor / num_parcelas, 2)
+        
+        novos_aportes = []
+        for i in range(num_parcelas):
+            data_vencimento = data_inicio + relativedelta(months=i)
+            novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
+            
+        st.session_state.aportes.extend(novos_aportes)
+        st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
+        st.session_state.parcelado_total_valor = 0.0
+        st.session_state.parcelado_num_parcelas = 1
 
     if st.session_state.show_results_page:
         st.title("Resultados da Simulação")
@@ -117,7 +153,9 @@ def render_new_simulation_page():
     col_inputs, col_visuals = st.columns([2, 1.2])
 
     with col_inputs:
-        with st.expander("Carregar Simulação Salva", expanded=False):
+        
+        with st.container(border=True):
+            st.subheader("Carregar Simulação Salva")
             if worksheets and worksheets.get("simulations"):
                 df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
                 
@@ -169,12 +207,11 @@ def render_new_simulation_page():
                                 st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
                                 st.rerun()
 
-        with st.expander("Parâmetros Gerais", expanded=True):
+        with st.container(border=True):
+            st.subheader("Parâmetros Gerais")
             tab_invest, tab_proj = st.tabs(["Investidor e Datas", "Parâmetros do Projeto"])
             
             with tab_invest:
-                st.subheader("Dados do Investidor e Prazos")
-
                 current_start_date = datetime.today().date()
                 if st.session_state.aportes:
                     try:
@@ -206,7 +243,6 @@ def render_new_simulation_page():
                                   )
 
             with tab_proj:
-                st.subheader("Parâmetros do Projeto")
                 c1, c2 = st.columns(2)
                 with c1:
                     st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
@@ -223,42 +259,11 @@ def render_new_simulation_page():
                     st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
                     st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
 
-        def add_aporte_callback():
-            if st.session_state.new_aporte_value > 0:
-                st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
-                st.session_state.new_aporte_value = 0.0
-            else:
-                st.warning("O valor do aporte deve ser maior que zero.")
-                
-        def add_aportes_parcelados_callback():
-            total_valor = st.session_state.get('parcelado_total_valor', 0.0)
-            num_parcelas = st.session_state.get('parcelado_num_parcelas', 1)
-            data_inicio = st.session_state.get('parcelado_data_inicio', datetime.today().date())
-            
-            if total_valor <= 0:
-                st.warning("O valor total do aporte deve ser maior que zero.")
-                return
-            if num_parcelas <= 0:
-                st.warning("O número de parcelas deve ser pelo menos 1.")
-                return
-                
-            valor_parcela = round(total_valor / num_parcelas, 2)
-            
-            novos_aportes = []
-            for i in range(num_parcelas):
-                data_vencimento = data_inicio + relativedelta(months=i)
-                novos_aportes.append({"data": data_vencimento, "valor": valor_parcela})
-                
-            st.session_state.aportes.extend(novos_aportes)
-            st.success(f"{num_parcelas} aportes parcelados adicionados com sucesso!")
-            st.session_state.parcelado_total_valor = 0.0
-            st.session_state.parcelado_num_parcelas = 1
-
-        with st.expander("Lançamento de Aportes", expanded=True):
+        with st.container(border=True):
+            st.subheader("Lançamento de Aportes")
             tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Aporte Parcelado"])
 
             with tab_unico:
-                st.subheader("Adicionar Aporte Único")
                 c1, c2, c3 = st.columns([2, 2, 1])
                 c1.date_input("Data de Vencimento", key="new_aporte_date")
                 c2.number_input("Valor do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
@@ -267,7 +272,6 @@ def render_new_simulation_page():
                     st.button("Adicionar Aporte", on_click=add_aporte_callback, use_container_width=True, key="btn_aporte_unico")
 
             with tab_parcelado:
-                st.subheader("Adicionar Aportes Parcelados")
                 p1, p2, p3 = st.columns(3)
                 p1.number_input("Valor Total do Aporte", min_value=0.0, step=10000.0, format="%.2f", key="parcelado_total_valor")
                 p2.number_input("Número de Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
@@ -335,8 +339,9 @@ def render_new_simulation_page():
 
         try:
             st.image("img/blueprint.png", caption="Definindo os parâmetros do empreendimento.")
-        except FileNotFoundError:
-            st.info("ℹ️ Dica: Adicione um arquivo 'img/blueprint.png' para um visual aprimorado.")
+        except Exception as e:
+            st.warning("⚠️ Imagem 'img/blueprint.png' não encontrada.")
+            st.caption("Para corrigir, crie uma pasta 'img' na raiz do seu projeto, adicione a imagem, e faça o commit/upload.")
 
         st.markdown("---")
         
