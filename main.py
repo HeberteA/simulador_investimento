@@ -25,7 +25,6 @@ st.set_page_config(
 background_texture_css = """
 <style>
 [data-testid="stAppViewContainer"] {
-    /* Opção: Papel Artesanal (Sutil e Elegante) */
     background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
     background-repeat: repeat;
 }
@@ -35,14 +34,26 @@ st.markdown(background_texture_css, unsafe_allow_html=True)
 
 defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
-    'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
+    'editing_row': None, 'simulation_to_edit': None, 
+    'simulation_to_view': None, 
+    'show_results_page': False,
     'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
     'aportes': [], 'confirming_delete': None,
-    'simulation_saved': False
+    'simulation_saved': False,
+    'current_step': 1 
 }
+
+def reset_form_to_defaults():
+    """Reseta o session_state para os valores padrão do formulário."""
+    for key, value in defaults.items():
+        st.session_state[key] = value
+    st.session_state.current_step = 1
+    st.session_state.show_results_page = False
+    st.session_state.results_ready = False
+
 
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -50,10 +61,11 @@ for key, value in defaults.items():
         
 worksheets = utils.init_gsheet_connection()
 
+
 def render_login_page():
-    c1, c2, c3 = st.columns([1, 2, 1])
+    c1, c2, c3 = st.columns([1, 1.5, 1]) 
     with c2:
-        st.image("Lavie.png", width=1000)
+        st.image("Lavie.png", use_column_width=True) 
         st.title("Simulador Financeiro Lavie")
         st.markdown("---")
         
@@ -184,20 +196,6 @@ def render_new_simulation_page():
             width: 100%;
         }
         
-        /* --- 5. ESTILO DO EXPANDER "Carregar" --- */
-        .st-expander {
-             border: 1px solid #555 !important;
-             background-color: rgba(255, 255, 255, 0.03) !important;
-             border-radius: 10px;
-             margin-bottom: 20px;
-        }
-        .st-expander summary {
-            font-size: 1.05rem;
-            color: #AAA;
-        }
-        .st-expander:hover summary {
-            color: #E37026;
-        }
         
     </style>
     """
@@ -215,7 +213,7 @@ def render_new_simulation_page():
             st.error(st.session_state.save_error)
             del st.session_state.save_error
         
-        if st.button("⬅️ Voltar para os Parâmetros"):
+        if st.button("Voltar para os Parâmetros"):
             go_to_inputs()
         
         if st.session_state.get('results_ready', False):
@@ -388,7 +386,7 @@ def render_new_simulation_page():
                     st.session_state.current_step += 1
                     st.rerun()
             elif st.session_state.current_step == 3:
-                if st.button("Calcular Resultado", use_container_width=True, type="primary"):
+                if st.button("🚀 Calcular Resultado", use_container_width=True, type="primary"):
                     if not st.session_state.aportes:
                         st.warning("Adicione pelo menos um aporte para calcular.")
                     else:
@@ -406,10 +404,10 @@ def render_new_simulation_page():
         st.markdown("---")
 
         try:
-            st.image("Burj.jpeg", caption="Definindo os parâmetros do empreendimento.")
+            st.image("Burj.jpeg", caption="Definindo os parâmetros do empreendimento.") 
         except Exception as e:
-            st.warning("⚠️ Imagem 'img/blueprint.png' não encontrada.")
-            st.caption("Para corrigir, crie uma pasta 'img' na raiz do seu projeto, adicione a imagem, e faça o commit/upload.")
+            st.warning("⚠️ Imagem 'Burj.jpeg' não encontrada.")
+            st.caption("Para corrigir, adicione a imagem ao seu repositório e faça o commit/upload.")
 
         st.markdown("---")
         
@@ -445,58 +443,6 @@ def render_new_simulation_page():
             st.caption("Preencha os campos da Etapa 1 para ver o resumo.")
 
     
-    with st.expander("Carregar Simulação Salva"):
-        if worksheets and worksheets.get("simulations"):
-            df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
-            
-            if not df_simulations.empty:
-                client_list = df_simulations["client_name"].unique().tolist()
-                selected_client_to_load = st.selectbox(
-                    "Selecione o cliente para carregar os dados da sua última simulação",
-                    options=client_list, index=None, placeholder="Escolha um cliente..."
-                )
-                
-                if st.button("Carregar Dados do Cliente"):
-                    if selected_client_to_load:
-                        with st.spinner("Carregando dados..."):
-                            client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
-                            latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
-                            
-                            for key, value in latest_sim.items():
-                                if key in st.session_state:
-                                    if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
-                                        st.session_state['annual_interest_rate'] = float(value)
-                                    elif key in st.session_state:
-                                        if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
-                                        elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
-                                        elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
-                                        else: st.session_state[key] = value
-                            
-                            df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
-                            sim_id = latest_sim['simulation_id']
-                            aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
-                            
-                            st.session_state.aportes = []
-                            
-                            date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
-                            value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
-                            
-                            if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
-                                for _, row in aportes_do_cliente.iterrows():
-                                    try:
-                                        st.session_state.aportes.append({
-                                            "data": pd.to_datetime(row[date_col]).date(),
-                                            "valor": float(row[value_col])
-                                        })
-                                    except Exception:
-                                        st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
-                            else:
-                                st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
-                            
-                            st.session_state.current_step = 3 
-                            st.success(f"Dados e {len(st.session_state.aportes)} aportes carregados para '{selected_client_to_load}'.")
-                            st.rerun()
-
     col_inputs, col_visuals = st.columns([2, 1.2])
 
     with col_inputs:
@@ -514,6 +460,72 @@ def render_new_simulation_page():
     with col_visuals:
         with st.container(border=True):
              render_visuals_sidebar()
+
+def render_load_simulation_page():
+    st.title("Carregar Simulação Salva")
+    st.markdown("Selecione um cliente para carregar os dados da sua última simulação. Você será redirecionado para o formulário de simulação com os dados preenchidos.")
+
+    if not worksheets or not worksheets.get("simulations"):
+        st.error("Conexão com a planilha de simulações não disponível.")
+        return
+
+    df_simulations = utils.load_data_from_sheet(worksheets["simulations"])
+    
+    if df_simulations.empty:
+        st.info("Nenhuma simulação salva encontrada para carregar.")
+        return
+
+    with st.container(border=True):
+        client_list = df_simulations["client_name"].unique().tolist()
+        selected_client_to_load = st.selectbox(
+            "Selecione o cliente",
+            options=client_list, index=None, placeholder="Escolha um cliente..."
+        )
+        
+        if st.button("Carregar Dados do Cliente", use_container_width=True, type="primary"):
+            if selected_client_to_load:
+                with st.spinner("Carregando dados..."):
+                    client_sims = df_simulations[df_simulations['client_name'] == selected_client_to_load]
+                    latest_sim = client_sims.sort_values(by="created_at", ascending=False).iloc[0]
+                    
+                    for key, value in latest_sim.items():
+                        if key in st.session_state:
+                            if key == 'monthly_interest_rate' and 'annual_interest_rate' in st.session_state:
+                                st.session_state['annual_interest_rate'] = float(value)
+                            elif key in st.session_state:
+                                if isinstance(st.session_state[key], float): st.session_state[key] = float(value)
+                                elif isinstance(st.session_state[key], int): st.session_state[key] = int(value)
+                                elif isinstance(st.session_state[key], type(datetime.today().date())): st.session_state[key] = pd.to_datetime(value).date()
+                                else: st.session_state[key] = value
+                    
+                    df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
+                    sim_id = latest_sim['simulation_id']
+                    aportes_do_cliente = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
+                    
+                    st.session_state.aportes = []
+                    
+                    date_col = 'data_aporte' if 'data_aporte' in aportes_do_cliente.columns else 'data'
+                    value_col = 'valor_aporte' if 'valor_aporte' in aportes_do_cliente.columns else 'valor'
+                    
+                    if date_col in aportes_do_cliente.columns and value_col in aportes_do_cliente.columns:
+                        for _, row in aportes_do_cliente.iterrows():
+                            try:
+                                st.session_state.aportes.append({
+                                    "data": pd.to_datetime(row[date_col]).date(),
+                                    "valor": float(row[value_col])
+                                })
+                            except Exception:
+                                st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
+                    else:
+                        st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}).")
+                    
+                    st.session_state.page = "Nova Simulação"
+                    st.session_state.current_step = 3 
+                    st.success(f"Dados e {len(st.session_state.aportes)} aportes de '{selected_client_to_load}' carregados! Redirecionando...")
+                    st.rerun()
+            else:
+                st.warning("Por favor, selecione um cliente.")
+
 
 def save_simulation_callback():
     if 'save_error' in st.session_state:
@@ -952,11 +964,11 @@ if 'page' in st.session_state and st.session_state.page != "Nova Simulação":
 if st.session_state.authenticated:
     with st.sidebar:
         st.image("Lavie.png")
-        st.info(f"**Usuário:** {st.session_state.get('user_name', 'N/A')}")
+        st.info(f"**Usuário:** {st.session_state.get('user_name', 'N/A')}") 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        page_options = ["Nova Simulação", "Histórico", "Dashboard"]
-        page_icons = ["plus-circle", "list-task", "bar-chart-fill"]
+        page_options = ["Nova Simulação", "Carregar Simulação", "Histórico", "Dashboard"]
+        page_icons = ["plus-circle", "upload", "list-task", "bar-chart-fill"]
         
         if st.session_state.get('editing_row') is not None:
             if "Editar Simulação" not in page_options:
@@ -969,7 +981,12 @@ if st.session_state.authenticated:
                 page_icons.append("eye-fill")
             default_index = page_options.index("Ver Simulação")
         else:
-            page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
+            page_map = {
+                "Nova Simulação": "Nova Simulação", 
+                "Carregar Simulação": "Carregar Simulação", 
+                "Histórico de Simulações": "Histórico", 
+                "Dashboard": "Dashboard"
+            }
             current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
             default_index = page_options.index(current_page_title)
 
@@ -988,8 +1005,11 @@ if st.session_state.authenticated:
         )
         
         page_map_to_state = {
-            "Nova Simulação": "Nova Simulação", "Histórico": "Histórico de Simulações",
-            "Dashboard": "Dashboard", "Editar Simulação": "Editar Simulação",
+            "Nova Simulação": "Nova Simulação",
+            "Carregar Simulação": "Carregar Simulação",
+            "Histórico": "Histórico de Simulações",
+            "Dashboard": "Dashboard", 
+            "Editar Simulação": "Editar Simulação",
             "Ver Simulação": "Ver Simulação"
         }
         
@@ -1026,6 +1046,8 @@ if st.session_state.authenticated:
 
     if st.session_state.page == "Nova Simulação":
         render_new_simulation_page()
+    elif st.session_state.page == "Carregar Simulação": 
+        render_load_simulation_page()
     elif st.session_state.page == "Histórico de Simulações":
         render_history_page()
     elif st.session_state.page == "Editar Simulação":
