@@ -7,7 +7,7 @@ import io
 import streamlit as st
 from fpdf import FPDF
 import gspread
-from gspread.exceptions import WorksheetNotFound
+from gspread.exceptions import SpreadsheetNotFound
 import json 
 
 try:
@@ -22,11 +22,15 @@ def format_currency(value):
 @st.cache_resource
 def init_gsheet_connection():
     try:
-        creds_str = st.secrets["gcp_creds"]
-        creds_dict = json.loads(creds_str)
+        creds_dict = st.secrets["gcp_service_account"]
         
-        gc = gspread.service_account_from_dict(creds_dict) 
+        gc = gspread.service_account_from_dict(creds_dict)
         
+        if "spreadsheet_key" not in st.secrets:
+            st.error("Erro fatal: A chave 'spreadsheet_key' não foi encontrada nos segredos.")
+            st.info("Adicione 'spreadsheet_key = \"SEU_ID_LONGO_DA_PLANILHA\"' aos seus segredos no Streamlit Cloud.")
+            return None
+            
         spreadsheet_key = st.secrets["spreadsheet_key"]
         spreadsheet = gc.open_by_key(spreadsheet_key)
         
@@ -35,11 +39,12 @@ def init_gsheet_connection():
             "aportes": spreadsheet.worksheet("aportes")
         }
         return worksheets
-    except json.JSONDecodeError:
-        st.error("Erro fatal: O formato do segredo 'gcp_creds' não é um JSON válido. Verifique o Streamlit Secrets.")
+
+    except SpreadsheetNotFound:
+        st.error("Erro fatal: Planilha não encontrada. Verifique se a 'spreadsheet_key' está correta.")
         return None
-    except gspread.exceptions.SpreadsheetNotFound:
-        st.error("Erro fatal: Planilha não encontrada. Verifique a 'spreadsheet_key' no Streamlit Secrets.")
+    except KeyError as e:
+        st.error(f"Erro fatal: Segredo '{e.key}' não encontrado. Verifique seu painel de Segredos no Streamlit Cloud.")
         return None
     except Exception as e:
         st.error(f"Erro fatal ao conectar com o Google Sheets: {e}")
