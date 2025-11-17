@@ -34,15 +34,26 @@ st.markdown(background_texture_css, unsafe_allow_html=True)
 
 defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
-    'editing_row': None, 'simulation_to_edit': None, 'show_results_page': False,
+    'editing_row': None, 'simulation_to_edit': None, 
+    'simulation_to_view': None, 
+    'show_results_page': False,
     'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
     'aportes': [], 'confirming_delete': None,
     'simulation_saved': False,
-    'current_step': 1  
+    'current_step': 1 
 }
+
+def reset_form_to_defaults():
+    """Reseta o session_state para os valores padrão do formulário."""
+    for key, value in defaults.items():
+        st.session_state[key] = value
+    st.session_state.current_step = 1
+    st.session_state.show_results_page = False
+    st.session_state.results_ready = False
+
 
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -88,11 +99,10 @@ def render_new_simulation_page():
     SENIOR_FRONTEND_CSS = """
     <style>
         /* --- 1. ESTILO DA SIDEBAR FIXA --- */
-        /* Alvo: O container da coluna da direita */
         div[data-testid="stVerticalBlock"]:nth-child(2) > [data-testid="stVerticalBlockBorderWrapper"] {
             position: sticky;
-            top: 60px; /* Ajuste a distância do topo */
-            background-color: rgba(14, 17, 23, 0.9); /* Cor de fundo escura */
+            top: 60px; 
+            background-color: rgba(14, 17, 23, 0.9); 
             border-radius: 10px;
             border: 1px solid #E37026;
             z-index: 1000;
@@ -110,7 +120,7 @@ def render_new_simulation_page():
             display: flex;
             align-items: center;
             flex-direction: column;
-            color: #888; /* Cor inativa */
+            color: #888; 
             font-weight: 500;
             width: 33%;
         }
@@ -130,9 +140,8 @@ def render_new_simulation_page():
             font-size: 0.9rem;
             text-align: center;
         }
-        /* Estado Ativo do Stepper */
         .step-item.active {
-            color: #E37026; /* Cor primária */
+            color: #E37026; 
             font-weight: bold;
         }
         .step-item.active .step-number {
@@ -140,7 +149,6 @@ def render_new_simulation_page():
             background-color: #E37026;
             color: #FFFFFF;
         }
-        /* Linha de conexão (opcional, mas elegante) */
         .step-item:not(:last-child)::after {
             content: '';
             position: relative;
@@ -150,14 +158,13 @@ def render_new_simulation_page():
             width: 100%;
             background-color: #555;
             z-index: -1;
-            transform: translateX(15px); /* Ajuste para centralizar */
+            transform: translateX(15px); 
         }
         .step-item.active:not(:last-child)::after {
              background-color: #E37026;
         }
 
         /* --- 3. ESTILO DO "CARTÃO" DE CONTEÚDO --- */
-        /* Substitui o st.container(border=True) padrão */
         .step-content-card {
             background-color: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -165,7 +172,7 @@ def render_new_simulation_page():
             padding: 25px;
             margin-bottom: 20px;
         }
-        .step-content-card h3 { /* Título de cada etapa */
+        .step-content-card h3 { 
             color: #E37026;
             margin-top: 0;
             border-bottom: 2px solid #E37026;
@@ -173,18 +180,15 @@ def render_new_simulation_page():
         }
         
         /* --- 4. BOTÕES DE NAVEGAÇÃO --- */
-        /* Esconde o label do "st.columns" */
         div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"] > div.stButton {
              display: flex;
         }
-        /* Botão "Próximo" */
         div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"]:last-child > div.stButton > button {
             background-color: #E37026;
             color: white;
             width: 100%;
             border: none;
         }
-        /* Botão "Voltar" */
         div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"]:first-child > div.stButton > button {
             background-color: transparent;
             color: #AAA;
@@ -192,8 +196,7 @@ def render_new_simulation_page():
             width: 100%;
         }
         
-        /* --- 5. ESCONDE O EXPANDER DE "Carregar" --- */
-        /* Vamos manter o expander, mas deixá-lo mais sutil */
+        /* --- 5. ESTILO DO EXPANDER "Carregar" --- */
         .st-expander {
              border: 1px solid #555 !important;
              background-color: rgba(255, 255, 255, 0.03) !important;
@@ -212,9 +215,6 @@ def render_new_simulation_page():
     """
     st.markdown(SENIOR_FRONTEND_CSS, unsafe_allow_html=True)
     
-    if 'show_results_page' not in st.session_state:
-        st.session_state.show_results_page = False
-
     def go_to_results():
         st.session_state.show_results_page = True
 
@@ -242,7 +242,6 @@ def render_new_simulation_page():
         return
 
     st.title("Nova Simulação Financeira")
-    
     
     def render_stepper_ui():
         step = st.session_state.current_step
@@ -391,13 +390,13 @@ def render_new_simulation_page():
         
         with nav_cols[0]:
             if st.session_state.current_step > 1:
-                if st.button("⬅️ Voltar", use_container_width=True):
+                if st.button("Voltar", use_container_width=True):
                     st.session_state.current_step -= 1
                     st.rerun()
                     
         with nav_cols[3]:
             if st.session_state.current_step < 3:
-                if st.button("Próximo ➡️", use_container_width=True):
+                if st.button("Próximo", use_container_width=True):
                     st.session_state.current_step += 1
                     st.rerun()
             elif st.session_state.current_step == 3:
@@ -419,7 +418,7 @@ def render_new_simulation_page():
         st.markdown("---")
 
         try:
-            st.image("img/blueprint.png", caption="Definindo os parâmetros do empreendimento.")
+            st.image("Burj.jpeg", caption="Definindo os parâmetros do empreendimento.")
         except Exception as e:
             st.warning("⚠️ Imagem 'img/blueprint.png' não encontrada.")
             st.caption("Para corrigir, crie uma pasta 'img' na raiz do seu projeto, adicione a imagem, e faça o commit/upload.")
@@ -573,7 +572,6 @@ def save_simulation_callback():
                 pd.to_datetime(results.get('start_date')).strftime('%Y-%m-%d'), 
                 pd.to_datetime(results.get('project_end_date')).strftime('%Y-%m-%d')
             ]
-
             worksheets["simulations"].append_row(main_data, value_input_option='USER_ENTERED')
         except BaseException as e: 
             st.session_state.save_error = f"Erro ao salvar dados principais: {e}. Verifique se a planilha 'simulations' tem 23 colunas."
@@ -640,20 +638,25 @@ def render_history_page():
             row_index = row.get('row_index', index)
             sim_id = row.get('simulation_id', '')
 
-            c1, c2, c3, c4, c5, c6 = st.columns([2.5, 3, 2, 4, 0.8, 0.8])
+            c1, c2, c3, c4, c_ver, c_edit, c_del = st.columns([2.5, 3, 2, 3.2, 0.8, 0.8, 0.8])
             c1.metric("Cliente", row.get('client_name', 'N/A'))
             created_at = pd.to_datetime(row.get('created_at')).strftime("%d/%m/%Y %H:%M")
             c2.metric("Data", created_at)
             c3.metric("ROI Anualizado", f"{row.get('roi_anualizado', 0):.2f}%")
             c4.metric("VGV", utils.format_currency(row.get('vgv', 0)))
             
-            if c5.button("📝", key=f"edit_{row_index}", help="Editar simulação"):
+            if c_ver.button("👁️", key=f"view_{row_index}", help="Ver detalhes da simulação"):
+                st.session_state.simulation_to_view = row.to_dict()
+                st.session_state.page = "Ver Simulação"
+                st.rerun()
+
+            if c_edit.button("📝", key=f"edit_{row_index}", help="Editar simulação"):
                 st.session_state.editing_row = row_index
                 st.session_state.simulation_to_edit = row.to_dict()
                 st.session_state.page = "Editar Simulação"
                 st.rerun()
             
-            if c6.button("🗑️", key=f"del_{row_index}", help="Excluir simulação"):
+            if c_del.button("🗑️", key=f"del_{row_index}", help="Excluir simulação"):
                 st.session_state.confirming_delete = row_index 
                 st.rerun()
 
@@ -680,35 +683,52 @@ def render_history_page():
                     st.session_state.confirming_delete = None
                     st.rerun()
 
-            with st.expander("Ver resultado completo"):
-                with st.spinner("Carregando detalhes..."):
-                    sim_data = row.to_dict()
-                    df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
-                    aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
-                    
-                    aportes_list = []
-                    date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
-                    value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
+def render_view_simulation_page():
+    st.title("Detalhes da Simulação")
+    
+    if 'simulation_to_view' not in st.session_state or st.session_state.simulation_to_view is None:
+        st.warning("Nenhuma simulação selecionada para visualização.")
+        if st.button("Voltar para o Histórico"):
+            st.session_state.page = "Histórico de Simulações"
+            st.rerun()
+        return
 
-                    if date_col not in aportes_sim.columns or value_col not in aportes_sim.columns:
-                        st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
-                    else:
-                        for _, aporte_row in aportes_sim.iterrows():
-                            try:
-                                 aportes_list.append({
-                                     'date': pd.to_datetime(aporte_row[date_col]).date(),
-                                     'value': float(aporte_row[value_col])
-                                 })
-                            except Exception:
-                                 st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
-                    
-                    sim_data['aportes'] = aportes_list
-                    
-                    if 'annual_interest_rate' not in sim_data:
-                         sim_data['annual_interest_rate'] = sim_data.get('monthly_interest_rate', 12.0) 
-                         
-                    full_results = utils.calculate_financials(sim_data)
-                    display_full_results(full_results, show_download_button=True, is_simulation_saved=True)
+    if st.button("Voltar para o Histórico"):
+        st.session_state.page = "Histórico de Simulações"
+        st.session_state.simulation_to_view = None
+        st.rerun()
+
+    with st.spinner("Carregando detalhes..."):
+        sim_data = st.session_state.simulation_to_view
+        sim_id = sim_data.get('simulation_id')
+
+        df_aportes_all = utils.load_data_from_sheet(worksheets["aportes"])
+        aportes_sim = df_aportes_all[df_aportes_all['simulation_id'] == sim_id]
+        
+        aportes_list = []
+        date_col = 'data_aporte' if 'data_aporte' in aportes_sim.columns else 'data'
+        value_col = 'valor_aporte' if 'valor_aporte' in aportes_sim.columns else 'valor'
+
+        if date_col not in aportes_sim.columns or value_col not in aportes_sim.columns:
+            st.error(f"A planilha 'aportes' não tem colunas de data/valor reconhecidas (Sim_ID: {sim_id}). Verifique os cabeçalhos na Linha 1 da GSheet.")
+        else:
+            for _, aporte_row in aportes_sim.iterrows():
+                try:
+                     aportes_list.append({
+                         'date': pd.to_datetime(aporte_row[date_col]).date(),
+                         'value': float(aporte_row[value_col])
+                     })
+                except Exception:
+                     st.warning(f"Aporte com dados inválidos na planilha (Sim_ID: {sim_id}). Pulando linha.")
+        
+        sim_data['aportes'] = aportes_list
+        
+        if 'annual_interest_rate' not in sim_data:
+             sim_data['annual_interest_rate'] = sim_data.get('monthly_interest_rate', 12.0) 
+             
+        full_results = utils.calculate_financials(sim_data)
+        display_full_results(full_results, show_download_button=True, is_simulation_saved=True)
+
 
 def render_edit_page():
     st.title("Editando Simulação")
@@ -721,6 +741,13 @@ def render_edit_page():
 
     sim = st.session_state.simulation_to_edit
     st.subheader(f"Editando Simulação de: **{sim.get('client_name', 'N/A')}**")
+    
+    if st.button("Voltar para o Histórico"):
+        st.session_state.page = "Histórico de Simulações"
+        st.session_state.editing_row = None
+        st.session_state.simulation_to_edit = None
+        st.rerun()
+        
     st.info("Atenção: A edição de aportes individuais não está disponível nesta tela. Para isso, carregue a simulação na página 'Nova Simulação'.")
 
     with st.container(border=True):
@@ -742,7 +769,7 @@ def render_edit_page():
             st.number_input("Valor de Venda do m²", value=float(sim.get('value_m2',0)), key="edit_value_m2")
             st.slider("% de Troca de Área", 0.0, 100.0, value=float(sim.get('area_exchange_percentage',0)), key="edit_area_exchange_percentage")
     
-    if st.button("💾 Salvar Alterações", use_container_width=True, type="primary"):
+    if st.button("Salvar Alterações", use_container_width=True, type="primary"):
         with st.spinner("Recalculando e salvando..."):
             sim_id = sim.get('simulation_id')
 
@@ -927,6 +954,7 @@ def render_dashboard_page():
             )
             st.plotly_chart(fig_bar_aportes, use_container_width=True)
 
+
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
     
@@ -936,7 +964,7 @@ if 'page' in st.session_state and st.session_state.page != "Nova Simulação":
 if st.session_state.authenticated:
     with st.sidebar:
         st.image("Lavie.png")
-        st.markdown(f"**Usuário:** {st.session_state.get('user_name', 'N/A')}")
+        st.info(f"**Usuário:** {st.session_state.get('user_name', 'N/A')}")
         st.markdown("<br>", unsafe_allow_html=True)
         
         page_options = ["Nova Simulação", "Histórico", "Dashboard"]
@@ -947,6 +975,11 @@ if st.session_state.authenticated:
                 page_options.append("Editar Simulação")
                 page_icons.append("pencil-square")
             default_index = page_options.index("Editar Simulação")
+        elif st.session_state.get('simulation_to_view') is not None:
+            if "Ver Simulação" not in page_options:
+                page_options.append("Ver Simulação")
+                page_icons.append("eye-fill")
+            default_index = page_options.index("Ver Simulação")
         else:
             page_map = {"Nova Simulação": "Nova Simulação", "Histórico de Simulações": "Histórico", "Dashboard": "Dashboard"}
             current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
@@ -968,23 +1001,31 @@ if st.session_state.authenticated:
         
         page_map_to_state = {
             "Nova Simulação": "Nova Simulação", "Histórico": "Histórico de Simulações",
-            "Dashboard": "Dashboard", "Editar Simulação": "Editar Simulação"
+            "Dashboard": "Dashboard", "Editar Simulação": "Editar Simulação",
+            "Ver Simulação": "Ver Simulação"
         }
         
         new_page_state = page_map_to_state.get(selected_page_key)
 
         if st.session_state.page != new_page_state:
-            if st.session_state.page == "📝 Editar Simulação":
-                st.session_state.editing_row = None
-                st.session_state.simulation_to_edit = None
-            
+            st.session_state.editing_row = None
+            st.session_state.simulation_to_edit = None
+            st.session_state.simulation_to_view = None
+
             st.session_state.page = new_page_state
-            st.session_state.current_step = 1 
+            
+            if new_page_state == "Nova Simulação":
+                reset_form_to_defaults()
+            
             st.rerun()
 
         if selected_page_key != "Editar Simulação" and st.session_state.get('editing_row') is not None:
             st.session_state.editing_row = None
             st.session_state.simulation_to_edit = None
+            st.rerun()
+        
+        if selected_page_key != "Ver Simulação" and st.session_state.get('simulation_to_view') is not None:
+            st.session_state.simulation_to_view = None
             st.rerun()
 
         st.markdown("---")
@@ -1001,6 +1042,8 @@ if st.session_state.authenticated:
         render_history_page()
     elif st.session_state.page == "Editar Simulação":
         render_edit_page()
+    elif st.session_state.page == "Ver Simulação": 
+        render_view_simulation_page()
     elif st.session_state.page == "Dashboard":
         render_dashboard_page()
 
