@@ -63,7 +63,7 @@ worksheets = utils.init_gsheet_connection()
 
 
 def render_login_page():
-    c1, c2, c3 = st.columns([1, 1.5, 1]) 
+    c1, c2, c3 = st.columns([1, 2, 1]) 
     with c2:
         st.image("Lavie.png", use_column_width=True) 
         st.title("Simulador Financeiro Lavie")
@@ -386,7 +386,7 @@ def render_new_simulation_page():
                     st.session_state.current_step += 1
                     st.rerun()
             elif st.session_state.current_step == 3:
-                if st.button("🚀 Calcular Resultado", use_container_width=True, type="primary"):
+                if st.button("Calcular Resultado", use_container_width=True, type="primary"):
                     if not st.session_state.aportes:
                         st.warning("Adicione pelo menos um aporte para calcular.")
                     else:
@@ -426,18 +426,6 @@ def render_new_simulation_page():
             st.metric("VGV Preliminar", utils.format_currency(vgv_preliminar))
             st.metric("Custo Físico Preliminar", utils.format_currency(custo_obra_preliminar))
 
-            if vgv_preliminar > 0 or custo_obra_preliminar > 0:
-                df_pie = pd.DataFrame([
-                    {"Categoria": "VGV", "Valor": vgv_preliminar},
-                    {"Categoria": "Custo Físico", "Valor": -custo_obra_preliminar},
-                ])
-                
-                fig = px.bar(df_pie, x="Categoria", y="Valor", 
-                             color="Categoria", 
-                             title="Visão Preliminar (VGV vs. Custo)",
-                             color_discrete_map={"VGV": "#388E3C", "Custo Físico": "#D32F2F"})
-                fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
 
         except Exception:
             st.caption("Preencha os campos da Etapa 1 para ver o resumo.")
