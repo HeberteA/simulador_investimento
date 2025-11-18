@@ -24,7 +24,14 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         st.subheader("Cronograma de Vencimentos Detalhado")
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.metric("Nome do Cliente", results.get('client_name', "N/A"))
+            client_name = results.get('client_name')
+            display_name = client_name if client_name and client_name.strip() != "" else "Cliente Não Identificado"
+            st.markdown(f"""
+            <div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; border-left: 4px solid #E37026;">
+                <p style="font-size: 12px; margin: 0; color: #888;">Cliente</p>
+                <p style="font-size: 18px; margin: 0; font-weight: bold; color: #FFF;">{display_name}</p>
+            </div>
+            """, unsafe_allow_html=True)
         with c2:
             st.metric("Montante Final (Aporte + Juros)", utils.format_currency(results.get('valor_corrigido', 0)))
         with c3:
