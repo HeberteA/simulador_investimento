@@ -113,13 +113,14 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 st.markdown("")
                 st.markdown("")
                 st.markdown("")
+                st.markdown("")
                 resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
                 st.markdown(f"""
                 <div style="
                     background-color: rgba(0,0,0,0);
-                    border-radius: 10px; 
+                    border-radius: 5px; 
                     padding: 20px; 
-                    border: 1px solid ;
+                    border: 1px solid {THEME_PRIMARY_COLOR};
                 ">
                     <p style="
                         font-size: 27px; 
