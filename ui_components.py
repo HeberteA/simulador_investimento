@@ -59,9 +59,9 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
             col5, col6 = st.columns([3, 1])
             with col5:
-                with st.container(height=300):
+                with st.container(height=400):
                     st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
-                    c_troca, c_juros = st.columns([2, 1])
+                    c_troca, c_juros = st.columns([2, 2])
                     c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
                     c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
                     st.metric("Custo Total da Obra", f"= -{format_currency(results.get('total_construction_cost', 0))}")
