@@ -397,7 +397,7 @@ def render_new_simulation_page():
                         with st.spinner("Realizando cálculos..."):
                             params = {k: st.session_state[k] for k in defaults.keys()}
                             params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
-                            st.session_state.simulation_results = utils.calculate_financials(params)
+                            st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
                             st.session_state.results_ready = True
                             st.session_state.simulation_saved = False 
                             go_to_results()
@@ -979,9 +979,12 @@ if st.session_state.authenticated:
                 "Histórico de Simulações": "Histórico", 
                 "Dashboard": "Dashboard"
             }
-            current_page_title = page_map.get(st.session_state.page, "Nova Simulação")
-            default_index = page_options.index(current_page_title)
-
+            current_page_title = page_map.get(st.session_state.get("page", "Nova Simulação"), "Nova Simulação")
+            try:
+                default_index = page_options.index(current_page_title)
+            except ValueError:
+                 default_index = 0
+                
         selected_page_key = option_menu(
             menu_title="Menu Principal", options=page_options, icons=page_icons,
             menu_icon="cast", 
