@@ -98,7 +98,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
         with colu2: 
             
-            co1, co2, co3 = st.columns([1, 5, 1])
+            co1, co2, co3 = st.columns([1, 3, 1])
             with co2:
                 st.markdown("")
                 st.markdown("")
@@ -123,7 +123,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     border: 1px solid ;
                 ">
                     <p style="
-                        font-size: 25px; 
+                        font-size: 30px; 
                         color: #FFFFFF; 
                         margin: 0; 
                         font-weight: bold;
