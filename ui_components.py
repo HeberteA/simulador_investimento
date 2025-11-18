@@ -123,7 +123,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     border: 1px solid ;
                 ">
                     <p style="
-                        font-size: 30px; 
+                        font-size: 20px; 
                         color: #FFFFFF; 
                         margin: 0; 
                         font-weight: bold;
