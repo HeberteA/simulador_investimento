@@ -47,18 +47,23 @@ defaults = {
 }
 
 def reset_form_to_defaults():
-    """Reseta o session_state para os valores padrão do formulário."""
     for key, value in defaults.items():
         st.session_state[key] = value
-    
     st.session_state.new_aporte_date = datetime.today().date()
     st.session_state.new_aporte_value = 0.0
     st.session_state.parcelado_total_valor = 0.0
     st.session_state.parcelado_num_parcelas = 1
     st.session_state.parcelado_data_inicio = datetime.today().date()
+
     st.session_state.current_step = 1
     st.session_state.show_results_page = False
     st.session_state.results_ready = False
+
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+        
+worksheets = utils.init_gsheet_connection()
 
 
 def render_login_page():
