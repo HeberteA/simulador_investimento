@@ -119,7 +119,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 <div style="
                     background-color: rgba(0,0,0,0);
                     border-radius: 10px; 
-                    padding: 30px; 
+                    padding: 20px; 
                     border: 1px solid ;
                 ">
                     <p style="
