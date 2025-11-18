@@ -12,7 +12,10 @@ from utils import format_currency, calculate_financials
 THEME_PRIMARY_COLOR = "#E37026"
 
 def display_full_results(results, show_save_button=False, show_download_button=False, save_callback=None, is_simulation_saved=False):
-    unique_id = results.get('simulation_id', str(datetime.now().timestamp()))
+    if 'simulation_id' not in results:
+        results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
+    
+    unique_id = results['simulation_id']
 
 
     tab_vencimentos, tab_resumo, tab_sensibilidade = st.tabs(["**Cronograma de Vencimentos**", "**Resumo Financeiro**", "**Análise de Cenários**"])
@@ -31,12 +34,15 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         aportes_list = results.get('aportes', [])
         
         if aportes_list:
-            df_aportes_display = pd.DataFrame([{'Vencimento': a['date'], 'Valor': a['value']} for a in aportes_list])
-            df_aportes_display['Vencimento'] = pd.to_datetime(df_aportes_display['Vencimento']).dt.strftime('%d/%m/%Y')
-            df_aportes_display['Valor'] = df_aportes_display['Valor'].apply(utils.format_currency)
-            st.dataframe(df_aportes_display, use_container_width=True, hide_index=True)
+            try:
+                df_aportes_display = pd.DataFrame([{'Vencimento': a['date'], 'Valor': a['value']} for a in aportes_list])
+                df_aportes_display['Vencimento'] = pd.to_datetime(df_aportes_display['Vencimento']).dt.strftime('%d/%m/%Y')
+                df_aportes_display['Valor'] = df_aportes_display['Valor'].apply(utils.format_currency)
+                st.dataframe(df_aportes_display, use_container_width=True, hide_index=True)
+            except Exception:
+                st.warning("Erro ao exibir tabela de aportes.")
         else:
-            st.warning("Nenhum aporte foi encontrado para esta simulação.")
+            st.info("ℹ️ Nenhum aporte registrado. Se esta é uma simulação antiga, os dados podem não ter sido salvos corretamente.")
 
     with tab_resumo:
         st.subheader("Resumo Financeiro")
@@ -93,8 +99,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_periodo, key=f"gauge_periodo_{unique_id}")
 
         with colu2: 
-            st.space("large")
-            st.space("large")
+            for _ in range(14): st.markdown("")
             resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
             st.markdown(f"""
             <div style="
@@ -173,8 +178,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
     with tab_sensibilidade:
         st.subheader("Matriz de Cenários")
         st.markdown("Análise do impacto no **ROI Anualizado do Investidor** com base nas principais variáveis do projeto.")
-        scenarios = {}
         base_params = results.copy()
+        base_params['value_m2'] = base_params.get('value_m2', 0.0)
+        base_params['construction_cost_m2'] = base_params.get('construction_cost_m2', 0.0)
+        
+        scenarios = {}
         
         try:
             scenarios['Realista'] = calculate_financials(base_params)
