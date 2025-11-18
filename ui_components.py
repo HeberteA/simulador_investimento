@@ -93,20 +93,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_periodo, key=f"gauge_periodo_{unique_id}")
 
         with colu2: 
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
-            st.markdown("")
+            st.space("stretch")
             resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
             st.markdown(f"""
             <div style="
