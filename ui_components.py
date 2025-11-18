@@ -40,7 +40,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_resumo:
         st.subheader("Resumo Financeiro")
-        col2, col1= st.columns([1.25, 1])
+        col2, col1= st.columns([1.25, 1,25])
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
             st.metric("Resultado Operacional do Projeto (VGV - Custo Total)", f"={format_currency(results.get('final_operational_result', 0))}")
