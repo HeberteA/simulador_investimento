@@ -17,25 +17,31 @@ def display_full_results(results, show_save_button=False, show_download_button=F
     
     unique_id = results['simulation_id']
 
+    client_name_raw = results.get('client_name', '')
+    client_display = client_name_raw if client_name_raw and str(client_name_raw).strip() else "Cliente Não Identificado"
 
-    tab_vencimentos, tab_resumo, tab_sensibilidade = st.tabs(["**Cronograma de Vencimentos**", "**Resumo Financeiro**", "**Análise de Cenários**"])
+    tab_vencimentos, tab_resumo, tab_sensibilidade = st.tabs(["Cronograma de Vencimentos", "Resumo Financeiro", "Análise de Cenários"])
 
     with tab_vencimentos:
-        st.subheader("Cronograma de Vencimentos Detalhado")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            client_name = results.get('client_name')
-            display_name = client_name if client_name and client_name.strip() != "" else "Cliente Não Identificado"
-            st.markdown(f"""
-            <div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; border-left: 4px solid #E37026;">
-                <p style="font-size: 12px; margin: 0; color: #888;">Cliente</p>
-                <p style="font-size: 18px; margin: 0; font-weight: bold; color: #FFF;">{display_name}</p>
+        st.subheader("Detalhes do Investidor e Cronograma")
+        
+        st.markdown(f"""
+        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+            <div style="flex: 2; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 4px solid #E37026;">
+                <p style="font-size: 12px; margin: 0; color: #aaa; text-transform: uppercase;">Nome do Cliente</p>
+                <p style="font-size: 20px; margin: 5px 0 0 0; font-weight: bold; color: #FFF;">{client_display}</p>
             </div>
-            """, unsafe_allow_html=True)
-        with c2:
-            st.metric("Montante Final (Aporte + Juros)", utils.format_currency(results.get('valor_corrigido', 0)))
-        with c3:
-            st.metric("Total Aportado", utils.format_currency(results.get('total_contribution', 0)))
+            <div style="flex: 1; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                <p style="font-size: 12px; margin: 0; color: #aaa;">Total Aportado</p>
+                <p style="font-size: 18px; margin: 5px 0 0 0; font-weight: 600; color: #FFF;">{utils.format_currency(results.get('total_contribution', 0))}</p>
+            </div>
+            <div style="flex: 1; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                <p style="font-size: 12px; margin: 0; color: #aaa;">Montante Final</p>
+                <p style="font-size: 18px; margin: 5px 0 0 0; font-weight: 600; color: #E37026;">{utils.format_currency(results.get('valor_corrigido', 0))}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.divider()
 
         aportes_list = results.get('aportes', [])
@@ -49,259 +55,164 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             except Exception:
                 st.warning("Erro ao exibir tabela de aportes.")
         else:
-            st.info("ℹ️ Nenhum aporte registrado. Se esta é uma simulação antiga, os dados podem não ter sido salvos corretamente.")
+            st.info("Nenhum aporte registrado.")
 
     with tab_resumo:
-        st.subheader("Resumo Financeiro")
-        col2, col1= st.columns([1.25, 1])
-        with col1:
-            st.markdown("##### Demonstrativo de Retorno do Investidor")
-            st.metric("Resultado Operacional do Projeto (VGV - Custo Total)", f"={format_currency(results.get('final_operational_result', 0))}")
-            spe_percentage_label = f"2. Participação da SPE no Projeto"
-            c_spe, c_mon = st.columns([2, 2])
-            c_spe.metric(spe_percentage_label, format_currency(results.get('valor_participacao', 0)), delta=f"{results.get('spe_percentage', 0):.2f}%")
-            c_mon.metric("1. Montante Corrigido (Aporte + Juros)", f"+ {format_currency(results.get('valor_corrigido', 0))}")
-            total_bruto = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
-            st.metric("Total Bruto Recebido", f"= {format_currency(total_bruto)}")
-            st.metric("Aporte Inicial", f"- {format_currency(results.get('total_contribution', 0))}")
+        lucro_liquido = results.get('resultado_final_investidor', 0)
+        roi_anual = results.get('roi_anualizado', 0)
         
-        with col2:
-            st.markdown("##### Resumo do Projeto Imobiliário")
-            st.metric("VGV (Valor Geral de Venda)", format_currency(results.get('vgv', 0)))
-            with st.container(height=300):
-                st.metric("Custo Físico da Obra", format_currency(results.get('cost_obra_fisica', 0)))
-                c_troca, c_juros = st.columns([2, 2])
-                c_juros.metric("Custo do Capital (Juros)", f"+ {format_currency(results.get('juros_investidor', 0))}")
-                c_troca.metric("Custo Troca de Área", f"+ {format_currency(results.get('area_exchange_value', 0))}")
-                st.metric("Custo Total da Obra", f"= -{format_currency(results.get('total_construction_cost', 0))}")
-                    
-        colu1, colu2 = st.columns([1.25, 1])
-        with colu1:
-            st.markdown("")
-            st.markdown("##### Retorno sobre o Investimento")
-            
-            roi_anualizado = results.get('roi_anualizado', 0)
-            gauge_max_range_anual = max(30, roi_anualizado * 1.5)
-            fig_gauge_anual = go.Figure(go.Indicator(
-                mode="gauge+number", value=roi_anualizado,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "ROI Anualizado", 'font': {'size': 20}},
-                number={'suffix': "%", 'font': {'size': 30, 'color': '#E37026'}},
-                gauge={'axis': {'range': [0, gauge_max_range_anual]}, 'bar': {'color': THEME_PRIMARY_COLOR}}
-            ))
-            fig_gauge_anual.update_layout(height=225, paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=50, r=50, t=50, b=10))
-            st.plotly_chart(fig_gauge_anual, use_container_width=True, key=f"gauge_anual_{unique_id}")
-
-            roi_periodo = results.get('roi', 0)
-            duracao_meses = results.get('num_months', 0)
-            gauge_max_range_periodo = max(30, roi_periodo * 1.5)
-            fig_gauge_periodo = go.Figure(go.Indicator(
-                mode="gauge+number", value=roi_periodo,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': f"ROI no Período ({duracao_meses} meses aprox.)", 'font': {'size': 20}},
-                number={'suffix': "%", 'font': {'size': 30, 'color': '#E37026'}},
-                gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
-            ))
-            fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=225, margin=dict(l=50, r=50, t=50, b=10))
-            st.plotly_chart(fig_gauge_periodo, key=f"gauge_periodo_{unique_id}")
-
-        with colu2: 
-            for _ in range(14): st.markdown("")
-            resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
-            st.markdown(f"""
-            <div style="
-                text-align: center;
-                background-color: rgba(0,0,0,0);
-                border-radius: 10px; 
-                padding: 20px; 
-                border: 1px solid {THEME_PRIMARY_COLOR};
-            ">
-                <p style="
-                    font-size: 27px; 
-                    color: #FFFFFF; 
-                    margin: 0; 
-                    font-weight: bold;
-                ">
-                    Resultado Final (Lucro Líquido)
-                </p>
-                <p style="
-                    font-size: 2.3rem; 
-                    color: {THEME_PRIMARY_COLOR}; 
-                    font-weight: 600; 
-                    margin: 0;
-                    line-height: 1;
-                ">
-                    ={resultado_final_str}
-                </p>
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, rgba(227, 112, 38, 0.15) 0%, rgba(0,0,0,0.2) 100%);
+            border: 1px solid #E37026;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+        ">
+            <h3 style="margin:0; font-size: 0.9rem; color: #ddd; text-transform: uppercase; letter-spacing: 2px;">Resultado Final (Lucro Líquido)</h3>
+            <h1 style="margin: 15px 0; font-size: 3.5rem; color: #E37026; font-weight: 800; text-shadow: 0 2px 10px rgba(227, 112, 38, 0.3);">
+                {format_currency(lucro_liquido)}
+            </h1>
+            <div style="display: inline-block; background-color: #E37026; color: white; padding: 8px 20px; border-radius: 25px; font-size: 1rem; font-weight: bold; box-shadow: 0 4px 15px rgba(227, 112, 38, 0.4);">
+                ROI Anualizado: {roi_anual:.2f}%
             </div>
-            """, unsafe_allow_html=True)
-                
-        st.divider()
-                
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("##### Fluxo de Caixa do Investidor")
+        col_details_1, col_details_2 = st.columns(2)
         
-        try:
+        with col_details_1:
+            st.markdown("#### Composição do Retorno")
+            with st.container():
+                st.markdown(f"""
+                <div style="background-color: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.9rem;">
+                        <span>Resultado Operacional (VGV - Custos)</span>
+                        <span>{format_currency(results.get('final_operational_result', 0))}</span>
+                    </div>
+                </div>
+                <div style="background-color: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span style="color:#fff;">(+) Part. SPE ({results.get('spe_percentage', 0):.2f}%)</span>
+                        <span style="color:#E37026; font-weight:bold;">{format_currency(results.get('valor_participacao', 0))}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#fff;">(+) Montante Corrigido</span>
+                        <span style="color:#E37026; font-weight:bold;">{format_currency(results.get('valor_corrigido', 0))}</span>
+                    </div>
+                    <hr style="border-color: rgba(255,255,255,0.1);">
+                    <div style="display:flex; justify-content:space-between; font-size:1.1rem;">
+                        <span style="color:#fff; font-weight:600;">Total Bruto</span>
+                        <span style="color:#fff; font-weight:600;">{format_currency(results.get('valor_corrigido', 0) + results.get('valor_participacao', 0))}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with col_details_2:
+            st.markdown("#### Dados do Projeto")
+            with st.container():
+                st.markdown(f"""
+                <div style="background-color: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="color:#aaa;">VGV Total</span>
+                        <span style="color:#fff;">{format_currency(results.get('vgv', 0))}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="color:#aaa;">Custo Obra Física</span>
+                        <span style="color:#fff;">{format_currency(results.get('cost_obra_fisica', 0))}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="color:#aaa;">Custo Capital (Juros)</span>
+                        <span style="color:#fff;">{format_currency(results.get('juros_investidor', 0))}</span>
+                    </div>
+                    <hr style="border-color: rgba(255,255,255,0.1);">
+                     <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#E37026;">Custo Total</span>
+                        <span style="color:#E37026;">{format_currency(results.get('total_construction_cost', 0))}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.subheader("Indicadores Visuais")
+        
+        g1, g2 = st.columns(2)
+        with g1:
+            roi_periodo = results.get('roi', 0)
+            duracao = results.get('num_months', 0)
+            fig_gauge = go.Figure(go.Indicator(
+                mode="gauge+number", value=roi_periodo,
+                title={'text': f"ROI Período ({duracao} meses)", 'font': {'size': 18, 'color': '#aaa'}},
+                number={'suffix': "%", 'font': {'size': 40, 'color': '#E37026'}},
+                gauge={'axis': {'range': [0, max(50, roi_periodo*1.5)]}, 'bar': {'color': '#E37026'}, 'bgcolor': "rgba(255,255,255,0.1)"}
+            ))
+            fig_gauge.update_layout(height=250, margin=dict(t=30,b=10,l=30,r=30), paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
+            st.plotly_chart(fig_gauge, use_container_width=True)
+            
+        with g2:
             aportes_df = pd.DataFrame(results.get('aportes', []))
             if not aportes_df.empty:
                 aportes_df.rename(columns={'date': 'Data', 'value': 'Valor'}, inplace=True)
-                aportes_df['Valor'] = -aportes_df['Valor']
                 aportes_df['Tipo'] = 'Aporte'
+                aportes_df['Valor'] = -aportes_df['Valor']
                 
-                retorno_capital = results.get('valor_corrigido', 0)
-                lucro_spe = results.get('valor_participacao', 0)
                 data_final = pd.to_datetime(results.get('project_end_date'))
-
-                df_retornos = pd.DataFrame([
-                    {'Data': data_final, 'Valor': retorno_capital, 'Tipo': 'Retorno (Capital + Juros)'},
-                    {'Data': data_final, 'Valor': lucro_spe, 'Tipo': 'Lucro (Participação SPE)'}
-                ])
+                retorno_total = results.get('valor_corrigido', 0) + results.get('valor_participacao', 0)
                 
-                df_fluxo = pd.concat([aportes_df, df_retornos], ignore_index=True)
-                df_fluxo['Data'] = pd.to_datetime(df_fluxo['Data'])
-                df_fluxo_agregado = df_fluxo.groupby(['Data', 'Tipo'])['Valor'].sum().reset_index()
-
-                fig_fluxo = px.bar(
-                    df_fluxo_agregado, 
-                    x='Data', 
-                    y='Valor', 
-                    color='Tipo',
-                    title="Fluxo de Caixa (Aportes vs. Retornos)",
-                    labels={'Valor': 'Valor (R$)', 'Data': 'Data'},
-                    color_discrete_map={
-                        'Aporte': '#D32F2F',
-                        'Retorno (Capital + Juros)': '#1976D2',
-                        'Lucro (Participação SPE)': '#388E3C'
-                    }
-                )
-                fig_fluxo.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', barmode='relative')
+                df_retorno = pd.DataFrame([{'Data': data_final, 'Valor': retorno_total, 'Tipo': 'Retorno Total'}])
+                df_fluxo = pd.concat([aportes_df, df_retorno], ignore_index=True)
+                
+                fig_fluxo = px.bar(df_fluxo, x='Data', y='Valor', color='Tipo', 
+                                   title="Fluxo de Caixa",
+                                   color_discrete_map={'Aporte': '#D32F2F', 'Retorno Total': '#388E3C'})
+                fig_fluxo.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font={'color': "white"}, showlegend=True)
                 st.plotly_chart(fig_fluxo, use_container_width=True)
-            else:
-                st.warning("Não há aportes para exibir o fluxo de caixa.")
-        except Exception as e:
-            st.error(f"Erro ao gerar gráfico de fluxo de caixa: {e}")
-
 
     with tab_sensibilidade:
         st.subheader("Matriz de Cenários")
-        st.markdown("Análise do impacto no **ROI Anualizado do Investidor** com base nas principais variáveis do projeto.")
         base_params = results.copy()
-        base_params['value_m2'] = base_params.get('value_m2', 0.0)
-        base_params['construction_cost_m2'] = base_params.get('construction_cost_m2', 0.0)
-        
         scenarios = {}
         
         try:
             scenarios['Realista'] = calculate_financials(base_params)
             
-            pessimistic_params = base_params.copy()
-            pessimistic_params['value_m2'] *= 0.85
-            pessimistic_params['construction_cost_m2'] *= 1.15
-            scenarios['Pessimista'] = calculate_financials(pessimistic_params)
+            pessimistic = base_params.copy()
+            pessimistic['value_m2'] *= 0.85
+            pessimistic['construction_cost_m2'] *= 1.15
+            scenarios['Pessimista'] = calculate_financials(pessimistic)
             
-            optimistic_params = base_params.copy()
-            optimistic_params['value_m2'] *= 1.15
-            optimistic_params['construction_cost_m2'] *= 0.85
-            scenarios['Otimista'] = calculate_financials(optimistic_params)
+            optimistic = base_params.copy()
+            optimistic['value_m2'] *= 1.15
+            optimistic['construction_cost_m2'] *= 0.85
+            scenarios['Otimista'] = calculate_financials(optimistic)
 
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                with st.container(border=True):
-                    st.markdown("<h5 style='text-align: center; color: #D32F2F;'>🔴 Pessimista</h5>", unsafe_allow_html=True)
-                    st.metric("ROI Anualizado", f"{scenarios['Pessimista']['roi_anualizado']:.2f}%")
-                    st.metric("Lucro do Investidor", format_currency(scenarios['Pessimista']['resultado_final_investidor']))
-                    st.caption(f"Venda m²: {format_currency(pessimistic_params['value_m2'])} | Custo m²: {format_currency(pessimistic_params['construction_cost_m2'])}")
-            with c2:
-                with st.container(border=True):
-                    st.markdown("<h5 style='text-align: center; color: #1976D2;'>🔵 Realista (Base)</h5>", unsafe_allow_html=True)
-                    st.metric("ROI Anualizado", f"{scenarios['Realista']['roi_anualizado']:.2f}%")
-                    st.metric("Lucro do Investidor", format_currency(scenarios['Realista']['resultado_final_investidor']))
-                    st.caption(f"Venda m²: {format_currency(base_params['value_m2'])} | Custo m²: {format_currency(base_params['construction_cost_m2'])}")
-            with c3:
-                with st.container(border=True):
-                    st.markdown("<h5 style='text-align: center; color: #388E3C;'>🟢 Otimista</h5>", unsafe_allow_html=True)
-                    st.metric("ROI Anualizado", f"{scenarios['Otimista']['roi_anualizado']:.2f}%")
-                    st.metric("Lucro do Investidor", format_currency(scenarios['Otimista']['resultado_final_investidor']))
-                    st.caption(f"Venda m²: {format_currency(optimistic_params['value_m2'])} | Custo m²: {format_currency(optimistic_params['construction_cost_m2'])}")
-        
-        except Exception as e:
-            st.error(f"Erro ao calcular cenários: {e}")
-
-        st.divider()
-        st.subheader("Simulação Interativa (What-If)")
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            variacao_vgv = st.slider("Variação do Valor de Venda (VGV %)", -25.0, 25.0, 0.0, 0.5)
-            variacao_custo = st.slider("Variação do Custo da Obra (%)", -25.0, 25.0, 0.0, 0.5)
-        
-        with c2:
-            sim_params = results.copy()
-            val_m2_original = sim_params.get('value_m2', 0.0)
-            custo_m2_original = sim_params.get('construction_cost_m2', 0.0)
+            c_pess, c_real, c_opt = st.columns(3)
             
-            try:
-                cenario_simulado = calculate_financials(sim_params)
-                st.metric("Novo ROI Anualizado (Simulado)", f"{cenario_simulado.get('roi_anualizado', 0):.2f}%")
-                st.metric("Novo Lucro do Investidor (Simulado)", format_currency(cenario_simulado.get('resultado_final_investidor', 0)))
-                st.caption(f"Venda m²: {format_currency(sim_params['value_m2'])} | Custo m²: {format_currency(sim_params['construction_cost_m2'])}")
-            except Exception as e:
-                st.error(f"Erro ao simular cenário: {e}")
+            def render_scenario_card(title, color, data):
+                st.markdown(f"""
+                <div style="border: 1px solid {color}; border-radius: 10px; padding: 15px; text-align: center; background: rgba(255,255,255,0.02);">
+                    <h4 style="color: {color}; margin: 0;">{title}</h4>
+                    <p style="font-size: 24px; font-weight: bold; margin: 10px 0; color: #fff;">{data['roi_anualizado']:.2f}% <span style="font-size:12px; color:#888;">a.a.</span></p>
+                    <p style="font-size: 14px; margin: 0; color: #aaa;">Lucro: {format_currency(data['resultado_final_investidor'])}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
+            with c_pess: render_scenario_card("Pessimista", "#D32F2F", scenarios['Pessimista'])
+            with c_real: render_scenario_card("Realista", "#1976D2", scenarios['Realista'])
+            with c_opt: render_scenario_card("Otimista", "#388E3C", scenarios['Otimista'])
+        
+        except Exception:
+            st.error("Erro ao calcular cenários.")
 
-        st.divider()
-
-        with st.expander("**Mapa de Calor de Sensibilidade (ROI Anualizado)**", expanded=True):
-            st.markdown("Veja como o ROI Anualizado (%) reage a mudanças no Custo da Obra e no Valor de Venda (VGV).")
-            
-            try:
-                base_cost_m2 = results.get('construction_cost_m2', 0)
-                base_value_m2 = results.get('value_m2', 0)
-
-                cost_range = np.linspace(base_cost_m2 * 0.8, base_cost_m2 * 1.2, 5)
-                value_range = np.linspace(base_value_m2 * 0.8, base_value_m2 * 1.2, 5)
-                
-                heatmap_data = []
-                for cost in cost_range:
-                    row_data = []
-                    for value in value_range:
-                        temp_params = results.copy()
-                        temp_params['construction_cost_m2'] = cost
-                        temp_params['value_m2'] = value
-                        res = calculate_financials(temp_params)
-                        row_data.append(res['roi_anualizado'])
-                    heatmap_data.append(row_data)
-
-                x_labels = [format_currency(v) for v in value_range]
-                y_labels = [format_currency(c) for c in cost_range]
-                
-                fig_heatmap = ff.create_annotated_heatmap(
-                    z=heatmap_data,
-                    x=x_labels,
-                    y=y_labels,
-                    annotation_text=[[f'{z:.1f}%' for z in row] for row in heatmap_data],
-                    colorscale='Viridis',
-                    showscale=True
-                )
-                fig_heatmap.update_layout(
-                    title="Sensibilidade: VGV m² (Eixo X) vs. Custo m² (Eixo Y)",
-                    xaxis_title="Valor de Venda do m²",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    yaxis_title="Custo da Obra por m²"
-                )
-                st.plotly_chart(fig_heatmap, use_container_width=True)
-            except Exception as e:
-                st.error(f"Erro ao gerar mapa de calor: {e}")
-              
     buttons_to_show = []
     if show_download_button: buttons_to_show.append("download")
     if show_save_button: buttons_to_show.append("save")
 
     if buttons_to_show:
         st.divider()
-        st.subheader("Ações")
-        
         cols = st.columns(len(buttons_to_show) or 1)
         col_index = 0
         
@@ -311,13 +222,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 pdf_data['aportes'] = results.get('aportes', []) 
                 pdf_bytes = utils.generate_pdf(pdf_data)
                 
-                client_name_safe = "".join(c for c in results.get('client_name', 'simulacao') if c.isalnum() or c in (' ', '_')).rstrip()
-                client_name_safe = client_name_safe.replace(' ', '_').lower()
-                timestamp = datetime.now().strftime('%Y%m%d')
-                file_name = f"relatorio_{client_name_safe}_{timestamp}.pdf"
+                client_name_safe = "".join(c for c in results.get('client_name', 'simulacao') if c.isalnum() or c in (' ', '_')).rstrip().replace(' ', '_').lower()
+                file_name = f"relatorio_{client_name_safe}_{datetime.now().strftime('%Y%m%d')}.pdf"
 
                 st.download_button(
-                    label="📄 Baixar Relatório em PDF",
+                    label="Baixar Relatório PDF",
                     data=pdf_bytes,
                     file_name=file_name,
                     mime="application/pdf",
@@ -325,20 +234,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     key=f"pdf_dl_{unique_id}",
                     disabled=not is_simulation_saved 
                 )
-                
-                if not is_simulation_saved:
-                    st.caption("ℹ️ Você deve salvar a simulação na planilha antes de baixar o PDF.")
-                
+                if not is_simulation_saved: st.caption("⚠️ Salve a simulação antes de baixar.")
             col_index += 1
 
         if "save" in buttons_to_show:
             with cols[col_index]:
-                if st.button(
-                    "💾 Salvar Simulação na Planilha", 
-                    use_container_width=True, 
-                    type="primary", 
-                    key=f"save_btn_{unique_id}" 
-                ):
-                    if save_callback:
-                        save_callback()
+                if st.button("Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
+                    if save_callback: save_callback()
             col_index += 1
