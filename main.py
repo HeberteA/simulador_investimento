@@ -423,8 +423,7 @@ def render_new_simulation_page():
         st.markdown("---")
 
         try:
-            c1, c2, c3 = st.columns([1, 3, 1])
-
+            c1, c2, c3 = st.columns([1, 5, 1])
             with c2:
                 st.image("tower.png", caption="Definindo os parâmetros do empreendimento.") 
         except Exception as e:
