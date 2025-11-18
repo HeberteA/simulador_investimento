@@ -253,44 +253,43 @@ def render_new_simulation_page():
         """, unsafe_allow_html=True)
 
     def render_step_1_projeto():
-        st.markdown("<div class='step-content-card'>", unsafe_allow_html=True)
-        st.subheader("Etapa 1: Parâmetros do Projeto")
-        st.markdown("Defina os dados fundamentais do empreendimento.")
-        st.divider()
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size")
-            st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
-        with c2:
-            st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
-            st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.subheader("Etapa 1: Parâmetros do Projeto")
+            st.markdown("Defina os dados fundamentais do empreendimento.")
+            st.divider()
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size", value=st.session_state.land_size)
+                st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", value=st.session_state.construction_cost_m2)
+            with c2:
+                st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2", value=st.session_state.value_m2)
+                st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage", value=st.session_state.area_exchange_percentage)
 
     def render_step_2_investidor():
-        st.markdown("<div class='step-content-card'>", unsafe_allow_html=True)
-        st.subheader("Etapa 2: Dados do Investidor e Prazos")
-        st.markdown("Insira as informações do cliente e as condições do investimento.")
-        st.divider()
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.text_input("Nome do Cliente", key="client_name")
-            st.text_input("Código do Cliente", key="client_code")
-            st.number_input(
-                "Taxa de Juros Anual (%)", 
-                min_value=0.0, 
-                step=0.1, 
-                format="%.2f", 
-                key="annual_interest_rate"
-            )
-        with c2:
-            st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-            st.date_input("Data Final do Projeto", 
-                          value=st.session_state.project_end_date,
-                          key="project_end_date" 
-                          )
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.subheader("Etapa 2: Dados do Investidor e Prazos")
+            st.markdown("Insira as informações do cliente e as condições do investimento.")
+            st.divider()
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.text_input("Nome do Cliente", key="client_name", value=st.session_state.client_name)
+                st.text_input("Código do Cliente", key="client_code", value=st.session_state.client_code)
+                st.number_input(
+                    "Taxa de Juros Anual (%)", 
+                    min_value=0.0, 
+                    step=0.1, 
+                    format="%.2f", 
+                    key="annual_interest_rate",
+                    value=st.session_state.annual_interest_rate
+                )
+            with c2:
+                st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", value=st.session_state.spe_percentage)
+                st.date_input("Data Final do Projeto", 
+                              value=st.session_state.project_end_date,
+                              key="project_end_date" 
+                              )
 
     def render_step_3_aportes():
         
