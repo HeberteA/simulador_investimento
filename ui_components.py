@@ -222,8 +222,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         
         with c2:
             sim_params = results.copy()
-            sim_params['value_m2'] *= (1 + variacao_vgv / 100)
-            sim_params['construction_cost_m2'] *= (1 + variacao_custo / 100)
+            val_m2_original = sim_params.get('value_m2', 0.0)
+            custo_m2_original = sim_params.get('construction_cost_m2', 0.0)
             
             try:
                 cenario_simulado = calculate_financials(sim_params)
