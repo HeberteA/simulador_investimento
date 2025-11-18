@@ -214,6 +214,7 @@ def render_new_simulation_page():
     
     def render_stepper_ui():
         st.title("Nova Simulação Financeira")
+        st.space("medium")
         step = st.session_state.current_step
         st.markdown(f"""
         <div class="step-container">
