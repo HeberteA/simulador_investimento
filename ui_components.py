@@ -95,7 +95,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         with colu2: 
             st.space("large")
             st.space("large")
-            st.space("large")
             resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
             st.markdown(f"""
             <div style="
