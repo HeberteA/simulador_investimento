@@ -98,10 +98,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
         with colu2: 
             
-            co1, co2, co3 = st.columns([1, 3, 1])
+            co1, co2, co3 = st.columns([1, 4, 1])
             with co2:
-                st.markdown("")
-                st.markdown("")
                 st.markdown("")
                 st.markdown("")
                 st.markdown("")
@@ -123,7 +121,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     border: 1px solid ;
                 ">
                     <p style="
-                        font-size: 30px; 
+                        font-size: 25px; 
                         color: #FFFFFF; 
                         margin: 0; 
                         font-weight: bold;
@@ -131,7 +129,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         Resultado Final (Lucro Líquido)
                     </p>
                     <p style="
-                        font-size: 2.0rem; 
+                        font-size: 2.2rem; 
                         color: {THEME_PRIMARY_COLOR}; 
                         font-weight: 600; 
                         margin: 0;
