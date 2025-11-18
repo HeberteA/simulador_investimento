@@ -285,6 +285,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 fig_heatmap.update_layout(
                     title="Sensibilidade: VGV m² (Eixo X) vs. Custo m² (Eixo Y)",
                     xaxis_title="Valor de Venda do m²",
+                    paper_bgcolor='rgba(0,0,0,0)',
                     yaxis_title="Custo da Obra por m²"
                 )
                 st.plotly_chart(fig_heatmap, use_container_width=True)
