@@ -396,13 +396,27 @@ def render_new_simulation_page():
                     else:
                         with st.spinner("Realizando cálculos..."):
                             params = {k: st.session_state[k] for k in defaults.keys()}
-                            params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes]
+                            
+                            aportes_formatados = []
+                            for a in st.session_state.aportes:
+                                try:
+                                    data_ap = a.get('data')
+                                    valor_ap = a.get('valor')
+                                    if data_ap is not None and valor_ap is not None:
+                                         aportes_formatados.append({'date': data_ap, 'value': valor_ap})
+                                except Exception:
+                                    pass
+
+                            params['aportes'] = aportes_formatados
+                            
+                            st.session_state.simulation_results = utils.calculate_financials(params)
+                            
                             st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
+                            
                             st.session_state.results_ready = True
                             st.session_state.simulation_saved = False 
                             go_to_results()
                             st.rerun()
-
     def render_visuals_sidebar():
         st.subheader("Resumo do Projeto")
         st.markdown("---")
