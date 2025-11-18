@@ -90,7 +90,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 gauge={'axis': {'range': [0, gauge_max_range_periodo]}, 'bar': {'color': '#E37026'}} 
             ))
             fig_gauge_periodo.update_layout(paper_bgcolor='rgba(0,0,0,0)', height=225, margin=dict(l=50, r=50, t=50, b=10))
-            st.plotly_chart(fig_gauge_periodo, use_container_width=True, key=f"gauge_periodo_{unique_id}")
+            st.plotly_chart(fig_gauge_periodo, key=f"gauge_periodo_{unique_id}")
 
         with colu2: 
             
@@ -286,6 +286,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     title="Sensibilidade: VGV m² (Eixo X) vs. Custo m² (Eixo Y)",
                     xaxis_title="Valor de Venda do m²",
                     paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
                     yaxis_title="Custo da Obra por m²"
                 )
                 st.plotly_chart(fig_heatmap, use_container_width=True)
