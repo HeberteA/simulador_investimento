@@ -46,9 +46,19 @@ defaults = {
     'current_step': 1 
 }
 
+def update_value(key):
+    """Copia o valor do widget temporário para a variável persistente."""
+    widget_key = f"widget_{key}"
+    if widget_key in st.session_state:
+        st.session_state[key] = st.session_state[widget_key]
+
 def reset_form_to_defaults():
+    """Reseta tudo, limpando tanto a memória quanto os widgets."""
     for key, value in defaults.items():
         st.session_state[key] = value
+        if f"widget_{key}" in st.session_state:
+            st.session_state[f"widget_{key}"] = value
+    
     st.session_state.new_aporte_date = datetime.today().date()
     st.session_state.new_aporte_value = 0.0
     st.session_state.parcelado_total_valor = 0.0
@@ -64,7 +74,6 @@ for key, value in defaults.items():
         st.session_state[key] = value
         
 worksheets = utils.init_gsheet_connection()
-
 
 def render_login_page():
     c1, c2, c3 = st.columns([1, 2, 1]) 
@@ -99,9 +108,6 @@ def render_login_page():
 
 
 def render_new_simulation_page():
-
-    # CSS Limpo - Apenas para o Stepper (Wizard)
-    # REMOVI o CSS que causava a caixa fantasma
     SENIOR_FRONTEND_CSS = """
     <style>
         .step-container {
@@ -205,9 +211,9 @@ def render_new_simulation_page():
             )
         return
 
-    st.title("Nova Simulação Financeira")
     
     def render_stepper_ui():
+        st.title("Nova Simulação Financeira")
         step = st.session_state.current_step
         st.markdown(f"""
         <div class="step-container">
@@ -227,6 +233,7 @@ def render_new_simulation_page():
         """, unsafe_allow_html=True)
 
     def render_step_1_projeto():
+        
         with st.container(border=True):
             st.subheader("Etapa 1: Parâmetros do Projeto")
             st.markdown("Defina os dados fundamentais do empreendimento.")
@@ -234,11 +241,27 @@ def render_new_simulation_page():
             
             c1, c2 = st.columns(2)
             with c1:
-                st.number_input("Área Vendável (m²)", min_value=0, step=100, key="land_size", value=st.session_state.land_size)
-                st.number_input("Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", value=st.session_state.construction_cost_m2)
+                st.number_input(
+                    "Área Vendável (m²)", min_value=0, step=100, 
+                    key="widget_land_size", value=st.session_state.land_size,
+                    on_change=update_value, args=("land_size",)
+                )
+                st.number_input(
+                    "Custo da Obra por m²", min_value=0.0, step=100.0, format="%.2f", 
+                    key="widget_construction_cost_m2", value=st.session_state.construction_cost_m2,
+                    on_change=update_value, args=("construction_cost_m2",)
+                )
             with c2:
-                st.number_input("Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", key="value_m2", value=st.session_state.value_m2)
-                st.number_input("% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="area_exchange_percentage", value=st.session_state.area_exchange_percentage)
+                st.number_input(
+                    "Valor de Venda do m²", min_value=0.0, step=100.0, format="%.2f", 
+                    key="widget_value_m2", value=st.session_state.value_m2,
+                    on_change=update_value, args=("value_m2",)
+                )
+                st.number_input(
+                    "% de Troca de Área", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", 
+                    key="widget_area_exchange_percentage", value=st.session_state.area_exchange_percentage,
+                    on_change=update_value, args=("area_exchange_percentage",)
+                )
 
     def render_step_2_investidor():
         with st.container(border=True):
@@ -248,22 +271,33 @@ def render_new_simulation_page():
             
             c1, c2 = st.columns(2)
             with c1:
-                st.text_input("Nome do Cliente", key="client_name", value=st.session_state.client_name)
-                st.text_input("Código do Cliente", key="client_code", value=st.session_state.client_code)
+                st.text_input(
+                    "Nome do Cliente", 
+                    key="widget_client_name", value=st.session_state.client_name,
+                    on_change=update_value, args=("client_name",)
+                )
+                st.text_input(
+                    "Código do Cliente", 
+                    key="widget_client_code", value=st.session_state.client_code,
+                    on_change=update_value, args=("client_code",)
+                )
                 st.number_input(
-                    "Taxa de Juros Anual (%)", 
-                    min_value=0.0, 
-                    step=0.1, 
-                    format="%.2f", 
-                    key="annual_interest_rate",
-                    value=st.session_state.annual_interest_rate
+                    "Taxa de Juros Anual (%)", min_value=0.0, step=0.1, format="%.2f", 
+                    key="widget_annual_interest_rate", value=st.session_state.annual_interest_rate,
+                    on_change=update_value, args=("annual_interest_rate",)
                 )
             with c2:
-                st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", value=st.session_state.spe_percentage)
-                st.date_input("Data Final do Projeto", 
-                              value=st.session_state.project_end_date,
-                              key="project_end_date" 
-                              )
+                st.number_input(
+                    "Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", 
+                    key="widget_spe_percentage", value=st.session_state.spe_percentage,
+                    on_change=update_value, args=("spe_percentage",)
+                )
+                st.date_input(
+                    "Data Final do Projeto", 
+                    value=st.session_state.project_end_date,
+                    key="widget_project_end_date",
+                    on_change=update_value, args=("project_end_date",)
+                )
 
     def render_step_3_aportes():
         
@@ -360,7 +394,7 @@ def render_new_simulation_page():
         with nav_cols[3]:
             if st.session_state.current_step < 3:
                 if st.button("Próximo", use_container_width=True):
-                    st.session_state.current_step += 1
+                    st.session_state.current_step -= 1
                     st.rerun()
             elif st.session_state.current_step == 3:
                 if st.button("Calcular Resultado", use_container_width=True, type="primary"):
@@ -383,7 +417,6 @@ def render_new_simulation_page():
                             params['aportes'] = aportes_formatados
                             
                             st.session_state.simulation_results = utils.calculate_financials(params)
-                            
                             st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
                             
                             st.session_state.results_ready = True
@@ -418,10 +451,21 @@ def render_new_simulation_page():
             st.metric("VGV Preliminar", utils.format_currency(vgv_preliminar))
             st.metric("Custo Físico Preliminar", utils.format_currency(custo_obra_preliminar))
 
+            if vgv_preliminar > 0 or custo_obra_preliminar > 0:
+                df_pie = pd.DataFrame([
+                    {"Categoria": "VGV", "Valor": vgv_preliminar},
+                    {"Categoria": "Custo Físico", "Valor": -custo_obra_preliminar},
+                ])
+                
+                fig = px.bar(df_pie, x="Categoria", y="Valor", 
+                             color="Categoria", 
+                             title="Visão Preliminar (VGV vs. Custo)",
+                             color_discrete_map={"VGV": "#388E3C", "Custo Físico": "#D32F2F"})
+                fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
 
         except Exception:
             st.caption("Preencha os campos da Etapa 1 para ver o resumo.")
-
     
     col_inputs, col_visuals = st.columns([2, 1.2])
 
