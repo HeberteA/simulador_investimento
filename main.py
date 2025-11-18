@@ -410,7 +410,7 @@ def render_new_simulation_page():
         try:
             st.image("Burj.jpeg", caption="Definindo os parâmetros do empreendimento.") 
         except Exception as e:
-            st.warning("⚠️ Imagem 'Burj.jpeg' não encontrada.")
+            st.warning("⚠️ Imagem 'Burj.jpg' não encontrada.")
             st.caption("Para corrigir, adicione a imagem ao seu repositório e faça o commit/upload.")
 
         st.markdown("---")
