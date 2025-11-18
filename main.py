@@ -56,8 +56,6 @@ def reset_form_to_defaults():
     st.session_state.parcelado_total_valor = 0.0
     st.session_state.parcelado_num_parcelas = 1
     st.session_state.parcelado_data_inicio = datetime.today().date()
-
-    # 3. Reseta os estados da página
     st.session_state.current_step = 1
     st.session_state.show_results_page = False
     st.session_state.results_ready = False
