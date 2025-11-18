@@ -100,19 +100,10 @@ def render_login_page():
 
 def render_new_simulation_page():
 
+    # CSS Limpo - Apenas para o Stepper (Wizard)
+    # REMOVI o CSS que causava a caixa fantasma
     SENIOR_FRONTEND_CSS = """
     <style>
-        /* --- 1. ESTILO DA SIDEBAR FIXA --- */
-        div[data-testid="stVerticalBlock"]:nth-child(2) > [data-testid="stVerticalBlockBorderWrapper"] {
-            position: sticky;
-            top: 60px; 
-            background-color: rgba(14, 17, 23, 0.9); 
-            border-radius: 10px;
-            border: 1px solid #E37026;
-            z-index: 1000;
-        }
-
-        /* --- 2. ESTILO DO "STEPPER" (WIZARD) --- */
         .step-container {
             display: flex;
             justify-content: space-between;
@@ -167,23 +158,8 @@ def render_new_simulation_page():
         .step-item.active:not(:last-child)::after {
              background-color: #E37026;
         }
-
-        /* --- 3. ESTILO DO "CARTÃO" DE CONTEÚDO --- */
-        .step-content-card {
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        .step-content-card h3 { 
-            color: #E37026;
-            margin-top: 0;
-            border-bottom: 2px solid #E37026;
-            padding-bottom: 10px;
-        }
         
-        /* --- 4. BOTÕES DE NAVEGAÇÃO --- */
+        /* Botões de Navegação */
         div[data-testid="stHorizontalBlock"] > div[data-testid="stVerticalBlock"] > div.stButton {
              display: flex;
         }
@@ -199,8 +175,6 @@ def render_new_simulation_page():
             border: 1px solid #AAA;
             width: 100%;
         }
-        
-        
     </style>
     """
     st.markdown(SENIOR_FRONTEND_CSS, unsafe_allow_html=True)
