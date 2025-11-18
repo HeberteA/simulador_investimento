@@ -93,50 +93,47 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             st.plotly_chart(fig_gauge_periodo, key=f"gauge_periodo_{unique_id}")
 
         with colu2: 
-            
-            co1, co2, co3 = st.columns([1, 2, 1])
-            with co2:
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                st.markdown("")
-                resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
-                st.markdown(f"""
-                <div style="
-                    background-color: rgba(0,0,0,0);
-                    border-radius: 10px; 
-                    padding: 25px; 
-                    border: 1px solid {THEME_PRIMARY_COLOR};
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            st.markdown("")
+            resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
+            st.markdown(f"""
+            <div style="
+                background-color: rgba(0,0,0,0);
+                border-radius: 10px; 
+                padding: 25px; 
+                border: 1px solid {THEME_PRIMARY_COLOR};
+            ">
+                <p style="
+                    font-size: 27px; 
+                    color: #FFFFFF; 
+                    margin: 0; 
+                    font-weight: bold;
                 ">
-                    <p style="
-                        font-size: 27px; 
-                        color: #FFFFFF; 
-                        margin: 0; 
-                        font-weight: bold;
-                    ">
-                        Resultado Final (Lucro Líquido)
-                    </p>
-                    <p style="
-                        font-size: 2.3rem; 
-                        color: {THEME_PRIMARY_COLOR}; 
-                        font-weight: 600; 
-                        margin: 0;
-                        line-height: 1;
-                    ">
-                        ={resultado_final_str}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                    Resultado Final (Lucro Líquido)
+                </p>
+                <p style="
+                    font-size: 2.3rem; 
+                    color: {THEME_PRIMARY_COLOR}; 
+                    font-weight: 600; 
+                    margin: 0;
+                    line-height: 1;
+                ">
+                    ={resultado_final_str}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
                 
         st.divider()
                 
