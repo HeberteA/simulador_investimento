@@ -458,13 +458,7 @@ def render_new_simulation_page():
                     {"Categoria": "Custo Físico", "Valor": -custo_obra_preliminar},
                 ])
                 
-                fig = px.bar(df_pie, x="Categoria", y="Valor", 
-                             color="Categoria", 
-                             title="Visão Preliminar (VGV vs. Custo)",
-                             color_discrete_map={"VGV": "#388E3C", "Custo Físico": "#D32F2F"})
-                fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
-
+        
         except Exception:
             st.caption("Preencha os campos da Etapa 1 para ver o resumo.")
     
