@@ -98,8 +98,9 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
         with colu2: 
             
-            co1, co2, co3 = st.columns([1, 4, 1])
+            co1, co2, co3 = st.columns([1, 3, 1])
             with co2:
+                st.markdown("")
                 st.markdown("")
                 st.markdown("")
                 st.markdown("")
