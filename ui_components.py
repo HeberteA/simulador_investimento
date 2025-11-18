@@ -40,11 +40,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
     with tab_resumo:
         st.subheader("Resumo Financeiro")
-        col2, col1= st.columns([2, 1])
+        col2, col1= st.columns([1.25, 1])
         with col1:
             st.markdown("##### Demonstrativo de Retorno do Investidor")
             st.metric("Resultado Operacional do Projeto (VGV - Custo Total)", f"={format_currency(results.get('final_operational_result', 0))}")
-            col8, col9 = st.columns([3, 1])
+            col8, col9 = st.columns([2, 2])
             with col8:
                 spe_percentage_label = f"2. Participação da SPE no Projeto"
                 c_spe, c_mon = st.columns([2, 2])
