@@ -111,7 +111,7 @@ def render_new_simulation_page():
         if 'save_error' in st.session_state and st.session_state.save_error:
             st.error(st.session_state.save_error); del st.session_state.save_error
         
-        if st.button("⬅️ Voltar e Editar Parâmetros"): go_to_inputs()
+        if st.button("Voltar para os Parâmetros"): go_to_inputs()
         
         if st.session_state.get('results_ready', False):
             display_full_results(
