@@ -418,6 +418,7 @@ def render_new_simulation_page():
                             st.session_state.simulation_saved = False 
                             go_to_results()
                             st.rerun()
+                            
     def render_visuals_sidebar():
         st.subheader("Resumo do Projeto")
         st.markdown("---")
