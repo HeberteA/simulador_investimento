@@ -110,6 +110,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             resultado_final_str = format_currency(results.get('resultado_final_investidor', 0))
             st.markdown(f"""
             <div style="
+                text-align: center;
                 background-color: rgba(0,0,0,0);
                 border-radius: 10px; 
                 padding: 20px; 
