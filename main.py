@@ -424,7 +424,7 @@ def render_new_simulation_page():
             st.caption("Preencha os campos da Etapa 1 para ver o resumo.")
 
 
-    col_inputs, col_visuals = st.columns([2, 1.2])
+    col_inputs, col_visuals = st.columns([2, 1])
 
     with col_inputs:
         render_stepper_ui()
