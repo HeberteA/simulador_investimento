@@ -546,7 +546,4 @@ if st.session_state.authenticated:
     elif st.session_state.page == "Dashboard": render_dashboard_page()
 
 else:
-    if st.button("Entrar (Demo)"):
-        st.session_state.authenticated = True
-        st.session_state.user_name = "Demo"
-        st.rerun()
+    render_login_page()
