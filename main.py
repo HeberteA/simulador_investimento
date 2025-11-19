@@ -22,8 +22,10 @@ APP_STYLE_CSS = """
     background-attachment: fixed;
 }
 
-[data-testid="stHeader"] {
-    background-color: rgba(0,0,0,0);
+[data-testid="stAppViewContainer"] {
+    /* Opção: Papel Artesanal (Sutil e Elegante) */
+    background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
+    background-repeat: repeat;
 }
 
 div[data-baseweb="input"] > div {
