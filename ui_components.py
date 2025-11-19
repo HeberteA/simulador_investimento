@@ -89,17 +89,17 @@ def display_full_results(results, show_save_button=False, show_download_button=F
             with st.container():
                 st.markdown(f"""
                 <div style="background-color: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                    <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.9rem;">
-                        <span style="font-weight:bold;">Resultado Operacional (VGV - Custos)</span>
-                        <span style="color:#fff; font-weight:bold;">{format_currency(results.get('final_operational_result', 0))}</span>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Resultado Operacional (VGV - Custos)</span>
+                        <span style="color:#fff;">{format_currency(results.get('final_operational_result', 0))}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                         <span style="color:#fff;">Part. SPE ({results.get('spe_percentage', 0):.2f}%)</span>
-                        <span style="color:#E37026; font-weight:bold;">{format_currency(results.get('valor_participacao', 0))}</span>
+                        <span style="color:#E37026;">{format_currency(results.get('valor_participacao', 0))}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
                         <span style="color:#fff;">(+) Montante Corrigido</span>
-                        <span style="color:#E37026; font-weight:bold;">{format_currency(results.get('valor_corrigido', 0))}</span>
+                        <span style="color:#E37026;">{format_currency(results.get('valor_corrigido', 0))}</span>
                     </div>
                     <hr style="border-color: rgba(255,255,255,0.1);">
                     <div style="display:flex; justify-content:space-between; font-size:1.1rem;">
@@ -122,11 +122,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         <span style="color:#aaa;">Custo Obra Física</span>
                         <span style="color:#fff;">{format_currency(results.get('cost_obra_fisica', 0))}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size: 0.85rem;">
                         <span style="color:#aaa;">Custo Troca de Área</span>
                         <span style="color:#fff;">{format_currency(results.get('area_exchange_value', 0))}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size: 0.85rem;">
                         <span style="color:#aaa;">Custo Capital (Juros)</span>
                         <span style="color:#fff;">{format_currency(results.get('juros_investidor', 0))}</span>
                     </div>
