@@ -379,10 +379,9 @@ def render_history_page():
                 st.session_state.page = "Nova Simulação"
                 st.session_state.current_step = 3 
                 st.rerun()
-                
-            if b2.button("👁️", key=f"view_{idx}"):
+            
+            if c2.button("👁️", key=f"vw_{i}"):
                 view_obj = row.to_dict()
-                
                 df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
                 if not df_ap.empty:
                     aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
@@ -394,7 +393,7 @@ def render_history_page():
                 st.session_state.page = "Ver Simulação"
                 st.rerun()
             st.divider()
-
+            
 def render_view_simulation_page():
     st.title("Visualizar")
     if st.button("Voltar"):
@@ -535,9 +534,9 @@ if st.session_state.authenticated:
         if sel != st.session_state.page and st.session_state.page != "Ver Simulação":
             st.session_state.page = sel
             st.rerun()
-            
+
     if st.session_state.page == "Nova Simulação": render_new_simulation_page()
-    elif st.session_state.page == "Simulações": render_history_page()
+    elif st.session_state.page == "Histórico": render_history_page()
     elif st.session_state.page == "Ver Simulação": render_view_simulation_page()
     elif st.session_state.page == "Dashboard": render_dashboard_page()
 
