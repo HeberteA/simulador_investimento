@@ -160,16 +160,13 @@ def render_new_simulation_page():
         elif step == 2:
             st.subheader("Dados do Investidor")
             c1, c2 = st.columns(2)
-            with c1:
-                c_name = st.text_input("Nome do Cliente/Investidor", value=st.session_state.client_name, key="widget_client_name", placeholder="Ex: João Silva...", help="Nome que aparecerá no relatório final.")
-                st.session_state.client_name = c_name
-
-                c_code = st.text_input("Código de Controle", value=st.session_state.client_code, key="widget_client_code", placeholder="Opcional")
-                st.session_state.client_code = c_code
-                st.number_input("Taxa de Juros Anual (%)", min_value=0.0, step=0.1, format="%.2f", key="annual_interest_rate", help="Custo de oportunidade ou taxa de remuneração do capital.")
-
-            with c2:
-                st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", help="Percentual de participação do investidor na Sociedade de Propósito Específico.")
+            st.session_state.client_name = c1.text_input("Nome", value=st.session_state.client_name)
+            st.session_state.client_code = c1.text_input("Código", value=st.session_state.client_code)
+            st.session_state.annual_interest_rate = c1.number_input("Juros Anual (%)", value=float(st.session_state.annual_interest_rate), step=0.5)
+            
+            st.session_state.spe_percentage = c2.number_input("Part. SPE (%)", value=float(st.session_state.spe_percentage), step=1.0)
+            safe_end = utils._ensure_date(st.session_state.project_end_date)
+            st.session_state.project_end_date = c2.date_input("Término Obra", value=safe_end)
 
         elif step == 3:
             st.subheader("Fluxo de Aportes")
@@ -216,22 +213,19 @@ def render_new_simulation_page():
 
             if st.session_state.aportes:
                 st.divider()
-                df_ap = pd.DataFrame(st.session_state.aportes)
-                if not df_ap.empty:
-                    df_ap['data'] = pd.to_datetime(df_ap['data'])
-                    edited = st.data_editor(
-                        df_ap, 
-                        column_config={
-                            "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"), 
-                            "valor": st.column_config.NumberColumn("Valor", format="R$ %.2f")
-                        }, 
-                        use_container_width=True, 
-                        num_rows="dynamic", 
-                        key="editor_aportes"
-                    )
-                    st.session_state.aportes = edited.to_dict('records')
+                df_show = pd.DataFrame(st.session_state.aportes)
+                if not df_show.empty:
+                    # Garante nomes padronizados
+                    if 'date' in df_show.columns: df_show.rename(columns={'date':'data', 'value':'valor'}, inplace=True)
+                    
+                    edited = st.data_editor(df_show, num_rows="dynamic", key="editor_aportes")
+                    # Salva de volta no formato padrão
+                    recs = []
+                    for r in edited.to_dict('records'):
+                         recs.append({'data': utils._ensure_date(r['data']), 'valor': float(r['valor'])})
+                    st.session_state.aportes = recs
 
-                if st.button("Limpar Todos Aportes", type="secondary"): 
+                if st.button("Limpar Lista"): 
                     st.session_state.aportes = []
                     st.rerun()
 
@@ -246,26 +240,23 @@ def render_new_simulation_page():
                     if not st.session_state.aportes: st.warning("Adicione pelo menos um aporte.")
                     else:
                         with st.spinner("Processando..."):
-                            params = {
-                                'client_name': st.session_state.client_name, 
+                            p = {
+                                'client_name': st.session_state.client_name,
                                 'client_code': st.session_state.client_code,
-                                'annual_interest_rate': st.session_state.get('annual_interest_rate', 12.0),
-                                'spe_percentage': st.session_state.get('spe_percentage', 65.0),
-                                'land_size': st.session_state.get('land_size', 0),
-                                'construction_cost_m2': st.session_state.get('construction_cost_m2', 0),
-                                'value_m2': st.session_state.get('value_m2', 0),
-                                'area_exchange_percentage': st.session_state.get('area_exchange_percentage', 0),
-                                'start_date': st.session_state.get('start_date', datetime.today().date()),
-                                'project_end_date': st.session_state.get('project_end_date', datetime.today().date()),
-                                'aportes': [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes if a.get('valor')]
+                                'annual_interest_rate': st.session_state.annual_interest_rate,
+                                'spe_percentage': st.session_state.spe_percentage,
+                                'land_size': st.session_state.land_size,
+                                'construction_cost_m2': st.session_state.construction_cost_m2,
+                                'value_m2': st.session_state.value_m2,
+                                'area_exchange_percentage': st.session_state.area_exchange_percentage,
+                                'start_date': utils._ensure_date(st.session_state.start_date),
+                                'project_end_date': utils._ensure_date(st.session_state.project_end_date),
+                                'aportes': [{'date': utils._ensure_date(x.get('data')), 'value': x.get('valor')} for x in st.session_state.aportes]
                             }
-                            
-                            st.session_state.simulation_results = utils.calculate_financials(params)
+                            st.session_state.simulation_results = utils.calculate_financials(p)
                             st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
-                            
                             st.session_state.results_ready = True
-                            st.session_state.simulation_saved = False
-                            go_to_results()
+                            st.session_state.show_results_page = True
                             st.rerun()
     
     with col_visual:
@@ -308,7 +299,7 @@ def save_simulation_callback():
     res = st.session_state.simulation_results
     sim_id = f"sim_{int(datetime.now().timestamp())}"
     try:
-        row = [sim_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(res.get('client_name','')), str(res.get('client_code','')),
+        row = [sid, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(res.get('client_name','')), str(res.get('client_code','')),
                st.session_state.get('user_name',''), float(res.get('total_contribution',0)), int(res.get('num_months',0)),
                float(res.get('annual_interest_rate',0)), float(res.get('spe_percentage',0)), int(res.get('land_size',0)),
                float(res.get('construction_cost_m2',0)), float(res.get('value_m2',0)), float(res.get('area_exchange_percentage',0)),
@@ -318,12 +309,13 @@ def save_simulation_callback():
                str(res.get('start_date')), str(res.get('project_end_date'))]
         worksheets["simulations"].append_row(row, value_input_option='USER_ENTERED')
         
-        aps_rows = [[sim_id, str(a['date']), float(a['value'])] for a in res.get('aportes',[])]
+        aps_rows = [[sid, str(a.get('date', a.get('data'))), float(a.get('value', a.get('valor')))] for a in res.get('aportes',[])]
         if aps_rows: worksheets["aportes"].append_rows(aps_rows, value_input_option='USER_ENTERED')
+        
         st.session_state.simulation_saved = True
-        st.toast("Salvo com sucesso!")
-    except Exception as e: st.error(f"Erro ao salvar: {e}")
-
+        st.toast("Salvo!")
+    except Exception as e: st.error(f"Erro save: {e}")
+        
 def render_history_page():
     st.title("Histórico de Simulações")
     
@@ -370,46 +362,49 @@ def render_history_page():
             b1, b2, b3 = st.columns([1, 1, 6])
             
             if b1.button("✏️", key=f"edit_{idx}"):
-                for k, v in row.items():
+               for k, v in row.items():
                     if k in st.session_state:
-                        try:
-                             if isinstance(st.session_state[k], float): st.session_state[k] = float(v)
-                             elif isinstance(st.session_state[k], int): st.session_state[k] = int(v)
-                             else: st.session_state[k] = v
-                        except: st.session_state[k] = v
+                        if k in ['start_date', 'project_end_date']:
+                            st.session_state[k] = utils._ensure_date(v)
+                        else:
+                            st.session_state[k] = v
                 
                 df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
-                if not df_ap.empty:
-                    aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-                    st.session_state.aportes = [{"data": pd.to_datetime(r['data_aporte']).date(), "valor": float(r['valor_aporte'])} for _, r in aps.iterrows()]
-                else:
-                    st.session_state.aportes = []
-
+                aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
+                st.session_state.aportes = [
+                    {'data': utils._ensure_date(r['data_aporte']), 'valor': float(r['valor_aporte'])} 
+                    for _, r in aps.iterrows()
+                ]
+                
                 st.session_state.client_name = row.get('client_name', '')
                 st.session_state.client_code = row.get('client_code', '')
-                
                 st.session_state.page = "Nova Simulação"
-                st.session_state.current_step = 3
-                st.session_state.simulation_saved = True 
+                st.session_state.current_step = 3 
                 st.rerun()
 
             if b2.button("👁️", key=f"view_{idx}"):
-                view_data = row.to_dict()
-                df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
-                aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-                view_data['aportes'] = [{"date": pd.to_datetime(r['data_aporte']).date(), "value": float(r['valor_aporte'])} for _, r in aps.iterrows()]
+                view_obj = row.to_dict()
                 
-                st.session_state.simulation_to_view = view_data
+                # Carrega aportes
+                df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
+                if not df_ap.empty:
+                    aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
+                    # Padroniza chaves para calculate_financials
+                    view_obj['aportes'] = [{'date': utils._ensure_date(r['data_aporte']), 'value': float(r['valor_aporte'])} for _, r in aps.iterrows()]
+                else:
+                    view_obj['aportes'] = []
+                
+                st.session_state.simulation_to_view = view_obj
                 st.session_state.page = "Ver Simulação"
                 st.rerun()
-                
+            st.divider()
 
 def render_view_simulation_page():
-    st.title("Visualizar Simulação")
-    if st.button("Voltar ao Histórico"): 
+    st.title("Visualizar")
+    if st.button("Voltar"):
         st.session_state.page = "Histórico"
         st.rerun()
-        
+    
     if st.session_state.simulation_to_view:
         res = utils.calculate_financials(st.session_state.simulation_to_view)
         display_full_results(res, show_download_button=True, is_simulation_saved=True)
@@ -525,38 +520,33 @@ if st.session_state.authenticated:
         st.image("Lavie.png")
         st.caption(f"Logado: {st.session_state.get('user_name')}")
         
-        sel = option_menu(
-            "Menu Principal", 
-            ["Nova Simulação", "Simulações", "Dashboard"], 
-            icons=["calculator", "clock-history", "graph-up-arrow"], 
-            menu_icon="cast", 
-            default_index=0,
-            styles={
-                "nav-link-selected": {"background-color": "#E37026"},
-                "container": {"padding": "0!important", "background-color": "transparent"},
-            }
-        )
+        page_list = ["Nova Simulação", "Simulações", "Dashboard"]
         
-        if st.button("Sair", use_container_width=True):
+        current_active = st.session_state.page
+        if current_active == "Ver Simulação": current_active = "Simulações"
+        
+        try:
+            default_ix = page_list.index(current_active)
+        except:
+            default_ix = 0
+            
+        sel = option_menu("Menu", page_list, icons=["calculator", "clock", "graph-up"], default_index=default_ix)
+        
+        if st.button("Sair"):
             st.session_state.authenticated = False
             st.rerun()
-        
-        page_map = {
-            "Nova Simulação": "Nova Simulação", 
-            "Simulações": "Simulações", 
-            "Dashboard": "Dashboard"
-        }
-        
-        target_page = page_map.get(sel)
-        
-        if target_page and st.session_state.page != target_page and st.session_state.page != "Ver Simulação":
-            st.session_state.page = target_page
-            st.rerun()
 
+        if sel != st.session_state.page and st.session_state.page != "Ver Simulação":
+            st.session_state.page = sel
+            st.rerun()
+            
     if st.session_state.page == "Nova Simulação": render_new_simulation_page()
     elif st.session_state.page == "Simulações": render_history_page()
     elif st.session_state.page == "Ver Simulação": render_view_simulation_page()
     elif st.session_state.page == "Dashboard": render_dashboard_page()
 
 else:
-    render_login_page()
+    if st.button("Entrar (Demo)"):
+        st.session_state.authenticated = True
+        st.session_state.user_name = "Demo"
+        st.rerun()
