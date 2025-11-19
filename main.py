@@ -110,11 +110,13 @@ def render_login_page():
             else: st.warning("Preencha todos os campos.")
 
 def render_new_simulation_page():
+    
 
     def go_to_results(): st.session_state.show_results_page = True
     def go_to_inputs(): st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
+        st.image("Lavie.png")
         st.title("Resultado da Simulação")
 
         if st.button("Voltar para os Parâmetros"):
@@ -325,7 +327,7 @@ def render_history_page():
         return
     
     c_search, c_sort = st.columns([3, 1])
-    search = c_search.text_input("🔍 Buscar Cliente", placeholder="Digite o nome...")
+    search = c_search.text_input("Buscar Cliente", placeholder="Digite o nome...")
     
     if search:
         df = df[df['client_name'].str.lower().str.contains(search.lower(), na=False)]
@@ -517,7 +519,7 @@ if 'authenticated' not in st.session_state: st.session_state.authenticated = Fal
 
 if st.session_state.authenticated:
     with st.sidebar:
-        st.image("Lavie.png")
+        st.image("Lavie1.png")
         st.caption(f"Logado: {st.session_state.get('user_name')}")
         
         page_list = ["Nova Simulação", "Histórico", "Dashboard"]
