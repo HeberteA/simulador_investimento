@@ -379,7 +379,7 @@ def render_history_page():
                 st.session_state.page = "Nova Simulação"
                 st.session_state.current_step = 3 
                 st.rerun()
-
+                
             if b2.button("👁️", key=f"view_{idx}"):
                 view_obj = row.to_dict()
                 
