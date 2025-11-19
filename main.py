@@ -119,15 +119,16 @@ def render_new_simulation_page():
 
     if st.session_state.show_results_page:
         st.title("Resultado da Simulação")
-        if 'save_error' in st.session_state and st.session_state.save_error:
-            st.error(st.session_state.save_error); del st.session_state.save_error
         
-        if st.button("Voltar para os Parâmetros"): go_to_inputs()
+        if st.button("Voltar para os Parâmetros"):
+            go_to_inputs()
+            st.rerun()
         
         if st.session_state.get('results_ready', False):
             display_full_results(
                 st.session_state.simulation_results,
-                show_save_button=True, show_download_button=True,
+                show_save_button=True, 
+                show_download_button=True,
                 save_callback=save_simulation_callback,
                 is_simulation_saved=st.session_state.get('simulation_saved', False)
             )
@@ -170,7 +171,7 @@ def render_new_simulation_page():
             st.subheader("Fluxo de Aportes")
             nome_atual = st.session_state.get('client_name', 'N/A')
             if nome_atual:
-                st.info(f"Simulando para: **{nome_atual}**")
+                st.caption(f"Simulando para: **{nome_atual}**")
             tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Gerar Parcelas"])
             
             with tab_unico:
@@ -179,35 +180,56 @@ def render_new_simulation_page():
                 c2.number_input("Valor (R$)", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
                 with c3:
                     st.space("small")
-                    def callback_adicionar_aporte():
-                        if st.session_state.new_aporte_value > 0:
-                            st.session_state.aportes.append({
-                                "data": st.session_state.new_aporte_date,
-                                "valor": st.session_state.new_aporte_value
-                            })
-                            st.session_state.new_aporte_value = 0.0
+                    def add_single_contribution():
+                        val = st.session_state.new_aporte_value
+                        dt = st.session_state.new_aporte_date
+                        if val > 0:
+                            st.session_state.aportes.append({"data": dt, "valor": val})
+                            st.session_state.new_aporte_value = 0.0 
                     
-                    st.button("Adicionar", use_container_width=True, on_click=callback_adicionar_aporte)
+                    st.button("Adicionar", use_container_width=True, on_click=add_single_contribution)
             
             with tab_parcelado:
                 p1, p2, p3 = st.columns(3)
                 p1.number_input("Valor Total", min_value=0.0, step=50000.0, key="parcelado_total_valor")
                 p2.number_input("Qtd. Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
                 p3.date_input("1º Vencimento", key="parcelado_data_inicio")
-                if st.button("Gerar Parcelas", use_container_width=True):
-                    if st.session_state.parcelado_total_valor > 0:
-                        val = st.session_state.parcelado_total_valor / st.session_state.parcelado_num_parcelas
-                        for i in range(st.session_state.parcelado_num_parcelas):
-                            st.session_state.aportes.append({"data": st.session_state.parcelado_data_inicio + relativedelta(months=i), "valor": val})
-                        st.success("Parcelas geradas!")
+                
+                def add_parcelas():
+                    total = st.session_state.parcelado_total_valor
+                    num = int(st.session_state.parcelado_num_parcelas)
+                    start = st.session_state.parcelado_data_inicio
+                    if total > 0 and num > 0:
+                        val_parcela = total / num
+                        for i in range(num):
+                            st.session_state.aportes.append({
+                                "data": start + relativedelta(months=i),
+                                "valor": val_parcela
+                            })
+                        st.toast("Parcelas geradas!")
+
+                st.button("Gerar Parcelas", use_container_width=True, on_click=add_parcelas)
 
             if st.session_state.aportes:
-                st.markdown("#### Aportes Lançados")
+                st.divider()
                 df_ap = pd.DataFrame(st.session_state.aportes)
-                df_ap['data'] = pd.to_datetime(df_ap['data'])
-                edited = st.data_editor(df_ap, column_config={"data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"), "valor": st.column_config.NumberColumn("Valor", format="R$ %.2f")}, use_container_width=True, num_rows="dynamic", key="editor_aportes")
-                st.session_state.aportes = edited.to_dict('records')
-                if st.button("Limpar Lista", type="secondary"): st.session_state.aportes = []; st.rerun()
+                if not df_ap.empty:
+                    df_ap['data'] = pd.to_datetime(df_ap['data'])
+                    edited = st.data_editor(
+                        df_ap, 
+                        column_config={
+                            "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"), 
+                            "valor": st.column_config.NumberColumn("Valor", format="R$ %.2f")
+                        }, 
+                        use_container_width=True, 
+                        num_rows="dynamic", 
+                        key="editor_aportes"
+                    )
+                    st.session_state.aportes = edited.to_dict('records')
+                
+                if st.button("Limpar Todos Aportes", type="secondary"): 
+                    st.session_state.aportes = []
+                    st.rerun()
 
         st.divider()
         nav_c1, nav_c2, nav_c3 = st.columns([1, 2, 1])
@@ -220,10 +242,23 @@ def render_new_simulation_page():
                     if not st.session_state.aportes: st.warning("Adicione aportes.")
                     else:
                         with st.spinner("Processando..."):
-                            params = {k: st.session_state[k] for k in defaults.keys()}
-                            params['aportes'] = [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes if a.get('valor')]
+                            params = {
+                                'client_name': st.session_state.get('client_name', 'Cliente Não Identificado'), 
+                                'client_code': st.session_state.get('client_code', ''),
+                                'annual_interest_rate': st.session_state.get('annual_interest_rate', 12.0),
+                                'spe_percentage': st.session_state.get('spe_percentage', 65.0),
+                                'land_size': st.session_state.get('land_size', 0),
+                                'construction_cost_m2': st.session_state.get('construction_cost_m2', 0),
+                                'value_m2': st.session_state.get('value_m2', 0),
+                                'area_exchange_percentage': st.session_state.get('area_exchange_percentage', 0),
+                                'start_date': st.session_state.get('start_date', datetime.today().date()),
+                                'project_end_date': st.session_state.get('project_end_date', datetime.today().date()),
+                                'aportes': [{'date': a['data'], 'value': a['valor']} for a in st.session_state.aportes if a.get('valor')]
+                            }
+                            
                             st.session_state.simulation_results = utils.calculate_financials(params)
                             st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
+                            
                             st.session_state.results_ready = True
                             st.session_state.simulation_saved = False
                             go_to_results()
