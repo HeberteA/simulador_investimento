@@ -139,7 +139,12 @@ def calculate_financials(params):
         delta_total_dias = (project_end_date_dt - first_contribution_date).days
         total_days_for_roi = max(1, delta_total_dias)
         
-        delta_total_meses = relativedelta(project_end_date_dt, first_contribution_date)
+        dt_end = project_end_date_dt.to_pydatetime() if isinstance(project_end_date_dt, pd.Timestamp) else project_end_date_dt
+        dt_start = first_contribution_date.to_pydatetime() if isinstance(first_contribution_date, pd.Timestamp) else first_contribution_date
+        
+        delta_total_meses = relativedelta(dt_end, dt_start)
+
+        
         num_months_for_roi_display = delta_total_meses.years * 12 + delta_total_meses.months
         if num_months_for_roi_display <= 0: num_months_for_roi_display = 1
             
