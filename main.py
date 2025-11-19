@@ -226,9 +226,9 @@ def render_new_simulation_page():
             step = st.session_state.current_step
             try:
                 if step == 1:
-                    st.image("tower.jpg", use_container_width=True, caption="Parâmetros da Obra")
+                    st.image("tower.png", use_container_width=True, caption="Parâmetros da Obra")
                 elif step == 2:
-                    st.image("Lavie.png", use_container_width=True, caption="Identidade do Investidor")
+                    st.image("Arc.jpeg", use_container_width=True, caption="Identidade do Investidor")
                 elif step == 3:
                     st.image("Burj.jpg", use_container_width=True, caption="Projeção de Crescimento")
             except Exception:
