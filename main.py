@@ -308,48 +308,76 @@ def render_new_simulation_page():
 
 def render_load_simulation_page():
     st.title("Carregar Simulação")
-    if not worksheets or not worksheets.get("simulations"): st.error("Erro de conexão."); return
-    df = utils.load_data_from_sheet(worksheets["simulations"])
-    if df.empty: st.info("Sem dados."); return
+    
+    if not worksheets:
+        st.error("Conexão com Google Sheets não estabelecida.")
+        return
+
+    df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
+    
+    if df.empty:
+        st.info("Nenhuma simulação encontrada no histórico.")
+        return
     
     df = df.sort_values('created_at', ascending=False)
     
-    options_map = {f"{row['client_name']} ({pd.to_datetime(row['created_at']).strftime('%d/%m/%Y %H:%M')})": row['simulation_id'] for _, row in df.iterrows()}
+    col_search, col_sort = st.columns([3, 1])
+    search_term = col_search.text_input("🔍 Buscar Cliente", placeholder="Digite o nome do cliente...").lower()
     
-    sel_label = st.selectbox("Selecione a Simulação", list(options_map.keys()), index=None, placeholder="Escolha um cliente...")
-    
-    if st.button("Carregar", type="primary") and sel_label:
-        selected_sim_id = options_map[sel_label]
-        row = df[df['simulation_id'] == selected_sim_id].iloc[0]
-        
-        for k, v in row.items():
-            if k in st.session_state:
-                try:
-                     if isinstance(st.session_state[k], float): st.session_state[k] = float(v)
-                     elif isinstance(st.session_state[k], int): st.session_state[k] = int(v)
-                     else: st.session_state[k] = v
-                except: st.session_state[k] = v
-        
-        df_ap = utils.load_data_from_sheet(worksheets["aportes"])
-        
-        df_ap.columns = df_ap.columns.str.replace(' ', '_')
-        
-        df_ap.rename(columns={'data': 'data_aporte', 'valor': 'valor_aporte', 'date': 'data_aporte', 'value': 'valor_aporte'}, inplace=True)
-        
-        aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-        
-        try:
-            st.session_state.aportes = [{"data": pd.to_datetime(r['data_aporte']).date(), "valor": float(r['valor_aporte'])} for _, r in aps.iterrows()]
-        except KeyError as e:
-            st.error(f"Erro nos nomes das colunas da aba 'aportes'. Colunas encontradas: {list(df_ap.columns)}")
-            st.stop()
-        st.session_state.client_name = row.get('client_name', '')
-        st.session_state.client_code = row.get('client_code', '')
-        
-        st.session_state.page = "Nova Simulação"
-        st.session_state.current_step = 3
-        st.rerun()
+    if search_term:
+        df = df[df['client_name'].str.lower().str.contains(search_term, na=False)]
 
+    st.markdown(f"<p style='color:#888; margin-bottom:20px;'>Encontrados: {len(df)} registros</p>", unsafe_allow_html=True)
+
+    for index, row in df.iterrows():
+        with st.container():
+            roi_val = float(row.get('roi_anualizado', 0))
+            color_border = "#388E3C" if roi_val > 15 else ("#E37026" if roi_val > 8 else "#D32F2F")
+            
+            st.markdown(f"""
+            <div style="
+                background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+                border-left: 5px solid {color_border};
+                padding: 20px; border-radius: 8px; margin-bottom: 15px;
+                display: flex; justify-content: space-between; align-items: center;
+            ">
+                <div>
+                    <h3 style="margin:0; font-size:1.2rem; color:white;">{row['client_name']}</h3>
+                    <p style="margin:5px 0 0 0; color:#888; font-size:0.9rem;">📅 {safe_date_to_string(row['created_at'], '%d/%m/%Y %H:%M')} &nbsp; | &nbsp; 🆔 {row['simulation_id']}</p>
+                </div>
+                <div style="text-align:right;">
+                    <span style="display:block; font-size:0.8rem; color:#aaa;">ROI Anualizado</span>
+                    <span style="font-size:1.5rem; font-weight:bold; color:{color_border};">{roi_val:.2f}%</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            c_btn1, c_btn2 = st.columns([1, 5])
+            if c_btn1.button("Abrir", key=f"load_{row['simulation_id']}", use_container_width=True):
+                for k, v in row.items():
+                    if k in st.session_state:
+                        try:
+                             if isinstance(st.session_state[k], float): st.session_state[k] = float(v)
+                             elif isinstance(st.session_state[k], int): st.session_state[k] = int(v)
+                             else: st.session_state[k] = v
+                        except: st.session_state[k] = v
+                
+                df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
+                
+                if not df_ap.empty:
+                    aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
+                    st.session_state.aportes = [{"data": r['data_aporte'].date(), "valor": float(r['valor_aporte'])} for _, r in aps.iterrows()]
+                else:
+                    st.session_state.aportes = []
+
+                st.session_state.client_name = row.get('client_name', '')
+                st.session_state.client_code = row.get('client_code', '')
+                
+                st.session_state.page = "Nova Simulação"
+                st.session_state.current_step = 3
+                st.session_state.simulation_saved = True
+                st.rerun()
+                
 def save_simulation_callback():
     if not worksheets: return
     res = st.session_state.simulation_results
@@ -371,31 +399,62 @@ def save_simulation_callback():
     except Exception as e: st.error(f"Erro ao salvar: {e}")
 
 def render_history_page():
-    st.title("Histórico")
-    if not worksheets: return
-    df = utils.load_data_from_sheet(worksheets["simulations"])
-    if df.empty: st.info("Vazio."); return
+    st.title("Histórico de Simulações")
     
-    for i, row in df.sort_values('created_at', ascending=False).iterrows():
-        with st.container():
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h4 style="margin:0; color:white;">{row.get('client_name')}</h4>
-                    <span style="color:#888; font-size: 12px;">{pd.to_datetime(row.get('created_at')).strftime('%d/%m/%Y %H:%M')}</span>
-                </div>
-                <div style="text-align: right;">
-                    <div style="color: #E37026; font-weight: bold;">ROI: {float(row.get('roi_anualizado',0)):.2f}%</div>
-                    <div style="color: #aaa; font-size: 12px;">VGV: {utils.format_currency(float(row.get('vgv',0)))}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            c1, c2, c3 = st.columns([1,1,8])
-            if c1.button("👁️", key=f"v_{i}"): 
-                st.session_state.simulation_to_view = row.to_dict(); st.session_state.page = "Ver Simulação"; st.rerun()
-            if c2.button("🗑️", key=f"d_{i}"):
-                worksheets["simulations"].delete_rows(int(row.get('row_index', i+2)))
+    if not worksheets: return
+    df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
+    
+    if df.empty:
+        st.warning("Ainda não há dados no histórico.")
+        return
+
+    display_df = df[['created_at', 'client_name', 'vgv', 'roi_anualizado', 'simulation_id', 'row_index']].copy()
+    display_df['created_at'] = pd.to_datetime(display_df['created_at'])
+    
+    st.markdown("Visualize e gerencie todas as simulações salvas.")
+    
+    selection = st.dataframe(
+        display_df,
+        column_config={
+            "created_at": st.column_config.DatetimeColumn("Data Criação", format="D/M/Y HH:mm"),
+            "client_name": "Cliente",
+            "vgv": st.column_config.NumberColumn("VGV (R$)", format="R$ %.2f"),
+            "roi_anualizado": st.column_config.NumberColumn("ROI a.a. (%)", format="%.2f%%"),
+            "simulation_id": st.column_config.TextColumn("ID", disabled=True),
+            "row_index": None 
+        },
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun", 
+        selection_mode="single-row"
+    )
+
+    if selection.selection.rows:
+        selected_index = selection.selection.rows[0]
+        selected_row = display_df.iloc[selected_index]
+        
+        st.divider()
+        c1, c2 = st.columns(2)
+        
+        with c1:
+            st.info(f"Selecionado: **{selected_row['client_name']}**")
+            if st.button("👁️ Visualizar Detalhes", use_container_width=True):
+                full_row = df[df['simulation_id'] == selected_row['simulation_id']].iloc[0]
+                st.session_state.simulation_to_view = full_row.to_dict()
+                st.session_state.page = "Ver Simulação"
                 st.rerun()
+
+        with c2:
+            st.error("Zona de Perigo")
+            if st.button("🗑️ Excluir Registro", type="primary", use_container_width=True):
+                try:
+                    idx_to_delete = int(selected_row['row_index'])
+                    worksheets["simulations"].delete_rows(idx_to_delete)
+                    st.toast("Registro excluído com sucesso!")
+                    utils.load_data_from_sheet.clear()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao excluir: {e}")
 
 def render_view_simulation_page():
     st.title("Visualizar Simulação")
@@ -411,19 +470,109 @@ def render_view_simulation_page():
     display_full_results(res, show_download_button=True, is_simulation_saved=True)
 
 def render_dashboard_page():
-    st.title("Dashboard Gerencial")
+    st.title("Intelligence Dashboard")
+    st.markdown("Análise estratégica de viabilidade e performance de portfólio.")
+    
     if not worksheets: return
-    df = utils.load_data_from_sheet(worksheets["simulations"])
-    if df.empty: return
+    df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
     
-    k1, k2, k3 = st.columns(3)
-    k1.metric("VGV Total", utils.format_currency(df['vgv'].sum()))
-    k2.metric("ROI Médio", f"{df['roi_anualizado'].mean():.2f}%")
-    k3.metric("Simulações", len(df))
+    if df.empty:
+        st.info("Dados insuficientes para gerar dashboard.")
+        return
+
+    total_vgv = df['vgv'].sum()
+    avg_roi = df['roi_anualizado'].mean()
+    total_investido = df['total_contribution'].sum()
+    lucro_total = df['resultado_final_investidor'].sum()
     
-    c1, c2 = st.columns(2)
-    with c1: st.plotly_chart(px.histogram(df, x='roi_anualizado', title="Distribuição de ROI", color_discrete_sequence=['#E37026']), use_container_width=True)
-    with c2: st.plotly_chart(px.scatter(df, x='total_contribution', y='roi_anualizado', title="Aporte vs ROI", color_discrete_sequence=['#E37026']), use_container_width=True)
+    st.markdown("""
+    <style>
+    .kpi-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .kpi-label { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+    .kpi-value { font-size: 28px; font-weight: bold; color: #fff; margin: 10px 0; }
+    .kpi-sub { font-size: 12px; color: #4CAF50; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    k1, k2, k3, k4 = st.columns(4)
+    
+    def kpi_html(label, value, subtext=""):
+        return f"""<div class="kpi-card"><div class="kpi-label">{label}</div><div class="kpi-value">{value}</div><div class="kpi-sub">{subtext}</div></div>"""
+
+    with k1: st.markdown(kpi_html("VGV Potencial", utils.format_currency(total_vgv), f"{len(df)} projetos"), unsafe_allow_html=True)
+    with k2: st.markdown(kpi_html("Capital Captado", utils.format_currency(total_investido)), unsafe_allow_html=True)
+    with k3: st.markdown(kpi_html("Lucro Projetado", utils.format_currency(lucro_total)), unsafe_allow_html=True)
+    with k4: st.markdown(kpi_html("ROI Médio (a.a.)", f"{avg_roi:.2f}%"), unsafe_allow_html=True)
+
+    st.divider()
+
+    
+    c_charts_1, c_charts_2 = st.columns([2, 1])
+    
+    with c_charts_1:
+        st.subheader("Risco x Retorno (Dispersão)")
+        fig_scatter = px.scatter(
+            df, 
+            x='total_contribution', 
+            y='roi_anualizado',
+            size='resultado_final_investidor',
+            color='roi_anualizado',
+            hover_name='client_name',
+            color_continuous_scale='RdYlGn',
+            labels={'total_contribution': 'Investimento Total (R$)', 'roi_anualizado': 'ROI Anualizado (%)'},
+            title="Eficiência do Capital"
+        )
+        fig_scatter.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        fig_scatter.add_hline(y=df['roi_anualizado'].mean(), line_dash="dot", annotation_text="Média", annotation_position="bottom right")
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
+    with c_charts_2:
+        st.subheader("Distribuição de ROI")
+        fig_hist = px.histogram(
+            df, 
+            x='roi_anualizado', 
+            nbins=10, 
+            color_discrete_sequence=['#E37026'],
+            title="Histograma de Rentabilidade"
+        )
+        fig_hist.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white', yaxis_title="Frequência")
+        st.plotly_chart(fig_hist, use_container_width=True)
+
+    c3, c4 = st.columns(2)
+    
+    with c3:
+        st.subheader("Evolução do Portfólio")
+        df_sorted = df.sort_values('created_at')
+        fig_line = px.area(
+            df_sorted, 
+            x='created_at', 
+            y='vgv', 
+            title="Crescimento do VGV Acumulado (Simulado)",
+            line_shape='spline',
+            color_discrete_sequence=['#00E676']
+        )
+        fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        st.plotly_chart(fig_line, use_container_width=True)
+        
+    with c4:
+        st.subheader("Top 5 Projetos (ROI)")
+        top_5 = df.nlargest(5, 'roi_anualizado')[['client_name', 'roi_anualizado', 'resultado_final_investidor']]
+        top_5['roi_anualizado'] = top_5['roi_anualizado'].apply(lambda x: f"{x:.2f}%")
+        top_5['resultado_final_investidor'] = top_5['resultado_final_investidor'].apply(utils.format_currency)
+        top_5.rename(columns={'client_name': 'Cliente', 'roi_anualizado': 'ROI', 'resultado_final_investidor': 'Lucro'}, inplace=True)
+        
+        st.dataframe(
+            top_5, 
+            use_container_width=True, 
+            hide_index=True,
+            column_config={"ROI": st.column_config.TextColumn("ROI", help="Retorno sobre Investimento Anualizado")}
+        )
 
 if 'authenticated' not in st.session_state: st.session_state.authenticated = False
 
