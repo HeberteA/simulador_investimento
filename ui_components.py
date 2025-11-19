@@ -144,6 +144,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         
         g1, g2 = st.columns(2)
         with g1:
+            st.space("medium")
             roi_periodo = results.get('roi', 0)
             duracao = results.get('num_months', 0)
             fig_gauge = go.Figure(go.Indicator(
@@ -152,7 +153,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 number={'suffix': "%", 'font': {'size': 40, 'color': '#E37026'}},
                 gauge={'axis': {'range': [0, max(50, roi_periodo*1.5)]}, 'bar': {'color': '#E37026'}, 'bgcolor': "rgba(255,255,255,0.1)"}
             ))
-            fig_gauge.update_layout(height=300, margin=dict(t=40,b=40,l=20,r=30), paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
+            fig_gauge.update_layout(height=300, margin=dict(t=30,b=30,l=30,r=30), paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
             st.plotly_chart(fig_gauge, use_container_width=True)
             
         with g2:
