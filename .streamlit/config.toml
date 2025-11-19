@@ -1,7 +1,7 @@
 [theme]
 primaryColor = "#E37026"
-backgroundColor = "rgba(0, 0, 0, 0.7)"
-secondaryBackgroundColor = "rgba(0, 0, 0, 1)"
+backgroundColor = "rgba(0, 0, 0, 0.5)"
+secondaryBackgroundColor = "rgba(0, 0, 0, 0.9)"
 textColor = "#FFFFFF"
 font = "sans serif"
 borderColor="#E37026"
