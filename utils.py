@@ -18,6 +18,21 @@ def format_currency(value):
     if value is None: return "N/A"
     return locale.currency(value, grouping=True, symbol='R$')
 
+def _ensure_date(val):
+    """Converte qualquer input de data (str, datetime, timestamp) para datetime.date"""
+    if val is None or pd.isna(val):
+        return date.today()
+    
+    if isinstance(val, date) and not isinstance(val, datetime):
+        return val
+    
+    try:
+        dt = pd.to_datetime(val)
+        if pd.isna(dt): return date.today()
+        return dt.date()
+    except:
+        return date.today()
+
 @st.cache_resource
 def init_gsheet_connection():
     try:
@@ -25,7 +40,7 @@ def init_gsheet_connection():
         gc = gspread.service_account_from_dict(creds_dict)
         
         if "spreadsheet_key" not in st.secrets:
-            st.error("Erro: 'spreadsheet_key' não encontrada nos segredos do Streamlit.")
+            st.error("Erro: 'spreadsheet_key' não encontrada nos segredos.")
             return None
             
         spreadsheet_key = st.secrets["spreadsheet_key"]
@@ -38,15 +53,15 @@ def init_gsheet_connection():
         return worksheets
 
     except SpreadsheetNotFound:
-        st.error("Erro: Planilha não encontrada. Verifique o ID no secrets.")
+        st.error("Erro: Planilha não encontrada.")
         return None
     except KeyError as e:
-        st.error(f"Erro nas credenciais: {e}")
+        st.error(f"Erro Credenciais: {e}")
         return None
     except Exception as e:
-        st.error(f"Erro fatal GSheets: {e}")
+        st.error(f"Erro GSheets: {e}")
         return None
-
+        
 @st.cache_data(ttl=60)
 def load_data_from_sheet(_worksheet, tab_name="default"):
     try:
@@ -85,7 +100,7 @@ def load_data_from_sheet(_worksheet, tab_name="default"):
                 is_pt_br = series.str.contains(',', na=False)
                 series.loc[is_pt_br] = series.loc[is_pt_br].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
                 df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
-                
+
         date_cols = ['created_at', 'data_aporte', 'start_date', 'project_end_date']
         for date_col in date_cols:
             if date_col in df.columns:
@@ -97,7 +112,7 @@ def load_data_from_sheet(_worksheet, tab_name="default"):
         return df
     
     except Exception as e:
-        st.error(f"Erro ao carregar dados ({tab_name}): {e}")
+        st.error(f"Erro ao carregar aba '{tab_name}': {e}")
         return pd.DataFrame()
 
 def calculate_financials(params):
@@ -108,14 +123,9 @@ def calculate_financials(params):
     total_contribution = 0
     aportes = params.get('aportes', [])
     
-    start_date_pd = pd.to_datetime(params.get('start_date', datetime.today()))
-    end_date_pd = pd.to_datetime(params.get('project_end_date', datetime.today()))
-
-    start_date_dt = start_date_pd.date()
-    project_end_date_dt = end_date_pd.date()
-
+    start_date_dt = _ensure_date(params.get('start_date'))
+    project_end_date_dt = _ensure_date(params.get('project_end_date'))
     annual_rate_decimal = params.get('annual_interest_rate', 0) / 100
-    
     if 'monthly_interest_rate' in params and 'annual_interest_rate' not in params:
         monthly_rate_decimal = params.get('monthly_interest_rate', 0) / 100
         annual_rate_decimal = (1 + monthly_rate_decimal) ** 12 - 1
@@ -132,20 +142,17 @@ def calculate_financials(params):
     else:
         sorted_aportes = sorted(aportes, key=lambda x: x['date'])
         
-        first_contribution_pd = pd.to_datetime(sorted_aportes[0]['date'])
-        first_contribution_date = first_contribution_pd.date()
+        first_contribution_date = _ensure_date(sorted_aportes[0]['date'])
         
         delta_total_dias = (project_end_date_dt - first_contribution_date).days
         total_days_for_roi = max(1, delta_total_dias)
         
         delta_total_meses = relativedelta(project_end_date_dt, first_contribution_date)
-        
         num_months_for_roi_display = delta_total_meses.years * 12 + delta_total_meses.months
         if num_months_for_roi_display <= 0: num_months_for_roi_display = 1
             
         for aporte in sorted_aportes:
-            contribution_pd = pd.to_datetime(aporte['date'])
-            contribution_date = contribution_pd.date()
+            contribution_date = _ensure_date(aporte['date'])
             contribution_value = aporte['value']
             total_contribution += contribution_value
 
@@ -211,80 +218,69 @@ def generate_pdf(data):
             pdf.image("Lavie.png", x=10, y=8, w=40)
         except Exception:
             pdf.set_font("Arial", "I", 8)
-            pdf.cell(0, 5, to_latin1("Logo não encontrado."), 0, 1, "L")
-        
+            pdf.cell(0, 5, to_latin1("Lavie"), 0, 1, "L")
+
         pdf.set_font("Arial", "B", 16)
         pdf.set_x(60)
         pdf.cell(0, 10, to_latin1("Relatório de Simulação Financeira"), 0, 1, "C")
         pdf.ln(20)
-        
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Dados do Cliente e Investimento"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
-        
-        client = data.get('client_name', '') or 'Cliente Não Identificado'
-        code = data.get('client_code', '') or ''
-        
-        pdf.cell(0, 5, to_latin1(f"Cliente: {client} {f'({code})' if code else ''}"), 0, 1)
+        c_name = data.get('client_name', '') or 'Cliente'
+        c_code = data.get('client_code', '')
+        pdf.cell(0, 5, to_latin1(f"Cliente: {c_name} {f'({c_code})' if c_code else ''}"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Valor do Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
-        pdf.cell(0, 5, to_latin1(f"Duração (aprox.): {data.get('num_months', 0)} meses"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Duração (aprox.): {data.get('num_months')} meses"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Taxa de Juros Anual: {data.get('annual_interest_rate', 0):.2f}%"), 0, 1)
         pdf.cell(0, 5, to_latin1(f"Participação na SPE: {data.get('spe_percentage', 0):.2f}%"), 0, 1)
-        
         pdf.ln(5)
+        
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Análise do Projeto Imobiliário"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
-        
-        lines = [
-            f"VGV Total: {format_currency(data.get('vgv'))}",
-            f"Custo Obra Física: {format_currency(data.get('cost_obra_fisica'))}",
-            f"Custo Financeiro (Juros): {format_currency(data.get('juros_investidor'))}",
-            f"Permuta/Troca de Área: {format_currency(data.get('area_exchange_value'))}",
-            f"Custo Total do Empreendimento: {format_currency(data.get('total_construction_cost'))}",
-            f"Resultado Operacional: {format_currency(data.get('final_operational_result'))}"
-        ]
-        for l in lines: pdf.cell(0, 5, to_latin1(l), 0, 1)
-
+        pdf.cell(0, 5, to_latin1(f"VGV (Valor Geral de Venda): {format_currency(data.get('vgv'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Custo Físico da Obra: {format_currency(data.get('cost_obra_fisica'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Custo Financeiro (Juros): {format_currency(data.get('juros_investidor'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Permuta/Troca de Área: {format_currency(data.get('area_exchange_value'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Custo Total: {format_currency(data.get('total_construction_cost'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Resultado Operacional: {format_currency(data.get('final_operational_result'))}"), 0, 1)
         pdf.ln(5)
+        
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, to_latin1("Resultados do Investidor"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
-        
-        res_lines = [
-            f"Montante Final (Capital + Juros): {format_currency(data.get('valor_corrigido'))}",
-            f"(+) Participação nos Lucros (SPE): {format_currency(data.get('valor_participacao'))}",
-            f"(-) Capital Investido: {format_currency(data.get('total_contribution'))}",
-            f"Lucro Líquido Final: {format_currency(data.get('resultado_final_investidor'))}"
-        ]
-        for l in res_lines: pdf.cell(0, 5, to_latin1(l), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Montante Final (Capital + Juros): {format_currency(data.get('valor_corrigido'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"(+) Participação na SPE: {format_currency(data.get('valor_participacao'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"(-) Capital Investido: {format_currency(data.get('total_contribution'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Resultado Líquido: {format_currency(data.get('resultado_final_investidor'))}"), 0, 1)
         
         pdf.ln(2)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8, to_latin1(f"ROI do Período: {data.get('roi', 0):.2f}%"), 0, 1)
+        pdf.cell(0, 8, to_latin1(f"ROI: {data.get('roi', 0):.2f}%"), 0, 1)
         pdf.cell(0, 8, to_latin1(f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%"), 0, 1)
-        
         pdf.ln(10)
+
         aportes = data.get('aportes', [])
         if aportes:
             pdf.set_font("Arial", "B", 12)
             pdf.cell(0, 10, to_latin1("Cronograma de Aportes"), 0, 1, "L")
-            
-            col_w = [50, 50]
             pdf.set_font("Arial", "B", 9)
-            pdf.cell(col_w[0], 8, to_latin1("Data"), 1, 0, 'C')
-            pdf.cell(col_w[1], 8, to_latin1("Valor"), 1, 1, 'C')
+            
+            w_dt, w_val = 50, 50
+            pdf.cell(w_dt, 8, to_latin1("Data"), 1, 0, 'C')
+            pdf.cell(w_val, 8, to_latin1("Valor"), 1, 1, 'C')
             
             pdf.set_font("Arial", "", 9)
-            for a in aportes:
-                try:
-                    d_str = pd.to_datetime(a['date']).strftime("%d/%m/%Y")
-                except: d_str = str(a['date'])
-                pdf.cell(col_w[0], 6, to_latin1(d_str), 1, 0, 'C')
-                pdf.cell(col_w[1], 6, to_latin1(format_currency(a['value'])), 1, 1, 'R')
+            for aporte in aportes:
+                d_obj = _ensure_date(aporte.get('date'))
+                d_str = d_obj.strftime("%d/%m/%Y")
+                
+                pdf.cell(w_dt, 6, to_latin1(d_str), 1, 0, 'C')
+                pdf.cell(w_val, 6, to_latin1(format_currency(aporte.get('value'))), 1, 1, 'R')
 
         return bytes(pdf.output(dest='S'))
 
     except Exception as e:
-        print(f"Erro PDF: {e}") # Log simples no console do servidor
+        print(f"Erro PDF: {e}")
         return b""
