@@ -117,7 +117,7 @@ def render_new_simulation_page():
 
     if st.session_state.show_results_page:
         i1, i2, i3 = st.columns([1, 2, 1])
-        i2.image("Lavie.png", width=600)
+        i2.image("Lavie.png", width=400)
         st.title("Resultado da Simulação")
 
         if st.button("Voltar para os Parâmetros"):
