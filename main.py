@@ -175,8 +175,7 @@ def render_new_simulation_page():
                 c1.date_input("Data", key="new_aporte_date")
                 c2.number_input("Valor (R$)", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
                 with c3:
-                    st.write("")
-                    st.markdown("")
+                    st.space("small")
                     if st.button("Adicionar", use_container_width=True):
                         if st.session_state.new_aporte_value > 0:
                             st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
