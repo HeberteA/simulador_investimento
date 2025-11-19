@@ -310,7 +310,8 @@ def save_simulation_callback():
         st.toast("Salvo!")
     except Exception as e: st.error(f"Erro save: {e}")
         
-st.title("Histórico de Simulações")
+def render_history_page():
+    st.title("Histórico de Simulações")
     
     if not worksheets: 
         st.error("Erro de conexão com banco de dados.")
@@ -357,9 +358,9 @@ st.title("Histórico de Simulações")
                 """, unsafe_allow_html=True)
             
             with c_actions:
-                st.write("")
+                st.write("") 
                 b_col1, b_col2 = st.columns(2)
-
+                
                 if b_col1.button("✏️", key=f"edit_{i}", help="Editar essa simulação"):
                     for k, v in row.items():
                         if k in st.session_state:
@@ -406,6 +407,7 @@ def render_view_simulation_page():
     if st.session_state.simulation_to_view:
         res = utils.calculate_financials(st.session_state.simulation_to_view)
         display_full_results(res, show_download_button=True, is_simulation_saved=True)
+
 
 def render_dashboard_page():
     st.title("Intelligence Dashboard")
