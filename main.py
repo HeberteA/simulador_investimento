@@ -519,8 +519,8 @@ if 'authenticated' not in st.session_state: st.session_state.authenticated = Fal
 if st.session_state.authenticated:
     with st.sidebar:
         st.image("Lavie2.png")
-        st.caption(f"Logado: {st.session_state.get('user_name')}")
         st.divider()
+        st.caption(f"Logado: {st.session_state.get('user_name')}")
         
         page_list = ["Nova Simulação", "Histórico", "Dashboard"]
         
