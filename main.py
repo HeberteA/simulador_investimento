@@ -268,7 +268,7 @@ def render_new_simulation_page():
                             go_to_results()
                             st.rerun()
     
-     with col_visual:
+    with col_visual:
         with st.container(border=True):
             st.subheader("Resumo do Passo")
             
