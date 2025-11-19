@@ -116,7 +116,7 @@ def render_new_simulation_page():
     def go_to_inputs(): st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
-        i1, i2, i3 = st.columns([1, 3, 1])
+        i1, i2, i3 = st.columns([1, 1, 1])
         i2.image("Lavie.png", width=500)
         st.title("Resultado da Simulação")
 
