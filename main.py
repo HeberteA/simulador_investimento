@@ -69,6 +69,7 @@ defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'simulation_to_view': None, 
     'show_results_page': False,
+    'client_name': '', 'client_code': '',
     'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
@@ -92,6 +93,7 @@ def reset_form_to_defaults():
     
 for key, value in defaults.items():
     if key not in st.session_state: st.session_state[key] = value
+        
 worksheets = utils.init_gsheet_connection()
 
 def render_login_page():
