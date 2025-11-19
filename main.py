@@ -29,7 +29,7 @@ div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
 }
 [data-testid="stAppViewContainer"] {
     /* Opção: Papel Artesanal (Sutil e Elegante) */
-    background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
+    background-image: url("https://www.transparenttextures.com/patterns/low-contrast-linen.png");
     background-repeat: repeat;
 }
 div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input {
