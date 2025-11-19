@@ -312,9 +312,16 @@ def render_load_simulation_page():
     df = utils.load_data_from_sheet(worksheets["simulations"])
     if df.empty: st.info("Sem dados."); return
     
-    sel_client = st.selectbox("Selecione o Cliente", df["client_name"].unique(), index=None)
-    if st.button("Carregar", type="primary") and sel_client:
-        row = df[df['client_name'] == sel_client].sort_values('created_at', ascending=False).iloc[0]
+    df = df.sort_values('created_at', ascending=False)
+    
+    options_map = {f"{row['client_name']} ({pd.to_datetime(row['created_at']).strftime('%d/%m/%Y %H:%M')})": row['simulation_id'] for _, row in df.iterrows()}
+    
+    sel_label = st.selectbox("Selecione a Simulação", list(options_map.keys()), index=None, placeholder="Escolha um cliente...")
+    
+    if st.button("Carregar", type="primary") and sel_label:
+        selected_sim_id = options_map[sel_label]
+        row = df[df['simulation_id'] == selected_sim_id].iloc[0]
+        
         for k, v in row.items():
             if k in st.session_state:
                 try:
@@ -324,9 +331,23 @@ def render_load_simulation_page():
                 except: st.session_state[k] = v
         
         df_ap = utils.load_data_from_sheet(worksheets["aportes"])
+        
+        df_ap.columns = df_ap.columns.str.replace(' ', '_')
+        
+        df_ap.rename(columns={'data': 'data_aporte', 'valor': 'valor_aporte', 'date': 'data_aporte', 'value': 'valor_aporte'}, inplace=True)
+        
         aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-        st.session_state.aportes = [{"data": pd.to_datetime(r['data_aporte']).date(), "valor": float(r['valor_aporte'])} for _, r in aps.iterrows()]
-        st.session_state.page = "Nova Simulação"; st.session_state.current_step = 3
+        
+        try:
+            st.session_state.aportes = [{"data": pd.to_datetime(r['data_aporte']).date(), "valor": float(r['valor_aporte'])} for _, r in aps.iterrows()]
+        except KeyError as e:
+            st.error(f"Erro nos nomes das colunas da aba 'aportes'. Colunas encontradas: {list(df_ap.columns)}")
+            st.stop()
+        st.session_state.client_name = row.get('client_name', '')
+        st.session_state.client_code = row.get('client_code', '')
+        
+        st.session_state.page = "Nova Simulação"
+        st.session_state.current_step = 3
         st.rerun()
 
 def save_simulation_callback():
