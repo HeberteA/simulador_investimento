@@ -168,6 +168,9 @@ def render_new_simulation_page():
 
         elif step == 3:
             st.subheader("Fluxo de Aportes")
+            nome_atual = st.session_state.get('client_name', 'N/A')
+            if nome_atual:
+                st.info(f"Simulando para: **{nome_atual}**")
             tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Gerar Parcelas"])
             
             with tab_unico:
