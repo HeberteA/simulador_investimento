@@ -520,6 +520,7 @@ if st.session_state.authenticated:
     with st.sidebar:
         st.image("Lavie2.png")
         st.caption(f"Logado: {st.session_state.get('user_name')}")
+        st.divider()
         
         page_list = ["Nova Simulação", "Histórico", "Dashboard"]
         
@@ -532,6 +533,7 @@ if st.session_state.authenticated:
             default_ix = 0
             
         sel = option_menu("Menu", page_list, icons=["calculator", "clock", "graph-up"], default_index=default_ix)
+        st.divider()
         
         if st.button("Sair", use_container_width=True):
             st.session_state.authenticated = False
