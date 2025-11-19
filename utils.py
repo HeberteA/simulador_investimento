@@ -88,7 +88,6 @@ def load_data_from_sheet(_worksheet, tab_name="default"):
 def calculate_financials(params):
     results = {}
     results.update(params)
-    
     dt_start = _ensure_date(params.get('start_date'))
     dt_end = _ensure_date(params.get('project_end_date'))
     
