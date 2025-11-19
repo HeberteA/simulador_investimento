@@ -93,8 +93,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         <span>Resultado Operacional (VGV - Custos)</span>
                         <span>{format_currency(results.get('final_operational_result', 0))}</span>
                     </div>
-                </div>
-                <div style="background-color: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                         <span style="color:#fff;">(+) Part. SPE ({results.get('spe_percentage', 0):.2f}%)</span>
                         <span style="color:#E37026; font-weight:bold;">{format_currency(results.get('valor_participacao', 0))}</span>
@@ -207,6 +205,75 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         except Exception:
             st.error("Erro ao calcular cenários.")
 
+    st.divider()
+        st.subheader("Simulação Interativa (What-If)")
+        
+        col_sliders, col_res_sim = st.columns(2)
+        with col_sliders:
+            variacao_vgv = st.slider("Variação do Valor de Venda (%)", -25.0, 25.0, 0.0, 0.5)
+            variacao_custo = st.slider("Variação do Custo da Obra (%)", -25.0, 25.0, 0.0, 0.5)
+        
+        with col_res_sim:
+            sim_params = results.copy()
+            sim_params['value_m2'] = sim_params['value_m2'] * (1 + variacao_vgv/100)
+            sim_params['construction_cost_m2'] = sim_params['construction_cost_m2'] * (1 + variacao_custo/100)
+            
+            try:
+                cenario_simulado = calculate_financials(sim_params)
+                roi_sim = cenario_simulado.get('roi_anualizado', 0)
+                lucro_sim = cenario_simulado.get('resultado_final_investidor', 0)
+                
+                delta_roi = roi_sim - results.get('roi_anualizado', 0)
+                color_delta = "#388E3C" if delta_roi >= 0 else "#D32F2F"
+                
+                st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; text-align: center;">
+                    <p style="color: #aaa; margin:0;">ROI Simulado</p>
+                    <p style="font-size: 28px; font-weight: bold; color: {color_delta}; margin:0;">{roi_sim:.2f}%</p>
+                    <p style="font-size: 14px; margin:0; color: #fff;">Lucro: {format_currency(lucro_sim)}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Erro: {e}")
+
+        st.write("")
+        with st.expander("Mapa de Calor de Sensibilidade (Clique para abrir)", expanded=True):
+            try:
+                base_cost = results.get('construction_cost_m2', 0)
+                base_val = results.get('value_m2', 0)
+                costs = np.linspace(base_cost * 0.8, base_cost * 1.2, 5)
+                values = np.linspace(base_val * 0.8, base_val * 1.2, 5)
+                
+                z_data = []
+                for c in costs:
+                    row_z = []
+                    for v in values:
+                        p = results.copy()
+                        p['construction_cost_m2'] = c
+                        p['value_m2'] = v
+                        r = calculate_financials(p)
+                        row_z.append(r['roi_anualizado'])
+                    z_data.append(row_z)
+                
+                x_lbl = [format_currency(v) for v in values]
+                y_lbl = [format_currency(c) for c in costs]
+                
+                fig_heat = ff.create_annotated_heatmap(
+                    z=z_data, x=x_lbl, y=y_lbl,
+                    annotation_text=[[f'{z:.1f}%' for z in row] for row in z_data],
+                    colorscale='Magma', showscale=True
+                )
+                fig_heat.update_layout(
+                    title={'text': "ROI Anualizado (%)", 'font': {'color': 'white'}},
+                    xaxis={'title': 'Valor de Venda (R$/m²)', 'tickfont': {'color': 'white'}, 'titlefont': {'color': 'white'}},
+                    yaxis={'title': 'Custo de Obra (R$/m²)', 'tickfont': {'color': 'white'}, 'titlefont': {'color': 'white'}},
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    height=400
+                )
+                st.plotly_chart(fig_heat, use_container_width=True)
+            except Exception: pass
+
     buttons_to_show = []
     if show_download_button: buttons_to_show.append("download")
     if show_save_button: buttons_to_show.append("save")
@@ -226,7 +293,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 file_name = f"relatorio_{client_name_safe}_{datetime.now().strftime('%Y%m%d')}.pdf"
 
                 st.download_button(
-                    label="Baixar Relatório PDF",
+                    label="📄 Baixar Relatório PDF",
                     data=pdf_bytes,
                     file_name=file_name,
                     mime="application/pdf",
@@ -239,6 +306,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
         if "save" in buttons_to_show:
             with cols[col_index]:
-                if st.button("Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
+                if st.button("💾 Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
                     if save_callback: save_callback()
             col_index += 1
