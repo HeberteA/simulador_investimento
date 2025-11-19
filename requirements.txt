@@ -12,4 +12,5 @@ google-api-python-client
 plotly
 streamlit-option-menu
 statsmodels
+scipy
 
