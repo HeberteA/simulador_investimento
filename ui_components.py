@@ -242,7 +242,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 st.error(f"Erro: {e}")
 
         st.write("")
-        with st.expander("Mapa de Calor de Sensibilidade", expanded=True):
+        with st.expander("Mapa de Calor de Sensibilidade (Clique para abrir)", expanded=True):
             try:
                 base_cost = results.get('construction_cost_m2', 0)
                 base_val = results.get('value_m2', 0)
@@ -261,25 +261,29 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         row_z.append(r['roi_anualizado'])
                     z_data.append(row_z)
                 
-                x_lbl = [format_currency(v) for v in values]
-                y_lbl = [format_currency(c) for c in costs]
-                
-                fig_heat = ff.create_annotated_heatmap(
-                    z=z_data, x=x_lbl, y=y_lbl,
-                    annotation_text=[[f'{z:.1f}%' for z in row] for row in z_data],
-                    colorscale='Magma', showscale=True
+                fig_heat = px.imshow(
+                    z_data,
+                    x=[format_currency(v) for v in values],
+                    y=[format_currency(c) for c in costs],
+                    text_auto='.1f',
+                    aspect="auto",
+                    labels=dict(x="Valor de Venda (R$/m²)", y="Custo de Obra (R$/m²)", color="ROI %"),
+                    color_continuous_scale='Magma'
                 )
+                
                 fig_heat.update_layout(
                     title={'text': "ROI Anualizado (%)", 'font': {'color': 'white'}},
                     xaxis={'title': 'Valor de Venda (R$/m²)', 'tickfont': {'color': 'white'}, 'titlefont': {'color': 'white'}},
                     yaxis={'title': 'Custo de Obra (R$/m²)', 'tickfont': {'color': 'white'}, 'titlefont': {'color': 'white'}},
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
-                    height=400
+                    height=400,
+                    font={'color': 'white'}
                 )
                 st.plotly_chart(fig_heat, use_container_width=True)
-            except Exception: pass
 
+            except Exception as e:
+                 st.error(f"Não foi possível gerar o mapa de calor: {e}")
     buttons_to_show = []
     if show_download_button: buttons_to_show.append("download")
     if show_save_button: buttons_to_show.append("save")
