@@ -215,11 +215,9 @@ def render_new_simulation_page():
                 st.divider()
                 df_show = pd.DataFrame(st.session_state.aportes)
                 if not df_show.empty:
-                    # Garante nomes padronizados
                     if 'date' in df_show.columns: df_show.rename(columns={'date':'data', 'value':'valor'}, inplace=True)
                     
                     edited = st.data_editor(df_show, num_rows="dynamic", key="editor_aportes")
-                    # Salva de volta no formato padrão
                     recs = []
                     for r in edited.to_dict('records'):
                          recs.append({'data': utils._ensure_date(r['data']), 'valor': float(r['valor'])})
@@ -385,11 +383,9 @@ def render_history_page():
             if b2.button("👁️", key=f"view_{idx}"):
                 view_obj = row.to_dict()
                 
-                # Carrega aportes
                 df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
                 if not df_ap.empty:
                     aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-                    # Padroniza chaves para calculate_financials
                     view_obj['aportes'] = [{'date': utils._ensure_date(r['data_aporte']), 'value': float(r['valor_aporte'])} for _, r in aps.iterrows()]
                 else:
                     view_obj['aportes'] = []
@@ -520,10 +516,10 @@ if st.session_state.authenticated:
         st.image("Lavie.png")
         st.caption(f"Logado: {st.session_state.get('user_name')}")
         
-        page_list = ["Nova Simulação", "Simulações", "Dashboard"]
+        page_list = ["Nova Simulação", "Histórico", "Dashboard"]
         
         current_active = st.session_state.page
-        if current_active == "Ver Simulação": current_active = "Simulações"
+        if current_active == "Ver Simulação": current_active = "Histórico"
         
         try:
             default_ix = page_list.index(current_active)
