@@ -164,8 +164,11 @@ def render_new_simulation_page():
             st.subheader("Dados do Investidor")
             c1, c2 = st.columns(2)
             with c1:
-                st.text_input("Nome do Cliente/Investidor", key="client_name", placeholder="Ex: João Silva ou JS Participações", help="Nome que aparecerá no relatório final.")
-                st.text_input("Código de Controle", key="client_code", placeholder="Opcional")
+                c_name = st.text_input("Nome do Cliente/Investidor", value=st.session_state.client_name, key="widget_client_name", placeholder="Ex: João Silva...", help="Nome que aparecerá no relatório final.")
+                st.session_state.client_name = c_name
+
+                c_code = st.text_input("Código de Controle", value=st.session_state.client_code, key="widget_client_code", placeholder="Opcional")
+                st.session_state.client_code = c_code
                 st.number_input("Taxa de Juros Anual (%)", min_value=0.0, step=0.1, format="%.2f", key="annual_interest_rate", help="Custo de oportunidade ou taxa de remuneração do capital.")
             with c2:
                 st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", help="Percentual de participação do investidor na Sociedade de Propósito Específico.")
