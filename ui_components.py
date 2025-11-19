@@ -273,8 +273,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 
                 fig_heat.update_layout(
                     title={'text': "ROI Anualizado (%)", 'font': {'color': 'white'}},
-                    xaxis={'title': 'Valor de Venda (R$/m²)', 'tickfont': {'color': 'white'}, 'titlefont': {'color': 'white'}},
-                    yaxis={'title': 'Custo de Obra (R$/m²)', 'tickfont': {'color': 'white'}, 'titlefont': {'color': 'white'}},
+                    xaxis={'title': 'Valor de Venda (R$/m²)', 'tickfont': {'color': 'white'}},
+                    yaxis={'title': 'Custo de Obra (R$/m²)', 'tickfont': {'color': 'white'}},
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     height=400,
@@ -284,6 +284,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
             except Exception as e:
                  st.error(f"Não foi possível gerar o mapa de calor: {e}")
+                
     buttons_to_show = []
     if show_download_button: buttons_to_show.append("download")
     if show_save_button: buttons_to_show.append("save")
