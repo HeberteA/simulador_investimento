@@ -87,6 +87,10 @@ def reset_form_to_defaults():
     st.session_state.current_step = 1
     st.session_state.show_results_page = False
     st.session_state.results_ready = False
+    
+for key, value in defaults.items():
+    if key not in st.session_state: st.session_state[key] = value
+worksheets = utils.init_gsheet_connection()
 
 def render_login_page():
     c1, c2, c3 = st.columns([1, 2, 1]) 
