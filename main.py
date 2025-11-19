@@ -104,7 +104,7 @@ def render_login_page():
         selected_user = st.selectbox("Usuário", options=user_list, index=None, placeholder="Selecione seu usuário")
         access_code = st.text_input("Senha", type="password", placeholder="Digite sua senha")
         
-        if st.button("Acessar Sistema", use_container_width=True, type="primary"):
+        if st.button("Entrar", use_container_width=True, type="primary"):
             if selected_user and access_code:
                 if access_code == st.secrets["credentials"].get(selected_user):
                     st.session_state.authenticated = True
@@ -179,10 +179,15 @@ def render_new_simulation_page():
                 c2.number_input("Valor (R$)", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
                 with c3:
                     st.space("small")
-                    if st.button("Adicionar", use_container_width=True):
+                    def callback_adicionar_aporte():
                         if st.session_state.new_aporte_value > 0:
-                            st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
+                            st.session_state.aportes.append({
+                                "data": st.session_state.new_aporte_date,
+                                "valor": st.session_state.new_aporte_value
+                            })
                             st.session_state.new_aporte_value = 0.0
+                    
+                    st.button("Adicionar", use_container_width=True, on_click=callback_adicionar_aporte)
             
             with tab_parcelado:
                 p1, p2, p3 = st.columns(3)
@@ -211,7 +216,7 @@ def render_new_simulation_page():
         with nav_c3:
             if step < 3: st.button("Próximo", on_click=lambda: st.session_state.update(current_step=st.session_state.current_step+1), use_container_width=True)
             else:
-                if st.button("CALCULAR RESULTADOS", type="primary", use_container_width=True):
+                if st.button("Calcular Resultados", type="primary", use_container_width=True):
                     if not st.session_state.aportes: st.warning("Adicione aportes.")
                     else:
                         with st.spinner("Processando..."):
