@@ -91,10 +91,10 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 <div style="background-color: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                     <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.9rem;">
                         <span>Resultado Operacional (VGV - Custos)</span>
-                        <span>{format_currency(results.get('final_operational_result', 0))}</span>
+                        <spanstyle="color:#fff; font-weight:bold;">{format_currency(results.get('final_operational_result', 0))}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span style="color:#fff;">(+) Part. SPE ({results.get('spe_percentage', 0):.2f}%)</span>
+                        <span style="color:#fff;">Part. SPE ({results.get('spe_percentage', 0):.2f}%)</span>
                         <span style="color:#E37026; font-weight:bold;">{format_currency(results.get('valor_participacao', 0))}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
