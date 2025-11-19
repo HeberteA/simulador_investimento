@@ -398,38 +398,107 @@ def render_view_simulation_page():
 
 def render_dashboard_page():
     st.title("Intelligence Dashboard")
-    st.markdown("Visão estratégica do portfólio.")
+    st.markdown("Análise estratégica de viabilidade e performance de portfólio.")
+    
     if not worksheets: return
     df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
-    if df.empty: st.info("Sem dados."); return
+    
+    if df.empty:
+        st.info("Dados insuficientes para gerar dashboard.")
+        return
+
+    total_vgv = df['vgv'].sum()
+    avg_roi = df['roi_anualizado'].mean()
+    total_investido = df['total_contribution'].sum()
+    lucro_total = df['resultado_final_investidor'].sum()
 
     st.markdown("""
     <style>
-    .kpi-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #333; }
-    .kpi-val { font-size: 24px; font-weight: bold; color: white; }
-    .kpi-lbl { color: #aaa; font-size: 12px; text-transform: uppercase; }
+    .kpi-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .kpi-label { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+    .kpi-value { font-size: 28px; font-weight: bold; color: #fff; margin: 10px 0; }
+    .kpi-sub { font-size: 12px; color: #4CAF50; }
     </style>
     """, unsafe_allow_html=True)
+
+    k1, k2, k3, k4 = st.columns(4)
     
-    c1, c2, c3, c4 = st.columns(4)
-    with c1: st.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>VGV Total</div><div class='kpi-val'>{utils.format_currency(df['vgv'].sum())}</div></div>", unsafe_allow_html=True)
-    with c2: st.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>ROI Médio</div><div class='kpi-val'>{df['roi_anualizado'].mean():.2f}%</div></div>", unsafe_allow_html=True)
-    with c3: st.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>Simulações</div><div class='kpi-val'>{len(df)}</div></div>", unsafe_allow_html=True)
-    with c4: st.markdown(f"<div class='kpi-box'><div class='kpi-lbl'>Lucro Proj.</div><div class='kpi-val'>{utils.format_currency(df['resultado_final_investidor'].sum())}</div></div>", unsafe_allow_html=True)
+    def kpi_html(label, value, subtext=""):
+        return f"""<div class="kpi-card"><div class="kpi-label">{label}</div><div class="kpi-value">{value}</div><div class="kpi-sub">{subtext}</div></div>"""
+
+    with k1: st.markdown(kpi_html("VGV Potencial", utils.format_currency(total_vgv), f"{len(df)} projetos"), unsafe_allow_html=True)
+    with k2: st.markdown(kpi_html("Capital Captado", utils.format_currency(total_investido)), unsafe_allow_html=True)
+    with k3: st.markdown(kpi_html("Lucro Projetado", utils.format_currency(lucro_total)), unsafe_allow_html=True)
+    with k4: st.markdown(kpi_html("ROI Médio (a.a.)", f"{avg_roi:.2f}%"), unsafe_allow_html=True)
 
     st.divider()
     
-    g1, g2 = st.columns([2, 1])
-    with g1:
-        fig = px.scatter(df, x='total_contribution', y='roi_anualizado', size='resultado_final_investidor', color='roi_anualizado',
-                         title="Matriz Risco x Retorno (Tamanho = Lucro)", color_continuous_scale='Sunsetdark')
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='white')
-        st.plotly_chart(fig, use_container_width=True)
+    c_charts_1, c_charts_2 = st.columns([2, 1])
     
-    with g2:
-        top5 = df.nlargest(5, 'roi_anualizado')[['client_name', 'roi_anualizado']]
-        st.markdown("##### Top 5 Rentabilidade")
-        st.dataframe(top5, hide_index=True, use_container_width=True)
+    with c_charts_1:
+        st.subheader("Risco x Retorno (Dispersão)")
+        fig_scatter = px.scatter(
+            df, 
+            x='total_contribution', 
+            y='roi_anualizado',
+            size='resultado_final_investidor',
+            color='roi_anualizado',
+            hover_name='client_name',
+            color_continuous_scale='RdYlGn',
+            labels={'total_contribution': 'Investimento Total (R$)', 'roi_anualizado': 'ROI Anualizado (%)'},
+            title="Eficiência do Capital"
+        )
+        fig_scatter.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        fig_scatter.add_hline(y=df['roi_anualizado'].mean(), line_dash="dot", annotation_text="Média", annotation_position="bottom right")
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
+    with c_charts_2:
+        st.subheader("Distribuição de ROI")
+        fig_hist = px.histogram(
+            df, 
+            x='roi_anualizado', 
+            nbins=10, 
+            color_discrete_sequence=['#E37026'],
+            title="Histograma de Rentabilidade"
+        )
+        fig_hist.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white', yaxis_title="Frequência")
+        st.plotly_chart(fig_hist, use_container_width=True)
+        
+    c3, c4 = st.columns(2)
+    
+    with c3:
+        st.subheader("Evolução do Portfólio")
+        df_sorted = df.sort_values('created_at')
+        fig_line = px.area(
+            df_sorted, 
+            x='created_at', 
+            y='vgv', 
+            title="Crescimento do VGV Acumulado (Simulado)",
+            line_shape='spline',
+            color_discrete_sequence=['#00E676']
+        )
+        fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        st.plotly_chart(fig_line, use_container_width=True)
+        
+    with c4:
+        st.subheader("Top 5 Projetos (ROI)")
+        top_5 = df.nlargest(5, 'roi_anualizado')[['client_name', 'roi_anualizado', 'resultado_final_investidor']]
+        top_5['roi_anualizado'] = top_5['roi_anualizado'].apply(lambda x: f"{x:.2f}%")
+        top_5['resultado_final_investidor'] = top_5['resultado_final_investidor'].apply(utils.format_currency)
+        top_5.rename(columns={'client_name': 'Cliente', 'roi_anualizado': 'ROI', 'resultado_final_investidor': 'Lucro'}, inplace=True)
+        
+        st.dataframe(
+            top_5, 
+            use_container_width=True, 
+            hide_index=True,
+            column_config={"ROI": st.column_config.TextColumn("ROI", help="Retorno sobre Investimento Anualizado")}
+        )
 
 if 'authenticated' not in st.session_state: st.session_state.authenticated = False
 
@@ -440,7 +509,7 @@ if st.session_state.authenticated:
         
         sel = option_menu(
             "Menu Principal", 
-            ["Nova Simulação", "Histórico de Simulações", "Dashboard"], 
+            ["Nova Simulação", "Simulações", "Dashboard"], 
             icons=["calculator", "clock-history", "graph-up-arrow"], 
             menu_icon="cast", 
             default_index=0,
@@ -456,7 +525,7 @@ if st.session_state.authenticated:
         
         page_map = {
             "Nova Simulação": "Nova Simulação", 
-            "Histórico": "Histórico de Simulações", 
+            "Simulações": "Simulações", 
             "Dashboard": "Dashboard"
         }
         
@@ -467,7 +536,7 @@ if st.session_state.authenticated:
             st.rerun()
 
     if st.session_state.page == "Nova Simulação": render_new_simulation_page()
-    elif st.session_state.page == "Histórico de Simulações": render_history_page()
+    elif st.session_state.page == "Simulações": render_history_page()
     elif st.session_state.page == "Ver Simulação": render_view_simulation_page()
     elif st.session_state.page == "Dashboard": render_dashboard_page()
 
