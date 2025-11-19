@@ -532,7 +532,7 @@ if st.session_state.authenticated:
             
         sel = option_menu("Menu", page_list, icons=["calculator", "clock", "graph-up"], default_index=default_ix)
         
-        if st.button("Sair"):
+        if st.button("Sair", use_container_width=True):
             st.session_state.authenticated = False
             st.rerun()
 
