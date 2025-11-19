@@ -116,7 +116,7 @@ def render_new_simulation_page():
     if st.session_state.show_results_page:
         st.title("Resultado da Simulação")
         
-        if st.button("⬅️ Voltar para os Parâmetros"):
+        if st.button("Voltar para os Parâmetros"):
             go_to_inputs()
             st.rerun()
         
@@ -370,7 +370,7 @@ def render_history_page():
                 st.session_state.simulation_saved = True 
                 st.rerun()
 
-            if b2.button("👁️ Ver", key=f"view_{idx}"):
+            if b2.button("👁️", key=f"view_{idx}"):
                 view_data = row.to_dict()
                 df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
                 aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
