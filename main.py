@@ -136,7 +136,7 @@ def render_new_simulation_page():
     col_form, col_visual = st.columns([2, 1], gap="large")
 
     with col_form:
-        st.image("Lavie.png", height=500)
+        st.image("Lavie.png", weight=500)
         step = st.session_state.current_step
         st.markdown(f"""
         <div class="step-container">
