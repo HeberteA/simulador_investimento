@@ -116,8 +116,6 @@ def render_new_simulation_page():
     def go_to_inputs(): st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
-        i1, i2, i3 = st.columns([1, 1, 1])
-        i2.image("Lavie.png", width=500)
         st.title("Resultado da Simulação")
 
         if st.button("Voltar para os Parâmetros"):
@@ -137,8 +135,6 @@ def render_new_simulation_page():
     col_form, col_visual = st.columns([2, 1], gap="large")
 
     with col_form:
-        i1, i2, i3 = st.columns([1, 2, 1])
-        i2.image("Lavie.png", width=600)
         step = st.session_state.current_step
         st.markdown(f"""
         <div class="step-container">
