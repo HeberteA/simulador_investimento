@@ -152,7 +152,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 number={'suffix': "%", 'font': {'size': 40, 'color': '#E37026'}},
                 gauge={'axis': {'range': [0, max(50, roi_periodo*1.5)]}, 'bar': {'color': '#E37026'}, 'bgcolor': "rgba(255,255,255,0.1)"}
             ))
-            fig_gauge.update_layout(height=250, margin=dict(t=30,b=10,l=30,r=30), paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
+            fig_gauge.update_layout(height=250, margin=dict(t=30,b=30,l=30,r=10), paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"})
             st.plotly_chart(fig_gauge, use_container_width=True)
             
         with g2:
@@ -242,7 +242,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 st.error(f"Erro: {e}")
 
         st.write("")
-        with st.expander("Mapa de Calor de Sensibilidade (Clique para abrir)", expanded=True):
+        with st.expander("Mapa de Calor de Sensibilidade", expanded=True):
             try:
                 base_cost = results.get('construction_cost_m2', 0)
                 base_val = results.get('value_m2', 0)
