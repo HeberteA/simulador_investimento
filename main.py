@@ -152,7 +152,7 @@ def render_new_simulation_page():
         elif step == 2:
             st.subheader("Dados do Investidor")
             c1, c2 = st.columns(2)
-            st.session_state.client_name = c1.text_input("Nome", value=st.session_state.client_name, use_column_width=True)
+            st.session_state.client_name = c1.text_input("Nome", value=st.session_state.client_name, use_container_width=True)
             st.session_state.client_code = c1.text_input("Código", value=st.session_state.client_code)
             st.session_state.annual_interest_rate = c1.number_input("Juros Anual (%)", value=float(st.session_state.annual_interest_rate), step=0.5)
             st.session_state.spe_percentage = c2.number_input("Part. SPE (%)", value=float(st.session_state.spe_percentage), step=1.0)
