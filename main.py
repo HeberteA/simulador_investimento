@@ -78,13 +78,15 @@ if 'parcelado_data_inicio' not in st.session_state: st.session_state.parcelado_d
 worksheets = utils.init_gsheet_connection()
 
 def manual_reset():
-    """Reseta apenas os campos do formulário, mantendo a autenticação."""
-    for key, value in defaults.items():
-        if key != 'page': 
-            st.session_state[key] = value
+    """Reseta formulário mantendo a navegação."""
+    for k, v in defaults.items():
+        if k != 'page': st.session_state[k] = v
     st.session_state.current_step = 1
     st.session_state.show_results_page = False
-    st.toast("Formulário limpo para nova simulação!")
+
+def safe_date_to_string(date_val, fmt='%d/%m/%Y'):
+    try: return pd.to_datetime(date_val).strftime(fmt)
+    except: return ""
 
 def render_login_page():
     c1, c2, c3 = st.columns([1, 2, 1]) 
@@ -308,89 +310,96 @@ def save_simulation_callback():
         st.toast("Salvo!")
     except Exception as e: st.error(f"Erro save: {e}")
         
-def render_history_page():
-    st.title("Histórico de Simulações")
+st.title("Histórico de Simulações")
     
     if not worksheets: 
-        st.error("Erro de conexão com Google Sheets.")
+        st.error("Erro de conexão com banco de dados.")
+        return
+        
+    with st.spinner("Carregando histórico..."):
+        df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
+    
+    if df.empty: 
+        st.info("Nenhuma simulação encontrada.")
         return
     
-    df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
-    
-    if df.empty:
-        st.info("Nenhum histórico encontrado.")
-        return
-
-    col_search, col_filter = st.columns([3, 1])
-    search = col_search.text_input("🔍 Buscar Cliente", placeholder="Nome do cliente...").lower()
+    c_search, c_sort = st.columns([3, 1])
+    search = c_search.text_input("🔍 Buscar Cliente", placeholder="Digite o nome...")
     
     if search:
-        df = df[df['client_name'].str.lower().str.contains(search, na=False)]
+        df = df[df['client_name'].str.lower().str.contains(search.lower(), na=False)]
     
     df = df.sort_values('created_at', ascending=False)
     
     st.write("")
     
-    for idx, row in df.iterrows():
+    for i, row in df.iterrows():
+        client_n = row.get('client_name', 'Cliente sem nome')
+        roi_val = float(row.get('roi_anualizado', 0))
+        date_fmt = safe_date_to_string(row.get('created_at'), "%d/%m/%Y às %H:%M")
+        profit = utils.format_currency(row.get('resultado_final_investidor', 0))
+        
+        border_color = "#4CAF50" if roi_val > 15 else "#FF9800" if roi_val > 0 else "#F44336"
+        
         with st.container():
-            roi_val = float(row.get('roi_anualizado', 0))
-            color = "#388E3C" if roi_val > 15 else "#E37026"
+            c_info, c_actions = st.columns([3, 1])
             
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.03); border-left: 4px solid {color}; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h4 style="margin:0; color:white;">{row['client_name']}</h4>
-                        <span style="color:#888; font-size: 12px;">📅 {safe_date_to_string(row['created_at'], '%d/%m/%Y %H:%M')}</span>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:bold; color:{color}; font-size: 1.2rem;">{roi_val:.2f}% a.a.</div>
-                        <div style="color:#aaa; font-size: 0.8rem;">Lucro: {utils.format_currency(row.get('resultado_final_investidor'))}</div>
+            with c_info:
+                st.markdown(f"""
+                <div style="border-left: 4px solid {border_color}; padding-left: 15px; margin-bottom: 10px;">
+                    <h3 style="margin:0; font-size:1.3rem; color: white;">{client_n}</h3>
+                    <p style="margin:0; color: #888; font-size: 0.8rem;">📅 {date_fmt}</p>
+                    <div style="margin-top: 8px; display: flex; gap: 20px;">
+                        <div><span style="color:#aaa; font-size:0.8rem;">ROI Anual</span><br><strong style="color:{border_color}; font-size:1.1rem;">{roi_val:.2f}%</strong></div>
+                        <div><span style="color:#aaa; font-size:0.8rem;">Lucro Líquido</span><br><strong style="color:white; font-size:1.1rem;">{profit}</strong></div>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
             
-            c1, c2 = st.columns([1, 6])
+            with c_actions:
+                st.write("")
+                b_col1, b_col2 = st.columns(2)
+
+                if b_col1.button("✏️", key=f"edit_{i}", help="Editar essa simulação"):
+                    for k, v in row.items():
+                        if k in st.session_state:
+                            if k in ['start_date', 'project_end_date']:
+                                st.session_state[k] = utils._ensure_date(v)
+                            else:
+                                st.session_state[k] = v
+                    
+                    df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
+                    if not df_ap.empty:
+                        aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
+                        st.session_state.aportes = [{'data': utils._ensure_date(r['data_aporte']), 'valor': float(r['valor_aporte'])} for _, r in aps.iterrows()]
+                    else:
+                        st.session_state.aportes = []
+                    
+                    st.session_state.client_name = row.get('client_name', '')
+                    st.session_state.client_code = row.get('client_code', '')
+                    st.session_state.page = "Nova Simulação"
+                    st.session_state.current_step = 3
+                    st.session_state.simulation_saved = True 
+                    st.rerun()
+                
+                if b_col2.button("👁️", key=f"view_{i}", help="Visualizar relatório"):
+                    view_obj = row.to_dict()
+                    df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
+                    if not df_ap.empty:
+                        aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
+                        view_obj['aportes'] = [{'date': utils._ensure_date(r['data_aporte']), 'value': float(r['valor_aporte'])} for _, r in aps.iterrows()]
+                    else:
+                        view_obj['aportes'] = []
+                    
+                    st.session_state.simulation_to_view = view_obj
+                    st.session_state.page = "Ver Simulação"
+                    st.rerun()
             
-            if c1.button("✏️", key=f"ed_{i}"):
-                for k, v in row.items():
-                    if k in st.session_state:
-                        if k in ['start_date', 'project_end_date']:
-                            st.session_state[k] = utils._ensure_date(v)
-                        else:
-                            st.session_state[k] = v
-                
-                df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
-                aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-                st.session_state.aportes = [
-                    {'data': utils._ensure_date(r['data_aporte']), 'valor': float(r['valor_aporte'])} 
-                    for _, r in aps.iterrows()
-                ]
-                
-                st.session_state.client_name = row.get('client_name', '')
-                st.session_state.client_code = row.get('client_code', '')
-                st.session_state.page = "Nova Simulação"
-                st.session_state.current_step = 3 
-                st.rerun()
-            
-            if c2.button("👁️", key=f"vw_{i}"):
-                view_obj = row.to_dict()
-                df_ap = utils.load_data_from_sheet(worksheets["aportes"], "aportes")
-                if not df_ap.empty:
-                    aps = df_ap[df_ap['simulation_id'] == row['simulation_id']]
-                    view_obj['aportes'] = [{'date': utils._ensure_date(r['data_aporte']), 'value': float(r['valor_aporte'])} for _, r in aps.iterrows()]
-                else:
-                    view_obj['aportes'] = []
-                
-                st.session_state.simulation_to_view = view_obj
-                st.session_state.page = "Ver Simulação"
-                st.rerun()
             st.divider()
-            
+
 def render_view_simulation_page():
-    st.title("Visualizar")
-    if st.button("Voltar"):
+    st.title("Visualizar Simulação")
+    if st.button("Voltar ao Histórico"):
         st.session_state.page = "Histórico"
         st.rerun()
     
