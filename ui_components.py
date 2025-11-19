@@ -205,7 +205,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         except Exception:
             st.error("Erro ao calcular cenários.")
 
-    st.divider()
+        st.divider()
         st.subheader("Simulação Interativa (What-If)")
         
         col_sliders, col_res_sim = st.columns(2)
