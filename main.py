@@ -497,7 +497,7 @@ def render_dashboard_page():
     with c4:
         st.subheader("Top 5 Projetos (ROI)")
         st.space("large")
-        st.space("samll")
+        st.space("small")
         top_5 = df.nlargest(5, 'roi_anualizado')[['client_name', 'roi_anualizado', 'resultado_final_investidor']]
         top_5['roi_anualizado'] = top_5['roi_anualizado'].apply(lambda x: f"{x:.2f}%")
         top_5['resultado_final_investidor'] = top_5['resultado_final_investidor'].apply(utils.format_currency)
