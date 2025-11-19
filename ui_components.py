@@ -122,18 +122,18 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                         <span style="color:#aaa;">Custo Obra Física</span>
                         <span style="color:#fff;">{format_currency(results.get('cost_obra_fisica', 0))}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size: 0.8rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size: 0.85rem;">
                         <span style="color:#aaa;">Custo Troca de Área</span>
                         <span style="color:#fff;">+{format_currency(results.get('area_exchange_value', 0))}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size: 0.8rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size: 0.85rem;">
                         <span style="color:#aaa;">Custo Capital (Juros)</span>
                         <span style="color:#fff;">+{format_currency(results.get('juros_investidor', 0))}</span>
                     </div>
                     <hr style="border-color: rgba(255,255,255,0.1);">
-                     <div style="display:flex; justify-content:space-between;">
-                        <span style="color:#E37026;">Custo Total</span>
-                        <span style="color:#E37026;">= -{format_currency(results.get('total_construction_cost', 0))}</span>
+                     <div style="display:flex; justify-content:space-between; font-size:1.1rem;">
+                        <span style="color:#E37026; font-weight:600;">Custo Total</span>
+                        <span style="color:#E37026; font-weight:600;">= -{format_currency(results.get('total_construction_cost', 0))}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
