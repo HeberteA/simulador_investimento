@@ -50,7 +50,7 @@ def init_gsheet_connection():
         return None
         
 @st.cache_data(ttl=60)
-def load_data_from_sheet(_worksheet):
+def load_data_from_sheet(_worksheet, tab_name="default"): 
     try:
         if _worksheet is None:
             return pd.DataFrame()
@@ -63,11 +63,15 @@ def load_data_from_sheet(_worksheet):
         data = all_values[1:]
         
         df = pd.DataFrame(data, columns=header)
+        
         df = df.loc[:, df.columns.notna()]
         df = df.loc[:, [col for col in df.columns if col != '']]
-        df.columns = df.columns.str.strip()
-        df.columns = df.columns.str.lower()
         
+        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+        
+        rename_map = {'date': 'data_aporte', 'value': 'valor_aporte', 'data': 'data_aporte', 'valor': 'valor_aporte'}
+        df.rename(columns=rename_map, inplace=True)
+
         if 'row_index' not in df.columns:
             df['row_index'] = [i + 2 for i in range(len(df))]
         
@@ -82,11 +86,13 @@ def load_data_from_sheet(_worksheet):
         for col in numeric_cols:
             if col in df.columns:
                 series = df[col].astype(str).copy()
+                series = series.str.replace('R$', '', regex=False).str.strip()
                 is_pt_br_format = series.str.contains(',', na=False)
                 series.loc[is_pt_br_format] = series.loc[is_pt_br_format].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
                 df[col] = pd.to_numeric(series, errors='coerce').fillna(0)
                 
-        for date_col in ['created_at', 'data_aporte', 'start_date', 'project_end_date', 'data']:
+        date_cols = ['created_at', 'data_aporte', 'start_date', 'project_end_date']
+        for date_col in date_cols:
             if date_col in df.columns:
                 df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
 
@@ -96,7 +102,7 @@ def load_data_from_sheet(_worksheet):
         return df
     
     except Exception as e:
-        st.error(f"Erro ao carregar dados da aba '{_worksheet.title}': {e}")
+        st.error(f"Erro ao carregar dados da aba '{tab_name}': {e}")
         return pd.DataFrame()
 
 def calculate_financials(params):
