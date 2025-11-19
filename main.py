@@ -456,7 +456,7 @@ if st.session_state.authenticated:
         
         page_map = {
             "Nova Simulação": "Nova Simulação", 
-            "Histórico": "Histórico", 
+            "Histórico": "Histórico de Simulações", 
             "Dashboard": "Dashboard"
         }
         
@@ -467,7 +467,7 @@ if st.session_state.authenticated:
             st.rerun()
 
     if st.session_state.page == "Nova Simulação": render_new_simulation_page()
-    elif st.session_state.page == "Histórico": render_history_page()
+    elif st.session_state.page == "Histórico de Simulações": render_history_page()
     elif st.session_state.page == "Ver Simulação": render_view_simulation_page()
     elif st.session_state.page == "Dashboard": render_dashboard_page()
 
