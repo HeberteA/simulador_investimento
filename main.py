@@ -137,7 +137,7 @@ def render_new_simulation_page():
 
     with col_form:
         i1, i2, i3 = st.columns(3)
-        i2.image("Lavie.png", width=500)
+        i2.image("Lavie.png", width=600)
         step = st.session_state.current_step
         st.markdown(f"""
         <div class="step-container">
