@@ -241,10 +241,11 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 st.error(f"Erro: {e}")
 
         st.write("")
-        with st.expander("Mapa de Calor de Sensibilidade (Clique para abrir)", expanded=True):
+        with st.expander("Mapa de Calor de Sensibilidade", expanded=True):
             try:
                 base_cost = results.get('construction_cost_m2', 0)
                 base_val = results.get('value_m2', 0)
+                
                 costs = np.linspace(base_cost * 0.8, base_cost * 1.2, 5)
                 values = np.linspace(base_val * 0.8, base_val * 1.2, 5)
                 
