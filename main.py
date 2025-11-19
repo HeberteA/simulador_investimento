@@ -67,7 +67,7 @@ defaults = {
     'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
     'editing_row': None, 'simulation_to_edit': None, 'simulation_to_view': None, 
     'show_results_page': False,
-    'client_name': "", 'client_code': "", 'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
+    'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
     'total_contribution': 100000.0, 'num_months': 24, 'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
     'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
@@ -75,7 +75,10 @@ defaults = {
 }
 
 def reset_form_to_defaults():
-    for key, value in defaults.items(): st.session_state[key] = value
+    for key, value in defaults.items():
+        if key != 'page': 
+            st.session_state[key] = value
+            
     st.session_state.new_aporte_date = datetime.today().date()
     st.session_state.new_aporte_value = 0.0
     st.session_state.parcelado_total_valor = 0.0
@@ -84,11 +87,6 @@ def reset_form_to_defaults():
     st.session_state.current_step = 1
     st.session_state.show_results_page = False
     st.session_state.results_ready = False
-
-for key, value in defaults.items():
-    if key not in st.session_state: st.session_state[key] = value
-
-worksheets = utils.init_gsheet_connection()
 
 def render_login_page():
     c1, c2, c3 = st.columns([1, 2, 1]) 
@@ -174,6 +172,7 @@ def render_new_simulation_page():
                 c2.number_input("Valor (R$)", min_value=0.0, step=10000.0, format="%.2f", key="new_aporte_value")
                 with c3:
                     st.write("")
+                    st.markdown("")
                     if st.button("Adicionar", use_container_width=True):
                         if st.session_state.new_aporte_value > 0:
                             st.session_state.aportes.append({"data": st.session_state.new_aporte_date, "valor": st.session_state.new_aporte_value})
