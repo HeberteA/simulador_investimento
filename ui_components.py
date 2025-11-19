@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import plotly.express as px
 from utils import format_currency, calculate_financials
+import scipy
 
 THEME_PRIMARY_COLOR = "#E37026"
 
