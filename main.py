@@ -27,11 +27,6 @@ div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     color: white !important;
 }
-[data-testid="stAppViewContainer"] {
-    /* Opção: Papel Artesanal (Sutil e Elegante) */
-    background-image: url("https://www.transparenttextures.com/patterns/low-contrast-linen.png");
-    background-repeat: repeat;
-}
 div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input {
     color: white !important;
 }
