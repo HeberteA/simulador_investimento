@@ -108,23 +108,23 @@ def render_login_page():
             else: st.warning("Preencha todos os campos.")
 
 def render_new_simulation_page():
-    col_tit, col_btn = st.columns([4, 1])
-    with col_tit: st.empty() 
-    with col_btn: 
-        if st.button("Nova Simulação", help="Limpa todos os campos para começar do zero", use_container_width=True):
-            manual_reset()
-            st.rerun()
+
+
+
+
+
+
 
     def go_to_results(): st.session_state.show_results_page = True
     def go_to_inputs(): st.session_state.show_results_page = False
 
     if st.session_state.show_results_page:
         st.title("Resultado da Simulação")
-        
+
         if st.button("Voltar para os Parâmetros"):
             go_to_inputs()
             st.rerun()
-        
+
         if st.session_state.get('results_ready', False):
             display_full_results(
                 st.session_state.simulation_results,
@@ -141,8 +141,8 @@ def render_new_simulation_page():
         step = st.session_state.current_step
         st.markdown(f"""
         <div class="step-container">
-            <div class="step-item {'active' if step >= 1 else ''}"><div class="step-number">1</div><div class="step-label">Obra</div></div>
-            <div class="step-item {'active' if step >= 2 else ''}"><div class="step-number">2</div><div class="step-label">Cliente</div></div>
+            <div class="step-item {'active' if step >= 1 else ''}"><div class="step-number">1</div><div class="step-label">Empreendimento</div></div>
+            <div class="step-item {'active' if step >= 2 else ''}"><div class="step-number">2</div><div class="step-label">Investidor</div></div>
             <div class="step-item {'active' if step >= 3 else ''}"><div class="step-number">3</div><div class="step-label">Financeiro</div></div>
         </div>
         """, unsafe_allow_html=True)
@@ -152,25 +152,24 @@ def render_new_simulation_page():
             c1, c2 = st.columns(2)
             with c1:
                 st.number_input("Área Vendável (m²)", min_value=0, step=10, key="land_size", help="Área total privativa vendável do projeto.")
-                st.number_input("Custo da Obra (R$/m²)", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2")
+                st.number_input("Custo da Obra (R$/m²)", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", help="Custo estimado de construção por metro quadrado.")
             with c2:
-                st.number_input("Valor de Venda (R$/m²)", min_value=0.0, step=100.0, format="%.2f", key="value_m2")
-                st.number_input("Permuta (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f", key="area_exchange_percentage")
+                st.number_input("Valor de Venda (R$/m²)", min_value=0.0, step=100.0, format="%.2f", key="value_m2", help="Valor médio de venda esperado por metro quadrado.")
+                st.number_input("Permuta Física/Financeira (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f", key="area_exchange_percentage", help="Percentual do VGV destinado à permuta do terreno.")
 
         elif step == 2:
             st.subheader("Dados do Investidor")
             c1, c2 = st.columns(2)
             with c1:
-                c_name = st.text_input("Nome do Cliente", value=st.session_state.client_name, key="widget_client_name")
+                c_name = st.text_input("Nome do Cliente/Investidor", value=st.session_state.client_name, key="widget_client_name", placeholder="Ex: João Silva...", help="Nome que aparecerá no relatório final.")
                 st.session_state.client_name = c_name
-                
-                c_code = st.text_input("Código de Controle", value=st.session_state.client_code, key="widget_client_code")
+
+                c_code = st.text_input("Código de Controle", value=st.session_state.client_code, key="widget_client_code", placeholder="Opcional")
                 st.session_state.client_code = c_code
-                
-                st.number_input("Taxa de Juros Anual (%)", min_value=0.0, step=0.1, format="%.2f", key="annual_interest_rate")
+                st.number_input("Taxa de Juros Anual (%)", min_value=0.0, step=0.1, format="%.2f", key="annual_interest_rate", help="Custo de oportunidade ou taxa de remuneração do capital.")
+
             with c2:
-                st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage")
-                st.date_input("Data Estimada de Término", value=st.session_state.project_end_date, key="project_end_date")
+                st.number_input("Participação na SPE (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f", key="spe_percentage", help="Percentual de participação do investidor na Sociedade de Propósito Específico.")
 
         elif step == 3:
             st.subheader("Fluxo de Aportes")
@@ -178,7 +177,7 @@ def render_new_simulation_page():
                 st.caption(f"Simulando para: **{st.session_state.client_name}**")
             
             tab_unico, tab_parcelado = st.tabs(["Aporte Único", "Gerar Parcelas"])
-            
+
             with tab_unico:
                 c1, c2, c3 = st.columns([2, 2, 1])
                 c1.date_input("Data", key="new_aporte_date")
@@ -191,14 +190,15 @@ def render_new_simulation_page():
                         if val > 0:
                             st.session_state.aportes.append({"data": dt, "valor": val})
                             st.session_state.new_aporte_value = 0.0 
+                    
                     st.button("Adicionar", use_container_width=True, on_click=add_single_contribution)
-            
+
             with tab_parcelado:
                 p1, p2, p3 = st.columns(3)
                 p1.number_input("Valor Total", min_value=0.0, step=50000.0, key="parcelado_total_valor")
                 p2.number_input("Qtd. Parcelas", min_value=1, step=1, key="parcelado_num_parcelas")
                 p3.date_input("1º Vencimento", key="parcelado_data_inicio")
-                
+
                 def add_parcelas():
                     total = st.session_state.parcelado_total_valor
                     num = int(st.session_state.parcelado_num_parcelas)
@@ -211,6 +211,7 @@ def render_new_simulation_page():
                                 "valor": val_parcela
                             })
                         st.toast("Parcelas geradas!")
+
                 st.button("Gerar Parcelas", use_container_width=True, on_click=add_parcelas)
 
             if st.session_state.aportes:
@@ -229,8 +230,8 @@ def render_new_simulation_page():
                         key="editor_aportes"
                     )
                     st.session_state.aportes = edited.to_dict('records')
-                
-                if st.button("Limpar Aportes", type="secondary"): 
+
+                if st.button("Limpar Todos Aportes", type="secondary"): 
                     st.session_state.aportes = []
                     st.rerun()
 
@@ -267,23 +268,40 @@ def render_new_simulation_page():
                             go_to_results()
                             st.rerun()
     
-    with col_visual:
+     with col_visual:
         with st.container(border=True):
-            st.subheader("Resumo")
+            st.subheader("Resumo do Passo")
+            
             step = st.session_state.current_step
             try:
-                if step == 1: st.image("tower.png", use_container_width=True)
-                elif step == 2: st.image("Arc.jpeg", use_container_width=True)
-                elif step == 3: st.image("Burj.jpg", use_container_width=True)
-            except: pass
+                if step == 1:
+                    st.image("tower.png", use_container_width=True, caption="Parâmetros da Obra")
+                elif step == 2:
+                    st.image("Arc.jpeg", use_container_width=True, caption="Identidade do Investidor")
+                elif step == 3:
+                    st.image("Burj.jpg", use_container_width=True, caption="Projeção de Crescimento")
+            except Exception:
+                st.info("Imagem ilustrativa não encontrada.")
 
             st.divider()
+            st.markdown("##### Métricas Preliminares")
+            
             try:
-                vgv = float(st.session_state.land_size) * float(st.session_state.value_m2)
-                st.metric("VGV Estimado", utils.format_currency(vgv))
-                total_ap = sum([a['valor'] for a in st.session_state.aportes])
-                if total_ap > 0: st.metric("Aportes", utils.format_currency(total_ap))
-            except: pass
+                area = float(st.session_state.land_size)
+                custo = float(st.session_state.construction_cost_m2)
+                venda = float(st.session_state.value_m2)
+                
+                vgv_est = area * venda
+                custo_est = area * custo
+                
+                st.metric("VGV Estimado", utils.format_currency(vgv_est))
+                st.metric("Custo Físico (Obra)", utils.format_currency(custo_est))
+                
+                total_aportado = sum([a['valor'] for a in st.session_state.aportes])
+                if total_aportado > 0:
+                     st.metric("Total Aportado", utils.format_currency(total_aportado))
+            except:
+                st.caption("Preencha os dados para ver os cálculos.")
 
 def save_simulation_callback():
     if not worksheets: return
