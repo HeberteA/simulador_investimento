@@ -296,6 +296,8 @@ def display_full_results(results, show_save_button=False, show_download_button=F
         
         if "download" in buttons_to_show:
             with cols[col_index]:
+                can_download = is_simulation_saved or results.get('simulation_id', '').startswith('sim_')
+                
                 pdf_data = results.copy()
                 pdf_data['aportes'] = results.get('aportes', []) 
                 pdf_bytes = utils.generate_pdf(pdf_data)
@@ -310,13 +312,17 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                     mime="application/pdf",
                     use_container_width=True,
                     key=f"pdf_dl_{unique_id}",
-                    disabled=not is_simulation_saved 
+                    disabled=not can_download 
                 )
-                if not is_simulation_saved: st.caption("⚠️ Salve a simulação antes de baixar.")
+                if not can_download: st.caption("⚠️ Salve a simulação antes de baixar.")
             col_index += 1
 
         if "save" in buttons_to_show:
             with cols[col_index]:
-                if st.button("Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
-                    if save_callback: save_callback()
-            col_index += 1
+                if is_simulation_saved:
+                    st.button("✅ Simulação Salva", use_container_width=True, disabled=True, key=f"saved_btn_{unique_id}")
+                else:
+                    if st.button("Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
+                        if save_callback: 
+                            save_callback()
+                            st.rerun()
