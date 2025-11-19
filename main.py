@@ -109,12 +109,6 @@ def render_login_page():
 
 def render_new_simulation_page():
 
-
-
-
-
-
-
     def go_to_results(): st.session_state.show_results_page = True
     def go_to_inputs(): st.session_state.show_results_page = False
 
@@ -357,10 +351,10 @@ def render_history_page():
             </div>
             """, unsafe_allow_html=True)
             
-            b1, b2, b3 = st.columns([1, 1, 6])
+            c1, c2 = st.columns([1, 6])
             
-            if b1.button("✏️", key=f"edit_{idx}"):
-               for k, v in row.items():
+            if c1.button("✏️", key=f"ed_{i}"):
+                for k, v in row.items():
                     if k in st.session_state:
                         if k in ['start_date', 'project_end_date']:
                             st.session_state[k] = utils._ensure_date(v)
