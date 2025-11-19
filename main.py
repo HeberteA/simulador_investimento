@@ -439,8 +439,8 @@ if st.session_state.authenticated:
         st.caption(f"Logado: {st.session_state.get('user_name')}")
         
         sel = option_menu(
-            "Menu", 
-            ["Nova Simulação", "Histórico", "Dashboard"], 
+            "Menu Principal", 
+            ["Nova Simulação", "Histórico de Simulações", "Dashboard"], 
             icons=["calculator", "clock-history", "graph-up-arrow"], 
             menu_icon="cast", 
             default_index=0,
