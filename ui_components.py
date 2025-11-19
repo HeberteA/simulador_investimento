@@ -299,7 +299,7 @@ def display_full_results(results, show_save_button=False, show_download_button=F
                 file_name = f"relatorio_{client_name_safe}_{datetime.now().strftime('%Y%m%d')}.pdf"
 
                 st.download_button(
-                    label="📄 Baixar Relatório PDF",
+                    label="Baixar Relatório PDF",
                     data=pdf_bytes,
                     file_name=file_name,
                     mime="application/pdf",
@@ -312,6 +312,6 @@ def display_full_results(results, show_save_button=False, show_download_button=F
 
         if "save" in buttons_to_show:
             with cols[col_index]:
-                if st.button("💾 Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
+                if st.button("Salvar Simulação", use_container_width=True, type="primary", key=f"save_btn_{unique_id}"):
                     if save_callback: save_callback()
             col_index += 1
