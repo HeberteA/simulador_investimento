@@ -320,7 +320,7 @@ def render_history_page():
         return
     
     c_search, c_sort = st.columns([3, 1])
-    search = c_search.text_input("Buscar Cliente", placeholder="Digite o nome...")
+    search = c_search.text_input("🔍 Buscar Cliente", placeholder="Digite o nome...")
     
     if search:
         df = df[df['client_name'].str.lower().str.contains(search.lower(), na=False)]
@@ -338,7 +338,7 @@ def render_history_page():
         border_color = "#4CAF50" if roi_val > 15 else "#FF9800" if roi_val > 0 else "#F44336"
         
         with st.container():
-            c_info, c_actions = st.columns([3, 1])
+            c_info, c_actions = st.columns([3, 1.5]) 
             
             with c_info:
                 st.markdown(f"""
@@ -354,7 +354,7 @@ def render_history_page():
             
             with c_actions:
                 st.write("") 
-                b_col1, b_col2 = st.columns(2)
+                b_col1, b_col2, b_col3 = st.columns(3)
                 
                 if b_col1.button("✏️", key=f"edit_{i}", help="Editar essa simulação"):
                     for k, v in row.items():
@@ -375,7 +375,7 @@ def render_history_page():
                     st.session_state.client_code = row.get('client_code', '')
                     st.session_state.page = "Nova Simulação"
                     st.session_state.current_step = 3
-                    st.session_state.simulation_saved = True 
+                    st.session_state.simulation_saved = True
                     st.rerun()
                 
                 if b_col2.button("👁️", key=f"view_{i}", help="Visualizar relatório"):
@@ -390,6 +390,18 @@ def render_history_page():
                     st.session_state.simulation_to_view = view_obj
                     st.session_state.page = "Ver Simulação"
                     st.rerun()
+
+                if b_col3.button("🗑️", key=f"del_{i}", help="Excluir permanentemente"):
+                    try:
+                        row_idx = int(row['row_index'])
+                        worksheets["simulations"].delete_rows(row_idx)
+                        
+                        utils.load_data_from_sheet.clear()
+                        
+                        st.toast("Simulação removida com sucesso!", icon="🗑️")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao excluir: {e}")
             
             st.divider()
 
