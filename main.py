@@ -287,23 +287,44 @@ def save_simulation_callback():
     if not worksheets: return
     res = st.session_state.simulation_results
     sim_id = f"sim_{int(datetime.now().timestamp())}"
+    
     try:
-        row = [sid, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(res.get('client_name','')), str(res.get('client_code','')),
-               st.session_state.get('user_name',''), float(res.get('total_contribution',0)), int(res.get('num_months',0)),
-               float(res.get('annual_interest_rate',0)), float(res.get('spe_percentage',0)), int(res.get('land_size',0)),
-               float(res.get('construction_cost_m2',0)), float(res.get('value_m2',0)), float(res.get('area_exchange_percentage',0)),
-               float(res.get('vgv',0)), float(res.get('total_construction_cost',0)), float(res.get('final_operational_result',0)),
-               float(res.get('valor_participacao',0)), float(res.get('resultado_final_investidor',0)), float(res.get('roi',0)),
-               float(res.get('roi_anualizado',0)), float(res.get('valor_corrigido',0)),
-               str(res.get('start_date')), str(res.get('project_end_date'))]
+        row = [
+            sim_id, 
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+            str(res.get('client_name','')), 
+            str(res.get('client_code','')),
+            st.session_state.get('user_name',''), 
+            float(res.get('total_contribution',0)), 
+            int(res.get('num_months',0)),
+            float(res.get('annual_interest_rate',0)), 
+            float(res.get('spe_percentage',0)), 
+            int(res.get('land_size',0)),
+            float(res.get('construction_cost_m2',0)), 
+            float(res.get('value_m2',0)), 
+            float(res.get('area_exchange_percentage',0)),
+            float(res.get('vgv',0)), 
+            float(res.get('total_construction_cost',0)), 
+            float(res.get('final_operational_result',0)),
+            float(res.get('valor_participacao',0)), 
+            float(res.get('resultado_final_investidor',0)), 
+            float(res.get('roi',0)),
+            float(res.get('roi_anualizado',0)), 
+            float(res.get('valor_corrigido',0)),
+            str(res.get('start_date')), 
+            str(res.get('project_end_date'))
+        ]
         worksheets["simulations"].append_row(row, value_input_option='USER_ENTERED')
         
-        aps_rows = [[sid, str(a.get('date', a.get('data'))), float(a.get('value', a.get('valor')))] for a in res.get('aportes',[])]
-        if aps_rows: worksheets["aportes"].append_rows(aps_rows, value_input_option='USER_ENTERED')
-        
+        aps_rows = [[sim_id, str(a['date']), float(a['value'])] for a in res.get('aportes',[])]
+        if aps_rows: 
+            worksheets["aportes"].append_rows(aps_rows, value_input_option='USER_ENTERED')
+            
         st.session_state.simulation_saved = True
-        st.toast("Salvo!")
-    except Exception as e: st.error(f"Erro save: {e}")
+        st.toast("Salvo com sucesso!", icon="✅")
+        
+    except Exception as e: 
+        st.error(f"Erro ao salvar: {e}"))
         
 def render_history_page():
     st.title("Histórico de Simulações")
