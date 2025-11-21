@@ -171,7 +171,7 @@ def generate_pdf(data):
         pdf.add_page()
         
         if os.path.exists("Lavie.png"):
-            pdf.image("Lavie.png", x=10, y=8, w=35)
+            pdf.image("Lavie.png", x=10, y=15, w=35)
         else:
             pdf.set_font("Arial", "I", 8)
             pdf.cell(0, 5, to_latin1("Simulador Financeiro"), 0, 1, "L")
