@@ -8,6 +8,7 @@ import streamlit as st
 from fpdf import FPDF
 import gspread
 from gspread.exceptions import SpreadsheetNotFound
+import os
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -160,48 +161,78 @@ def calculate_financials(params):
 
 def generate_pdf(data):
     try:
-        def clean_txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1') if t else ''
-        
+        def to_latin1(text):
+            if text is None: return ''
+            text = str(text).replace("€", "EUR").replace("’", "'").replace("–", "-")
+            try:
+                return text.encode('latin-1', 'replace').decode('latin-1')
+            except:
+                return text
+
         pdf = FPDF()
         pdf.add_page()
         
-        try: pdf.image("Lavie.png", x=10, y=8, w=40)
-        except: pass
+        if os.path.exists("Lavie.png"):
+            pdf.image("Lavie.png", x=10, y=8, w=40)
+        else:
+            pdf.set_font("Arial", "I", 8)
+            pdf.cell(0, 5, to_latin1("Simulador Financeiro"), 0, 1, "L")
         
         pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 20, clean_txt("Relatório de Simulação"), 0, 1, "C")
-        pdf.ln(10)
+        pdf.set_x(60)
+        pdf.cell(0, 10, to_latin1("Relatório de Simulação Financeira"), 0, 1, "C")
+        pdf.ln(20)
         
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 10, clean_txt("Resumo do Cliente"), 0, 1)
+        pdf.cell(0, 10, to_latin1("Dados do Cliente"), 0, 1, "L")
         pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, clean_txt(f"Cliente: {data.get('client_name','')}"), 0, 1)
-        pdf.cell(0, 6, clean_txt(f"Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
         
+        client_name = data.get('client_name', 'Não Informado')
+        client_code = data.get('client_code', '')
+        client_info = f"Cliente: {client_name}"
+        if client_code: client_info += f" (Cód: {client_code})"
+        
+        pdf.cell(0, 5, to_latin1(client_info), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Aporte Total: {format_currency(data.get('total_contribution'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Prazo Estimado: {data.get('num_months')} meses"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"Taxa Anual: {data.get('annual_interest_rate', 0):.2f}%"), 0, 1)
         pdf.ln(5)
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 10, clean_txt("Resultados"), 0, 1)
-        pdf.set_font("Arial", "", 10)
-        items = [
-            f"VGV: {format_currency(data.get('vgv'))}",
-            f"Lucro Líquido: {format_currency(data.get('resultado_final_investidor'))}",
-            f"ROI Anualizado: {data.get('roi_anualizado')}%"
-        ]
-        for i in items: pdf.cell(0, 6, clean_txt(i), 0, 1)
         
-        aps = data.get('aportes', [])
-        if aps:
-            pdf.ln(5)
-            pdf.set_font("Arial", "B", 10)
-            pdf.cell(0, 10, clean_txt("Aportes"), 0, 1)
-            for a in aps:
-                dt = _ensure_date(a.get('date', a.get('data'))).strftime("%d/%m/%Y")
-                val = format_currency(float(a.get('value', a.get('valor', 0))))
-                pdf.set_font("Arial", "", 9)
-                pdf.cell(50, 6, clean_txt(dt), 1, 0, 'C')
-                pdf.cell(50, 6, clean_txt(val), 1, 1, 'R')
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, to_latin1("Resultados"), 0, 1, "L")
+        pdf.set_font("Arial", "", 10)
+        pdf.cell(0, 5, to_latin1(f"Lucro Líquido: {format_currency(data.get('resultado_final_investidor'))}"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"ROI do Período: {data.get('roi', 0):.2f}%"), 0, 1)
+        pdf.cell(0, 5, to_latin1(f"ROI Anualizado: {data.get('roi_anualizado', 0):.2f}%"), 0, 1)
+        pdf.ln(10)
+
+        aportes = data.get('aportes', [])
+        if aportes:
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, to_latin1("Cronograma de Aportes"), 0, 1, "L")
+            pdf.set_font("Arial", "B", 9)
+            col_widths = [60, 80]
+            pdf.cell(col_widths[0], 8, to_latin1("Data"), 1, 0, 'C')
+            pdf.cell(col_widths[1], 8, to_latin1("Valor"), 1, 1, 'C')
+
+            pdf.set_font("Arial", "", 9)
+            for aporte in aportes:
+                dt = aporte.get('date')
+                if not isinstance(dt, str): 
+                    try: dt = dt.strftime("%d/%m/%Y")
+                    except: dt = str(dt)
                 
-        return bytes(pdf.output(dest='S'))
+                val = aporte.get('value')
+                
+                pdf.cell(col_widths[0], 6, to_latin1(dt), 1, 0, 'C')
+                pdf.cell(col_widths[1], 6, to_latin1(format_currency(val)), 1, 1, 'R')
+
+        output = pdf.output(dest='S')
+        
+        if isinstance(output, str):
+            return output.encode('latin-1')
+        return output
+
     except Exception as e:
-        print(f"Erro PDF: {e}")
+        print(f"CRITICAL PDF ERROR: {e}")
         return b""
