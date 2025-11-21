@@ -324,7 +324,7 @@ def save_simulation_callback():
         st.toast("Salvo com sucesso!", icon="✅")
         
     except Exception as e: 
-        st.error(f"Erro ao salvar: {e}"))
+        st.error(f"Erro ao salvar: {e}")
         
 def render_history_page():
     st.title("Histórico de Simulações")
