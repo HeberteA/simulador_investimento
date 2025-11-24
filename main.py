@@ -18,7 +18,7 @@ st.set_page_config(page_title="Simulador Financeiro", page_icon="Lavie1.png", la
 APP_STYLE_CSS = """
 <style>
 [data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 10% 20%, #3b3b3b 10%, #000000 100%);
+    background: radial-gradient(circle at 10% 20%, #3b3b3b 0%, #000000 100%);
     font-family: 'Inter', sans-serif;
     color: #ffffff;
 }
