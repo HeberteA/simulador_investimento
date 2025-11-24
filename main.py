@@ -29,41 +29,14 @@ div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     color: white !important;
 }
-
-/* Texto interno dos inputs */
-div[data-testid="stNumberInput"] input, 
-div[data-testid="stTextInput"] input {
+div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input {
     color: white !important;
-    font-family: 'Inter', sans-serif;
 }
-
-/* Labels (Títulos dos inputs) */
-label[data-testid="stLabel"] {
-    color: rgba(255, 255, 255, 0.6) !important;
-    font-size: 0.85rem !important;
-    margin-bottom: 8px;
-}
-
-/* Headers Personalizados */
-.section-header { display: flex; align-items: center; margin-bottom: 20px; }
-.section-icon {
-    font-family: 'Material Symbols Rounded'; font-size: 22px; margin-right: 10px;
-    color: #E37026; background: rgba(227, 112, 38, 0.15); padding: 6px;
-    border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
-}
-.section-title { font-size: 1.05rem; font-weight: 600; color: #fff; }
 /* Steps */
 .step-container {
-    background-color: transparent !important;
-    background-image: linear-gradient(160deg, #2b2b2b 0%, #0a0a0c 100%) !important;
-    
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
-    padding: 24px !important;
-    margin-bottom: 20px !important;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;
+    background: rgba(255,255,255,0.03); padding: 20px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.05);
 }
-
 .step-item {
     display: flex; align-items: center; flex-direction: column; color: #666; font-weight: 500; width: 33%; position: relative;
 }
