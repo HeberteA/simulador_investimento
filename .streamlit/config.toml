@@ -2,7 +2,7 @@
 primaryColor = "#E37026"
 backgroundColor = "rgba(0, 0, 0, 0.7)"
 secondaryBackgroundColor = "rgba(0, 0, 0, 1)"
-textColor = "#FFFFFF"
+textColor = "#ffffff"
 font = "sans serif"
-borderColor="#E37026"
+borderColor="rgba(255, 255, 255, 0.2)"
 showWidgetBorder=true
