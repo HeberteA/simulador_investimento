@@ -22,7 +22,6 @@ APP_STYLE_CSS = """
     font-family: 'Inter', sans-serif;
     color: #ffffff;
 }
-
 /* Ajustes de Inputs para contraste */
 div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
     background-color: rgba(255, 255, 255, 0.05) !important;
