@@ -55,11 +55,11 @@ defaults = {
     'editing_row': None, 'simulation_to_edit': None, 'simulation_to_view': None, 
     'show_results_page': False,
     'client_name': '', 'client_code': '',
-    'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
-    'total_contribution': 100000.0, 'num_months': 24, 
+    'annual_interest_rate': 0.0, 'spe_percentage': 0.0,
+    'total_contribution': 0.0, 'num_months': 0, 
     'start_date': datetime.today().date(),
     'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
-    'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
+    'land_size': 0, 'construction_cost_m2': 0.0, 'value_m2': 0.0, 'area_exchange_percentage': 0.0,
     'aportes': [], 'confirming_delete': None, 'simulation_saved': False, 'current_step': 1 
 }
 
@@ -145,12 +145,42 @@ def render_new_simulation_page():
             st.subheader("Parâmetros do Projeto")
             c1, c2 = st.columns(2)
             with c1:
-                st.number_input("Área Vendável (m²)", min_value=0, step=10, key="land_size", help="Área total privativa vendável do projeto.")
-                st.number_input("Custo da Obra (R$/m²)", min_value=0.0, step=100.0, format="%.2f", key="construction_cost_m2", help="Custo estimado de construção por metro quadrado.")
+                st.session_state.land_size = st.number_input(
+                    "Área Vendável (m²)", 
+                    min_value=0, 
+                    step=10, 
+                    value=int(st.session_state.land_size), 
+                    help="Área total privativa vendável do projeto."
+                )
+                
+                st.session_state.construction_cost_m2 = st.number_input(
+                    "Custo da Obra (R$/m²)", 
+                    min_value=0.0, 
+                    step=100.0, 
+                    format="%.2f", 
+                    value=float(st.session_state.construction_cost_m2),
+                    help="Custo estimado de construção por metro quadrado."
+                )
+                
             with c2:
-                st.number_input("Valor de Venda (R$/m²)", min_value=0.0, step=100.0, format="%.2f", key="value_m2", help="Valor médio de venda esperado por metro quadrado.")
-                st.number_input("Permuta Física/Financeira (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f", key="area_exchange_percentage", help="Percentual do VGV destinado à permuta do terreno.")
-
+                st.session_state.value_m2 = st.number_input(
+                    "Valor de Venda (R$/m²)", 
+                    min_value=0.0, 
+                    step=100.0, 
+                    format="%.2f", 
+                    value=float(st.session_state.value_m2),
+                    help="Valor médio de venda esperado por metro quadrado."
+                )
+                
+                st.session_state.area_exchange_percentage = st.number_input(
+                    "Permuta Física/Financeira (%)", 
+                    min_value=0.0, 
+                    max_value=100.0, 
+                    step=0.5, 
+                    format="%.2f", 
+                    value=float(st.session_state.area_exchange_percentage),
+                    help="Percentual do VGV destinado à permuta do terreno."
+                )
         elif step == 2:
             st.subheader("Dados do Investidor")
             st.session_state.client_name = st.text_input("Nome", value=st.session_state.client_name)
