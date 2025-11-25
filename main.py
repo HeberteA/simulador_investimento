@@ -121,7 +121,7 @@ def render_new_simulation_page():
 
     if st.session_state.show_results_page:
         st.title("Resultado da Simulação")
-        if st.button("⬅️ Voltar e Editar Parâmetros"):
+        if st.button("Voltar para osParâmetros"):
             go_to_inputs()
             st.rerun()
 
@@ -342,7 +342,7 @@ def render_history_page():
     if df.empty: st.info("Vazio."); return
     
     c_search, c_sort = st.columns([3, 1])
-    search = c_search.text_input("🔍 Buscar", placeholder="Nome...")
+    search = c_search.text_input("Buscar", placeholder="Nome...")
     if search: df = df[df['client_name'].str.lower().str.contains(search.lower(), na=False)]
     
     df = df.sort_values('created_at', ascending=False)
