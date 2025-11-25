@@ -55,11 +55,16 @@ defaults = {
     'editing_row': None, 'simulation_to_edit': None, 'simulation_to_view': None, 
     'show_results_page': False,
     'client_name': '', 'client_code': '',
-    'annual_interest_rate': 12.0, 'spe_percentage': 65.0,
-    'total_contribution': 100000.0, 'num_months': 24, 
+    'annual_interest_rate': 0.0, 
+    'spe_percentage': 0.0,      
+    'total_contribution': 0.0, 
+    'num_months': 0, 
     'start_date': datetime.today().date(),
-    'project_end_date': (datetime.today() + relativedelta(years=2)).date(),
-    'land_size': 1000, 'construction_cost_m2': 3500.0, 'value_m2': 10000.0, 'area_exchange_percentage': 20.0,
+    'project_end_date': datetime.today().date(),
+    'land_size': 0,             
+    'construction_cost_m2': 0.0, 
+    'value_m2': 0.0,           
+    'area_exchange_percentage': 0.0, 
     'aportes': [], 'confirming_delete': None, 'simulation_saved': False, 'current_step': 1 
 }
 
@@ -107,8 +112,6 @@ def render_login_page():
             else: st.warning("Preencha todos os campos.")
 
 def render_new_simulation_page():
-    
-
     def go_to_results(): st.session_state.show_results_page = True
     def go_to_inputs(): st.session_state.show_results_page = False
 
@@ -158,6 +161,7 @@ def render_new_simulation_page():
             st.session_state.client_code = c1.text_input("Código", value=st.session_state.client_code)
             st.session_state.annual_interest_rate = c1.number_input("Juros Anual (%)", value=float(st.session_state.annual_interest_rate), step=0.5)
             st.session_state.spe_percentage = c2.number_input("Part. SPE (%)", value=float(st.session_state.spe_percentage), step=1.0)
+            
             safe_end = utils._ensure_date(st.session_state.project_end_date)
             st.session_state.project_end_date = c2.date_input("Término Obra", value=safe_end)
 
@@ -229,6 +233,7 @@ def render_new_simulation_page():
             else:
                 if st.button("Calcular Resultados", type="primary", use_container_width=True):
                     if not st.session_state.aportes: st.warning("Adicione pelo menos um aporte.")
+                    elif st.session_state.land_size == 0 or st.session_state.value_m2 == 0: st.error("Preencha os dados do empreendimento (Etapa 1).")
                     else:
                         with st.spinner("Processando..."):
                             p = {
@@ -273,11 +278,11 @@ def render_new_simulation_page():
                 custo = float(st.session_state.construction_cost_m2)
                 venda = float(st.session_state.value_m2)
                 
-                vgv_est = area * venda
-                custo_est = area * custo
-                
-                st.metric("VGV Estimado", utils.format_currency(vgv_est))
-                st.metric("Custo Físico (Obra)", utils.format_currency(custo_est))
+                if area > 0:
+                    vgv_est = area * venda
+                    custo_est = area * custo
+                    st.metric("VGV Estimado", utils.format_currency(vgv_est))
+                    st.metric("Custo Físico (Obra)", utils.format_currency(custo_est))
                 
                 total_aportado = sum([a['valor'] for a in st.session_state.aportes])
                 if total_aportado > 0:
