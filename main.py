@@ -1,19 +1,27 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 from streamlit_option_menu import option_menu
 from dateutil.relativedelta import relativedelta 
 import utils
 from ui_components import display_full_results
 import plotly.express as px
 import numpy as np
+import os
 
-def safe_date_to_string(date_val, fmt='%Y-%m-%d'):
-    if pd.isna(date_val): return ""  
-    try: return pd.to_datetime(date_val).strftime(fmt)
-    except (ValueError, TypeError): return ""  
+def safe_load_icon(image_name, fallback_emoji="🏗️"):
+    if os.path.exists(image_name): return image_name
+    return fallback_emoji
 
-st.set_page_config(page_title="Simulador Financeiro", page_icon="Lavie1.png", layout="wide")
+def ensure_date(val):
+    """Garante conversão segura para data."""
+    if isinstance(val, date): return val
+    if isinstance(val, datetime): return val.date()
+    try: return pd.to_datetime(val).date()
+    except: return datetime.today().date()
+
+app_icon = safe_load_icon("Lavie1.png")
+st.set_page_config(page_title="Simulador Financeiro", page_icon=app_icon, layout="wide")
 
 APP_STYLE_CSS = """
 <style>
@@ -47,11 +55,14 @@ div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input {
 """
 st.markdown(APP_STYLE_CSS, unsafe_allow_html=True)
 
-state_vars = {
-    'page': "Nova Simulação", 'results_ready': False, 'simulation_results': {},
-    'editing_row': None, 'simulation_to_edit': None, 'simulation_to_view': None, 
+initial_state = {
+    'page': "Nova Simulação", 
+    'results_ready': False, 
+    'simulation_results': {},
     'show_results_page': False,
-    'client_name': '', 'client_code': '',
+    'current_step': 1,
+    'client_name': '', 
+    'client_code': '',
     'annual_interest_rate': 0.0, 
     'spe_percentage': 0.0,
     'total_contribution': 0.0, 
@@ -62,7 +73,8 @@ state_vars = {
     'construction_cost_m2': 0.0, 
     'value_m2': 0.0,             
     'area_exchange_percentage': 0.0, 
-    'aportes': [], 'confirming_delete': None, 'simulation_saved': False, 'current_step': 1,
+    'aportes': [], 
+    'simulation_saved': False,
     'new_aporte_date': datetime.today().date(),
     'new_aporte_value': 0.0,
     'parcelado_total_valor': 0.0,
@@ -70,25 +82,17 @@ state_vars = {
     'parcelado_data_inicio': datetime.today().date()
 }
 
-for k, v in state_vars.items():
-    if k not in st.session_state: st.session_state[k] = v
+for key, default_value in initial_state.items():
+    if key not in st.session_state:
+        st.session_state[key] = default_value
 
 worksheets = utils.init_gsheet_connection()
 
 def manual_reset():
-    st.session_state.client_name = ''
-    st.session_state.client_code = ''
-    st.session_state.land_size = 0
-    st.session_state.construction_cost_m2 = 0.0
-    st.session_state.value_m2 = 0.0
-    st.session_state.area_exchange_percentage = 0.0
-    st.session_state.annual_interest_rate = 0.0
-    st.session_state.spe_percentage = 0.0
-    st.session_state.project_end_date = datetime.today().date()
-    st.session_state.aportes = []
-    st.session_state.current_step = 1
-    st.session_state.show_results_page = False
-    st.session_state.results_ready = False
+    """Reseta os valores para o estado inicial."""
+    for k, v in initial_state.items():
+        if k not in ['page']: 
+            st.session_state[k] = v
 
 def render_login_page():
     c1, c2, c3 = st.columns([1, 2, 1]) 
@@ -97,6 +101,7 @@ def render_login_page():
         except: pass
         st.markdown("<h2 style='text-align: center;'>Simulador Financeiro</h2>", unsafe_allow_html=True)
         st.markdown("---")
+        
         try: user_list = list(st.secrets["credentials"].keys())
         except: st.error("Credenciais não configuradas."); st.stop()
         
@@ -116,7 +121,7 @@ def render_new_simulation_page():
 
     if st.session_state.show_results_page:
         st.title("Resultado da Simulação")
-        if st.button("Voltar para os Parâmetros"):
+        if st.button("⬅️ Voltar e Editar Parâmetros"):
             go_to_inputs()
             st.rerun()
 
@@ -146,22 +151,23 @@ def render_new_simulation_page():
             st.subheader("Parâmetros do Projeto")
             c1, c2 = st.columns(2)
             with c1:
-                st.number_input("Área Vendável (m²)", key="land_size", min_value=0, step=10)
-                st.number_input("Custo da Obra (R$/m²)", key="construction_cost_m2", min_value=0.0, step=100.0, format="%.2f")
+                st.number_input("Área Vendável (m²)", key="land_size", value=int(st.session_state.land_size), min_value=0, step=10)
+                st.number_input("Custo da Obra (R$/m²)", key="construction_cost_m2", value=float(st.session_state.construction_cost_m2), min_value=0.0, step=100.0, format="%.2f")
             with c2:
-                st.number_input("Valor de Venda (R$/m²)", key="value_m2", min_value=0.0, step=100.0, format="%.2f")
-                st.number_input("Permuta Física/Financeira (%)", key="area_exchange_percentage", min_value=0.0, max_value=100.0, step=0.5, format="%.2f")
+                st.number_input("Valor de Venda (R$/m²)", key="value_m2", value=float(st.session_state.value_m2), min_value=0.0, step=100.0, format="%.2f")
+                st.number_input("Permuta Física/Financeira (%)", key="area_exchange_percentage", value=float(st.session_state.area_exchange_percentage), min_value=0.0, max_value=100.0, step=0.5, format="%.2f")
 
         elif step == 2:
             st.subheader("Dados do Investidor")
-            st.text_input("Nome do Cliente", key="client_name")
+            st.text_input("Nome do Cliente", key="client_name", value=st.session_state.client_name)
             c1, c2 = st.columns(2)
             with c1:
-                st.text_input("Código do Cliente", key="client_code")
-                st.number_input("Taxa de Juros Anual (%)", key="annual_interest_rate", min_value=0.0, step=0.5, format="%.2f")
+                st.text_input("Código do Cliente", key="client_code", value=st.session_state.client_code)
+                st.number_input("Taxa de Juros Anual (%)", key="annual_interest_rate", value=float(st.session_state.annual_interest_rate), min_value=0.0, step=0.5, format="%.2f")
             with c2:
-                st.number_input("Participação na SPE (%)", key="spe_percentage", min_value=0.0, max_value=100.0, step=1.0, format="%.2f")
-                st.date_input("Data Estimada de Término", key="project_end_date")
+                st.number_input("Participação na SPE (%)", key="spe_percentage", value=float(st.session_state.spe_percentage), min_value=0.0, max_value=100.0, step=1.0, format="%.2f")
+                safe_dt = ensure_date(st.session_state.project_end_date)
+                st.date_input("Data Estimada de Término", key="project_end_date", value=safe_dt)
 
         elif step == 3:
             st.subheader("Fluxo de Aportes")
@@ -177,11 +183,10 @@ def render_new_simulation_page():
                 with c3:
                     st.write("")
                     def add_single_contribution():
-                        if st.session_state.new_aporte_value > 0:
-                            st.session_state.aportes.append({
-                                "data": st.session_state.new_aporte_date,
-                                "valor": st.session_state.new_aporte_value
-                            })
+                        val = st.session_state.new_aporte_value
+                        dt = ensure_date(st.session_state.new_aporte_date)
+                        if val > 0:
+                            st.session_state.aportes.append({"data": dt, "valor": val})
                             st.session_state.new_aporte_value = 0.0 
                     
                     st.button("Adicionar", use_container_width=True, on_click=add_single_contribution)
@@ -195,7 +200,7 @@ def render_new_simulation_page():
                 def add_parcelas():
                     total = st.session_state.parcelado_total_valor
                     num = int(st.session_state.parcelado_num_parcelas)
-                    start = st.session_state.parcelado_data_inicio
+                    start = ensure_date(st.session_state.parcelado_data_inicio)
                     if total > 0 and num > 0:
                         val_parcela = total / num
                         for i in range(num):
@@ -226,7 +231,7 @@ def render_new_simulation_page():
                     )
                     recs = []
                     for r in edited.to_dict('records'):
-                         recs.append({'data': utils.calculate_financials.__globals__['safe_to_date'](r['data']) if 'safe_to_date' in utils.calculate_financials.__globals__ else pd.to_datetime(r['data']).date(), 'valor': float(r['valor'])})
+                         recs.append({'data': ensure_date(r['data']), 'valor': float(r['valor'])})
                     st.session_state.aportes = recs
 
                 if st.button("Limpar Lista"): 
@@ -241,35 +246,38 @@ def render_new_simulation_page():
             if step < 3: st.button("Próximo", on_click=lambda: st.session_state.update(current_step=st.session_state.current_step+1), use_container_width=True)
             else:
                 if st.button("Calcular Resultados", type="primary", use_container_width=True):
-                    if not st.session_state.aportes: 
-                        st.warning("Atenção: Nenhum aporte foi adicionado.")
+                    errors = []
+                    if st.session_state.land_size <= 0: errors.append("Área Vendável (Etapa 1)")
+                    if st.session_state.value_m2 <= 0: errors.append("Valor de Venda (Etapa 1)")
+                    if not st.session_state.aportes: errors.append("Aportes (Etapa 3)")
                     
-                    with st.spinner("Processando..."):
-                        def get_float(k): return float(st.session_state.get(k, 0.0))
-                        def get_int(k): return int(st.session_state.get(k, 0))
-                        
-                        p = {
-                            'client_name': st.session_state.get('client_name', ''),
-                            'client_code': st.session_state.get('client_code', ''),
-                            'annual_interest_rate': get_float('annual_interest_rate'),
-                            'spe_percentage': get_float('spe_percentage'),
-                            'land_size': get_int('land_size'),
-                            'construction_cost_m2': get_float('construction_cost_m2'),
-                            'value_m2': get_float('value_m2'),
-                            'area_exchange_percentage': get_float('area_exchange_percentage'),
-                            'start_date': st.session_state.get('start_date', datetime.today().date()),
-                            'project_end_date': st.session_state.get('project_end_date', datetime.today().date()),
-                            'aportes': [{'date': x.get('data'), 'value': x.get('valor')} for x in st.session_state.aportes]
-                        }
-                        st.session_state.simulation_results = utils.calculate_financials(p)
-                        st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
-                        st.session_state.results_ready = True
-                        st.session_state.show_results_page = True
-                        st.rerun()
+                    if errors:
+                        st.error(f"Preencha os dados obrigatórios: {', '.join(errors)}.")
+                    else:
+                        with st.spinner("Processando..."):
+                            p = {
+                                'client_name': st.session_state.client_name,
+                                'client_code': st.session_state.client_code,
+                                'annual_interest_rate': float(st.session_state.annual_interest_rate),
+                                'spe_percentage': float(st.session_state.spe_percentage),
+                                'land_size': int(st.session_state.land_size),
+                                'construction_cost_m2': float(st.session_state.construction_cost_m2),
+                                'value_m2': float(st.session_state.value_m2),
+                                'area_exchange_percentage': float(st.session_state.area_exchange_percentage),
+                                'start_date': ensure_date(st.session_state.start_date),
+                                'project_end_date': ensure_date(st.session_state.project_end_date),
+                                'aportes': [{'date': ensure_date(x.get('data')), 'value': x.get('valor')} for x in st.session_state.aportes]
+                            }
+                            st.session_state.simulation_results = utils.calculate_financials(p)
+                            st.session_state.simulation_results['simulation_id'] = f"gen_{int(datetime.now().timestamp())}"
+                            st.session_state.results_ready = True
+                            st.session_state.show_results_page = True
+                            st.rerun()
     
     with col_visual:
         with st.container(border=True):
             st.subheader("Resumo do Passo")
+            
             step = st.session_state.current_step
             try:
                 import os
@@ -283,10 +291,11 @@ def render_new_simulation_page():
 
             st.divider()
             st.markdown("##### Métricas Preliminares")
+            
             try:
-                area = float(st.session_state.get('land_size', 0))
-                custo = float(st.session_state.get('construction_cost_m2', 0))
-                venda = float(st.session_state.get('value_m2', 0))
+                area = float(st.session_state.land_size)
+                custo = float(st.session_state.construction_cost_m2)
+                venda = float(st.session_state.value_m2)
                 
                 if area > 0:
                     vgv_est = area * venda
@@ -333,7 +342,7 @@ def render_history_page():
     if df.empty: st.info("Vazio."); return
     
     c_search, c_sort = st.columns([3, 1])
-    search = c_search.text_input("Buscar", placeholder="Nome...")
+    search = c_search.text_input("🔍 Buscar", placeholder="Nome...")
     if search: df = df[df['client_name'].str.lower().str.contains(search.lower(), na=False)]
     
     df = df.sort_values('created_at', ascending=False)
@@ -374,25 +383,121 @@ def render_history_page():
             st.divider()
 
 def render_view_simulation_page():
-    st.title("Visualizar")
-    if st.button("Voltar"): st.session_state.page = "Histórico"; st.rerun()
+    st.title("Visualizar Simulação")
+    if st.button("Voltar ao Histórico"):
+        st.session_state.page = "Histórico"
+        st.rerun()
+    
     if st.session_state.simulation_to_view:
         res = utils.calculate_financials(st.session_state.simulation_to_view)
         display_full_results(res, show_download_button=True, is_simulation_saved=True)
 
+
 def render_dashboard_page():
-    st.title("Dashboard")
-    if not worksheets: return
-    df = utils.load_data_from_sheet(worksheets["simulations"])
-    if df.empty: st.info("Dados insuficientes."); return
-
-    k1, k2, k3 = st.columns(3)
-    k1.metric("VGV Total", utils.format_currency(df['vgv'].sum()))
-    k2.metric("ROI Médio", f"{df['roi_anualizado'].mean():.2f}%")
-    k3.metric("Simulações", len(df))
+    st.title("Intelligence Dashboard")
+    st.markdown("Análise estratégica de viabilidade e performance de portfólio.")
     
-    st.plotly_chart(px.scatter(df, x='total_contribution', y='roi_anualizado', title="Risco x Retorno", color_discrete_sequence=['#E37026']), use_container_width=True)
+    if not worksheets: return
+    df = utils.load_data_from_sheet(worksheets["simulations"], "simulations")
+    
+    if df.empty:
+        st.info("Dados insuficientes para gerar dashboard.")
+        return
 
+    total_vgv = df['vgv'].sum()
+    avg_roi = df['roi_anualizado'].mean()
+    total_investido = df['total_contribution'].sum()
+    lucro_total = df['resultado_final_investidor'].sum()
+
+    st.markdown("""
+    <style>
+    .kpi-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .kpi-label { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+    .kpi-value { font-size: 28px; font-weight: bold; color: #fff; margin: 10px 0; }
+    .kpi-sub { font-size: 12px; color: #4CAF50; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    k1, k2, k3, k4 = st.columns(4)
+    
+    def kpi_html(label, value, subtext=""):
+        return f"""<div class="kpi-card"><div class="kpi-label">{label}</div><div class="kpi-value">{value}</div><div class="kpi-sub">{subtext}</div></div>"""
+
+    with k1: st.markdown(kpi_html("VGV Potencial", utils.format_currency(total_vgv), f"{len(df)} projetos"), unsafe_allow_html=True)
+    with k2: st.markdown(kpi_html("Capital Captado", utils.format_currency(total_investido)), unsafe_allow_html=True)
+    with k3: st.markdown(kpi_html("Lucro Projetado", utils.format_currency(lucro_total)), unsafe_allow_html=True)
+    with k4: st.markdown(kpi_html("ROI Médio (a.a.)", f"{avg_roi:.2f}%"), unsafe_allow_html=True)
+
+    st.divider()
+    
+    c_charts_1, c_charts_2 = st.columns([2, 1])
+    
+    with c_charts_1:
+        st.subheader("Risco x Retorno (Dispersão)")
+        fig_scatter = px.scatter(
+            df, 
+            x='total_contribution', 
+            y='roi_anualizado',
+            size='resultado_final_investidor',
+            color='roi_anualizado',
+            hover_name='client_name',
+            color_continuous_scale='RdYlGn',
+            labels={'total_contribution': 'Investimento Total (R$)', 'roi_anualizado': 'ROI Anualizado (%)'},
+            title="Eficiência do Capital"
+        )
+        fig_scatter.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        fig_scatter.add_hline(y=df['roi_anualizado'].mean(), line_dash="dot", annotation_text="Média", annotation_position="bottom right")
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
+    with c_charts_2:
+        st.subheader("Distribuição de ROI")
+        fig_hist = px.histogram(
+            df, 
+            x='roi_anualizado', 
+            nbins=10, 
+            color_discrete_sequence=['#E37026'],
+            title="Histograma de Rentabilidade"
+        )
+        fig_hist.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white', yaxis_title="Frequência")
+        st.plotly_chart(fig_hist, use_container_width=True)
+        
+    c3, c4 = st.columns(2)
+    
+    with c3:
+        st.subheader("Evolução do Portfólio")
+        df_sorted = df.sort_values('created_at')
+        fig_line = px.area(
+            df_sorted, 
+            x='created_at', 
+            y='vgv', 
+            title="Crescimento do VGV Acumulado (Simulado)",
+            line_shape='spline',
+            color_discrete_sequence=['#00E676']
+        )
+        fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        st.plotly_chart(fig_line, use_container_width=True)
+        
+    with c4:
+        st.subheader("Top 5 Projetos (ROI)")
+        st.space("large")
+        st.space("small")
+        top_5 = df.nlargest(5, 'roi_anualizado')[['client_name', 'roi_anualizado', 'resultado_final_investidor']]
+        top_5['roi_anualizado'] = top_5['roi_anualizado'].apply(lambda x: f"{x:.2f}%")
+        top_5['resultado_final_investidor'] = top_5['resultado_final_investidor'].apply(utils.format_currency)
+        top_5.rename(columns={'client_name': 'Cliente', 'roi_anualizado': 'ROI', 'resultado_final_investidor': 'Lucro'}, inplace=True)
+        
+        st.dataframe(
+            top_5, 
+            use_container_width=True, 
+            hide_index=True,
+            column_config={"ROI": st.column_config.TextColumn("ROI", help="Retorno sobre Investimento Anualizado")}
+        )
 if 'authenticated' not in st.session_state: st.session_state.authenticated = False
 
 if st.session_state.authenticated:
