@@ -34,7 +34,7 @@ div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input {
 /* Steps */
 .step-container {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;
-    background: radial-gradient(circle at 10% 20%, #2b2b2b 0%, #000000 90%); padding: 20px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.05);
+    background: radial-gradient(circle at 10% 20%, #2b2b2b 0%, #000000 80%); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
 }
 .step-item {
     display: flex; align-items: center; flex-direction: column; color: #666; font-weight: 500; width: 33%; position: relative;
