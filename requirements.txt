@@ -13,4 +13,6 @@ plotly
 streamlit-option-menu
 statsmodels
 scipy
+python-dateutil
+
 
