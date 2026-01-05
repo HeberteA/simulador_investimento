@@ -40,11 +40,24 @@ def _ensure_date(val):
 @st.cache_resource
 def init_gsheet_connection():
     try:
-        creds_dict = st.secrets["gcp_service_account"]
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        if "private_key" in creds_dict:
+            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+
         gc = gspread.service_account_from_dict(creds_dict)
-        if "spreadsheet_key" not in st.secrets: return None
+        
+        if "spreadsheet_key" not in st.secrets: 
+            st.error("Chave da planilha não encontrada nos secrets.")
+            return None
+            
         sh = gc.open_by_key(st.secrets["spreadsheet_key"])
-        return {"simulations": sh.worksheet("simulations"), "aportes": sh.worksheet("aportes")}
+        return {
+            "simulations": sh.worksheet("simulations"), 
+            "aportes": sh.worksheet("aportes")
+        }
+    except SpreadsheetNotFound:
+        st.error("Planilha não encontrada. Verifique se o ID está correto e se o email de serviço tem permissão de editor.")
+        return None
     except Exception as e:
         st.error(f"Erro GSheets: {e}")
         return None
